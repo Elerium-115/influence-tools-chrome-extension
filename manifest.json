@@ -1,0 +1,19 @@
+{
+    "manifest_version": 3,
+    "name": "Influence Tools",
+    "description": "Add menu items for several Influence tools created by the community, and open them in an in-game window.",
+    "version": "1.0",
+    "content_scripts": [
+        {
+            "js": [
+                "globals/dom-core.js",
+                "globals/style.js",
+                "globals/tools.js",
+                "content_script.js"
+            ],
+            "matches": [
+                "https://game-goerli.influenceth.io/*"
+            ]
+        }
+    ]
+}
