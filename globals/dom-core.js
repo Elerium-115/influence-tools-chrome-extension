@@ -71,7 +71,11 @@ function injectStandardWindow(title, url) {
     const elNewWindowHeaderButton = createEl('a', cls.button, ['e115-button', 'e115-cursor-full']);
     elNewWindowHeaderButton.href = url.replace(/([?&])embed=?[^?&]*/, '$1').replace('&&', '&').replace(/[?&]$/, ''); // remove "embed" query-param, if any
     elNewWindowHeaderButton.target = '_blank';
-    elNewWindowHeaderButton.innerHTML = `Open in new window${svg.e115ButtonCorner}`;
+    elNewWindowHeaderButton.innerHTML = /*html*/ `
+        ${svg.e115IconClose}
+        Open in new window
+        ${svg.e115ButtonCorner}
+    `;
     elNewWindowHeader.appendChild(elNewWindowHeaderButton);
     // Prepare new standard window > close
     const elNewWindowClose = createEl('button', cls.standardWindowClose, ['e115-window-close', 'e115-cursor-full']);

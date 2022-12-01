@@ -26,7 +26,7 @@
 
 const svg = {
     e115IconShip: `<svg viewBox="0 0 221.73 94.58"><g><g><path fill="#fff" d="M221.73,47.3L110.78,0H0L71.49,30.77l-22.68,16.53,22.68,16.53L0,94.58H110.78l110.95-47.28Z"/></g></g></svg>`,
-    e115IconClose: `<svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 24 24" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><path fill="none" d="M0 0h24v24H0z"></path><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"></path></svg>`,
+    e115IconClose: `<svg class="e115-close" stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 24 24" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><path fill="none" d="M0 0h24v24H0z"></path><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"></path></svg>`,
     e115ButtonCorner: `<svg viewBox="0 0 10 10" xmlns="http://www.w3.org/2000/svg" class="sc-jSUZER ktYJwN e115-button-corner"><line x1="0" y1="10" x2="10" y2="0"></line></svg>`,
 };
 
@@ -134,9 +134,14 @@ elStyleE115.innerHTML = /*html*/ `
         margin-right: 90px;
     }
     .e115-window-header .e115-button {
+        width: 200px;
         height: 35px;
         color: var(--e115-highlight);
         text-decoration: none;
+        white-space: nowrap;
+    }
+    .e115-window-header .e115-button .e115-close {
+        transform: rotate(45deg);
     }
     .e115-window-title {
         border-left-color: var(--e115-highlight);
@@ -148,6 +153,7 @@ elStyleE115.innerHTML = /*html*/ `
     .e115-window iframe {
         border: none;
         height: 100%;
+        margin: 25px 35px 35px 25px;
     }
 
     .${cls.sideMenuPanel[1]}[data-e115-panel-id]::after {
