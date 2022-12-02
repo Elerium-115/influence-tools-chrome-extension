@@ -51,7 +51,7 @@ const tools = [
         items: [
             {title: 'The Incident in Sixteen', author: 'Korivak', url: 'https://matthew.debarth.com/influence/the-incident-in-sixteen'}, // blocked by "medium.com"
             {title: 'strwrsfrk Influence Lore', author: 'strwrsfrk', url: 'https://strwrsfrk.medium.com/'}, // blocked by "medium.com"
-            {title: 'Last Night in Space', author: 'Korivak', url: 'https://lastnight.space/'},
+            {title: 'Last Night in Space', author: 'Korivak', url: 'https://lastnight.space/?embed'},
         ],
     },
 ];
