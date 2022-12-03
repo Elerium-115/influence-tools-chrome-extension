@@ -130,30 +130,70 @@ elStyleE115.innerHTML = /*html*/ `
 
     .e115-window-header {
         display: flex;
+        gap: 30px;
         justify-content: space-between;
         margin-right: 90px;
     }
+    .e115-window-header .e115-window-title {
+        border-left-color: var(--e115-highlight);
+        flex-grow: 1;
+        white-space: nowrap;
+    }
     .e115-window-header .e115-button {
-        width: 200px;
-        height: 35px;
         color: var(--e115-highlight);
+        height: 35px;
         text-decoration: none;
         white-space: nowrap;
+        width: auto;
     }
     .e115-window-header .e115-button .e115-close {
         transform: rotate(45deg);
-    }
-    .e115-window-title {
-        border-left-color: var(--e115-highlight);
     }
     .e115-window-close.${cls.standardWindowClose[1]} {
         border-color: var(--e115-highlight);
         color: var(--e115-highlight);
     }
-    .e115-window iframe {
-        border: none;
+    .e115-window .e115-window-content {
         height: 100%;
         margin: 25px 35px 35px 25px;
+    }
+    .e115-window .e115-window-safety {
+        align-items: center;
+        background-color: rgba(0, 0, 0, 0.5);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        padding: 30px;
+    }
+    .e115-window .e115-window-safety h2 {
+        font-size: 24px;
+        font-weight: 400;
+        line-height: 60px;
+        margin: 0;
+    }
+    .e115-window .e115-window-safety ul {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+    }
+    .e115-window .e115-window-safety ul li {
+        line-height: 20px;
+        padding: 15px 0 15px 30px;
+        position: relative;
+    }
+    .e115-window .e115-window-safety ul li::before {
+        /* URL encoded based on "svg.e115IconShip", via https://yoksel.github.io/url-encoder/ */
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 221.73 94.58'%3E%3Cg%3E%3Cg%3E%3Cpath fill='%23ccc' d='M221.73,47.3L110.78,0H0L71.49,30.77l-22.68,16.53,22.68,16.53L0,94.58H110.78l110.95-47.28Z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+        background-position: center;
+        background-repeat: no-repeat;
+        content: '';
+        height: 20px;
+        left: 0;
+        position: absolute;
+        width: 17px;
+    }
+    .e115-window iframe {
+        border: none;
     }
 
     .${cls.sideMenuPanel[1]}[data-e115-panel-id]::after {
@@ -205,6 +245,10 @@ elStyleE115.innerHTML = /*html*/ `
 
     .e115-faded {
         opacity: 0.5;
+    }
+
+    .e115-hidden {
+        display: none !important;
     }
 `;
 document.head.appendChild(elStyleE115);

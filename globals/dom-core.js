@@ -67,7 +67,24 @@ function injectStandardWindow(title, url) {
     const elNewWindowHeaderTitle = createEl('h1', cls.standardWindowTitle, ['e115-window-title']);
     elNewWindowHeaderTitle.textContent = title;
     elNewWindowHeader.appendChild(elNewWindowHeaderTitle);
-    // Prepare new standard window > header > button
+    // Prepare new standard window > header > button "Safety Tips"
+    const elNewWindowHeaderWarning = createEl('a', cls.button, ['e115-button', 'e115-cursor-full']);
+    elNewWindowHeaderWarning.innerHTML = /*html*/ `
+        ⚠&nbsp;&nbsp;Safety Tips
+        ${svg.e115ButtonCorner}
+    `;
+    elNewWindowHeaderWarning.setAttribute('onmouseenter', `
+        const el = this.closest('.e115-window');
+        el.querySelector('iframe').classList.add('e115-hidden');
+        el.querySelector('.e115-window-safety').classList.remove('e115-hidden');
+    `);
+    elNewWindowHeaderWarning.setAttribute('onmouseleave', `
+        const el = this.closest('.e115-window');
+        el.querySelector('.e115-window-safety').classList.add('e115-hidden');
+        el.querySelector('iframe').classList.remove('e115-hidden');
+    `);
+    elNewWindowHeader.appendChild(elNewWindowHeaderWarning);
+    // Prepare new standard window > header > button "Open in new window"
     const elNewWindowHeaderButton = createEl('a', cls.button, ['e115-button', 'e115-cursor-full']);
     elNewWindowHeaderButton.href = url;
     elNewWindowHeaderButton.target = '_blank';
@@ -84,8 +101,19 @@ function injectStandardWindow(title, url) {
     elNewWindowClose.dataset.onClickFunction = 'delSel';
     elNewWindowClose.dataset.onClickArgs = JSON.stringify([`[data-e115-window-id='${title}']`]);
     elNewWindow.appendChild(elNewWindowClose);
-    // Prepare new standard window > iframe
-    const elNewWindowIframe = document.createElement('iframe');
+    // Prepare new standard window > content > Safety Tips
+    const elNewWindowSafety = createEl('div', null, ['e115-window-content', 'e115-window-safety', 'e115-hidden']);
+    elNewWindowSafety.innerHTML = /*html*/ `
+        <h2>Safety Tips</h2>
+        <ul>
+            <li>This tool is embedded from a third-party website, without any guarantees, and beyond the control of influenceth.io.</li>
+            <li>This embedded tool may trigger requests to your L1 and/or L2 wallet, but it does NOT have access to your game account.</li>
+            <li>Ensure that you fully understand the origin and impact of any wallet request, before you approve it!</li>
+        </ul>
+    `;
+    elNewWindow.appendChild(elNewWindowSafety);
+    // Prepare new standard window > content > iframe
+    const elNewWindowIframe = createEl('iframe', null, ['e115-window-content']);
     elNewWindowIframe.src = url;
     elNewWindow.appendChild(elNewWindowIframe);
     // Inject new standard window, right before the bottom menu wrapper (i.e. after any "official" window)
