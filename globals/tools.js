@@ -3,16 +3,16 @@ const tools = [
         category_short: 'Mining',
         category: 'Mining Tools',
         items: [
-            {title: 'Raw Materials', author: 'Elerium115', url: 'https://materials.adalia.id/?embed'},
-            {title: 'Materials Ratios', author: 'Elerium115', url: 'https://materials.adalia.id/ratios.html?embed'},
+            {title: 'Raw Materials', author: 'Elerium115', url: 'https://materials.adalia.id/'},
+            {title: 'Materials Ratios', author: 'Elerium115', url: 'https://materials.adalia.id/ratios.html'},
         ],
     },
     {
         category_short: 'Production',
         category: 'Production Tools',
         items: [
-            {title: 'Production Planner', author: 'Elerium115', url: 'https://materials.adalia.id/production-planner.html?embed'},
-            {title: 'Production Chains', author: 'Elerium115', url: 'https://materials.adalia.id/production.html?embed'},
+            {title: 'Production Planner', author: 'Elerium115', url: 'https://materials.adalia.id/production-planner.html'},
+            {title: 'Production Chains', author: 'Elerium115', url: 'https://materials.adalia.id/production.html'},
             {title: 'Product List', author: 'Daharius', url: 'https://influence.daharius.com/ProductList'},
         ],
     },
@@ -20,7 +20,7 @@ const tools = [
         category_short: 'Asteroids',
         category: 'Asteroids Tools',
         items: [
-            {title: 'Asteroids Planner', author: 'Elerium115', url: 'https://materials.adalia.id/asteroids-planner.html?embed'},
+            {title: 'Asteroids Planner', author: 'Elerium115', url: 'https://materials.adalia.id/asteroids-planner.html'},
             {title: 'Asteroid Management', author: 'Tyrell-Yutani', url: 'https://tyrell-yutani.app/#/asteroid'},
             {title: 'Asteroid Tracker & Visualizer', author: 'Daharius', url: 'https://influence.daharius.com/AsteroidsTracker'},
             {title: 'Adalia Co-orbital Rocks', author: 'RGR', url: 'https://adalia.coorbital.rocks/'},
@@ -51,7 +51,7 @@ const tools = [
         items: [
             {title: 'The Incident in Sixteen', author: 'Korivak', url: 'https://matthew.debarth.com/influence/the-incident-in-sixteen'}, // blocked by "medium.com"
             {title: 'strwrsfrk Influence Lore', author: 'strwrsfrk', url: 'https://strwrsfrk.medium.com/'}, // blocked by "medium.com"
-            {title: 'Last Night in Space', author: 'Korivak', url: 'https://lastnight.space/?embed'},
+            {title: 'Last Night in Space', author: 'Korivak', url: 'https://lastnight.space/'},
         ],
     },
 ];

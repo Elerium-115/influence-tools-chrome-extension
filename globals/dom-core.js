@@ -69,7 +69,7 @@ function injectStandardWindow(title, url) {
     elNewWindowHeader.appendChild(elNewWindowHeaderTitle);
     // Prepare new standard window > header > button
     const elNewWindowHeaderButton = createEl('a', cls.button, ['e115-button', 'e115-cursor-full']);
-    elNewWindowHeaderButton.href = url.replace(/([?&])embed=?[^?&]*/, '$1').replace('&&', '&').replace(/[?&]$/, ''); // remove "embed" query-param, if any
+    elNewWindowHeaderButton.href = url;
     elNewWindowHeaderButton.target = '_blank';
     elNewWindowHeaderButton.innerHTML = /*html*/ `
         ${svg.e115IconClose}
