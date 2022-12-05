@@ -24,6 +24,22 @@ If you are a developer or content creator looking to integrate your website into
 - Make sure that your website or hosted content can be displayed in an iframe. For example "medium.com" is blocking its content from being displayed in an iframe, so it is not currently supported by this Chrome extension.
 - Test locally by adding your website details into `/globals/tools.js`, using the data structure in that file. You may also make a pull request with your changes.
 
+**Features:**
+
+- The asteroid ID / crew ID that's currently selected in-game (if any), is automatically injected in the iframe URL as a search-parameter, named `influence_asteroid` / `influence_crew`. This allows developers to pre-select stuff in their tool, if relevant to that asteroid / crew:
+    ```
+    /**
+    * Get asteroid ID injected from iframe parent, if any
+    * e.g. game URL: https://game.influenceth.io/asteroids/1234
+    * => iframe URL: https://adalia.stuff/tool.html?influence_asteroid=1234
+    */
+    const urlParams = new URLSearchParams(location.search);
+    const influenceAsteroidId = urlParams.get('influence_asteroid');
+    if (influenceAsteroidId) {
+        // Pre-select stuff for this asteroid ID ...
+    }
+    ```
+
 ---
 
 Created by [@elerium115](https://twitter.com/elerium115) for the space strategy sandbox MMO [Influence](https://www.influenceth.io/).
