@@ -42,6 +42,14 @@ function flashSidePanel(el) {
     }, 500);
 }
 
+function injectUrlParam(url, key, value) {
+    const urlData = new URL(url);
+    const urlParams = new URLSearchParams(urlData.search);
+    urlParams.set(key, value);
+    urlData.search = urlParams.toString();
+    return urlData.href;
+}
+
 function injectStandardWindow(title, url) {
     // console.log(`--- [injectStandardWindow] title = ${title}`); //// TEST
     // Check if window already exists with the same "title"
@@ -114,7 +122,18 @@ function injectStandardWindow(title, url) {
     elNewWindow.appendChild(elNewWindowSafety);
     // Prepare new standard window > content > iframe
     const elNewWindowIframe = createEl('iframe', null, ['e115-window-content']);
-    elNewWindowIframe.src = url;
+    let iframeUrl = url;
+    // Inject ID of selected asteroid (if any) into the iframe URL
+    const asteroidMatches = location.pathname.match(/\/asteroids\/(\d+)/);
+    if (asteroidMatches) {
+        iframeUrl = injectUrlParam(iframeUrl, 'influence_asteroid', asteroidMatches[1]);
+    }
+    // Inject ID of selected crew (if any) into the iframe URL
+    const crewMatches = location.pathname.match(/\/crew\/(\d+)/);
+    if (crewMatches) {
+        iframeUrl = injectUrlParam(iframeUrl, 'influence_crew', crewMatches[1]);
+    }
+    elNewWindowIframe.src = iframeUrl;
     elNewWindow.appendChild(elNewWindowIframe);
     // Inject new standard window, right before the bottom menu wrapper (i.e. after any "official" window)
     const elBottomMenuWrapper = document.querySelector(`.${cls.bottomMenuWrapper[1]}`);
