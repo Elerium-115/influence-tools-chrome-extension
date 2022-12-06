@@ -27,7 +27,6 @@
 const svg = {
     e115IconShip: `<svg viewBox="0 0 221.73 94.58"><g><g><path fill="#fff" d="M221.73,47.3L110.78,0H0L71.49,30.77l-22.68,16.53,22.68,16.53L0,94.58H110.78l110.95-47.28Z"/></g></g></svg>`,
     e115IconClose: `<svg class="e115-close" stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 24 24" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><path fill="none" d="M0 0h24v24H0z"></path><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"></path></svg>`,
-    e115ButtonCorner: `<svg viewBox="0 0 10 10" xmlns="http://www.w3.org/2000/svg" class="sc-jSUZER ktYJwN e115-button-corner"><line x1="0" y1="10" x2="10" y2="0"></line></svg>`,
 };
 
 /**
@@ -99,6 +98,7 @@ elStyleE115.innerHTML = /*html*/ `
         --e115-highlight-faded-10: rgba(var(--e115-highlight-red), var(--e115-highlight-green), var(--e115-highlight-blue), 0.1);
         --e115-highlight-faded-15: rgba(var(--e115-highlight-red), var(--e115-highlight-green), var(--e115-highlight-blue), 0.15);
         --e115-highlight-faded-25: rgba(var(--e115-highlight-red), var(--e115-highlight-green), var(--e115-highlight-blue), 0.25);
+        /* IMPORTANT: any change of this highlight color should also be applied in background-image @ ".e115-button::after" */
     }
 
     .e115-cursor {
@@ -108,6 +108,51 @@ elStyleE115.innerHTML = /*html*/ `
     .e115-cursor-full a,
     .e115-cursor-full button {
         cursor: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAACXBIWXMAAAsTAAALEwEAmpwYAAAFw2lUWHRYTUw6Y29tLmFkb2JlLnhtcAAAAAAAPD94cGFja2V0IGJlZ2luPSLvu78iIGlkPSJXNU0wTXBDZWhpSHpyZVN6TlRjemtjOWQiPz4gPHg6eG1wbWV0YSB4bWxuczp4PSJhZG9iZTpuczptZXRhLyIgeDp4bXB0az0iQWRvYmUgWE1QIENvcmUgNy4yLWMwMDAgNzkuMWI2NWE3OWI0LCAyMDIyLzA2LzEzLTIyOjAxOjAxICAgICAgICAiPiA8cmRmOlJERiB4bWxuczpyZGY9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkvMDIvMjItcmRmLXN5bnRheC1ucyMiPiA8cmRmOkRlc2NyaXB0aW9uIHJkZjphYm91dD0iIiB4bWxuczp4bXA9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC8iIHhtbG5zOmRjPSJodHRwOi8vcHVybC5vcmcvZGMvZWxlbWVudHMvMS4xLyIgeG1sbnM6cGhvdG9zaG9wPSJodHRwOi8vbnMuYWRvYmUuY29tL3Bob3Rvc2hvcC8xLjAvIiB4bWxuczp4bXBNTT0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wL21tLyIgeG1sbnM6c3RFdnQ9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9zVHlwZS9SZXNvdXJjZUV2ZW50IyIgeG1wOkNyZWF0b3JUb29sPSJBZG9iZSBQaG90b3Nob3AgMjMuNSAoTWFjaW50b3NoKSIgeG1wOkNyZWF0ZURhdGU9IjIwMjItMTEtMjZUMTc6MzA6MTYrMDI6MDAiIHhtcDpNb2RpZnlEYXRlPSIyMDIyLTExLTI2VDE4OjA5OjE3KzAyOjAwIiB4bXA6TWV0YWRhdGFEYXRlPSIyMDIyLTExLTI2VDE4OjA5OjE3KzAyOjAwIiBkYzpmb3JtYXQ9ImltYWdlL3BuZyIgcGhvdG9zaG9wOkNvbG9yTW9kZT0iMyIgeG1wTU06SW5zdGFuY2VJRD0ieG1wLmlpZDowZWM1Mjk5NS01MDFmLTQwMTgtOWVlZC0wZGJhMmRmMjA2MmQiIHhtcE1NOkRvY3VtZW50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") 5 5, auto;
+    }
+
+    .e115-list {
+        list-stye: none;
+        margin: 0;
+        padding: 0;
+    }
+    .e115-list li:hover {
+        background: var(--e115-highlight-faded-10);
+    }
+    .e115-list li a {
+        display: block;
+        padding: 10px;
+    }
+
+    .e115-button {
+        color: var(--e115-highlight);
+        border-color: var(--e115-highlight);
+    }
+    .e115-button:hover:not(:disabled) {
+        background-color: var(--e115-highlight-faded-25);
+    }
+    .e115-button:active:not(:disabled) {
+        background-color: var(--e115-highlight);
+    }
+    .e115-button::after {
+        /* based on button-corner SVG ".ktYJwN", URL via https://yoksel.github.io/url-encoder/ */
+        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 10 10' xmlns='http://www.w3.org/2000/svg' stroke='%23a36bf7'%3E%3Cline x1='0' y1='10' x2='10' y2='0'%3E%3C/line%3E%3C/svg%3E");
+        background-position: center;
+        background-repeat: no-repeat;
+        bottom: -1px;
+        content: '';
+        height: 10px;
+        margin-right: 0px;
+        position: absolute;
+        right: -1px;
+        width: 10px;
+    }
+
+    .e115-faded {
+        opacity: 0.5;
+    }
+
+    .e115-hidden {
+        display: none !important;
     }
 
     /* Fill custom SVG icon */
@@ -182,7 +227,7 @@ elStyleE115.innerHTML = /*html*/ `
         position: relative;
     }
     .e115-window .e115-window-safety ul li::before {
-        /* URL encoded based on "svg.e115IconShip", via https://yoksel.github.io/url-encoder/ */
+        /* based on "svg.e115IconShip", URL via https://yoksel.github.io/url-encoder/ */
         background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 221.73 94.58'%3E%3Cg%3E%3Cg%3E%3Cpath fill='%23ccc' d='M221.73,47.3L110.78,0H0L71.49,30.77l-22.68,16.53,22.68,16.53L0,94.58H110.78l110.95-47.28Z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
         background-position: center;
         background-repeat: no-repeat;
@@ -217,38 +262,6 @@ elStyleE115.innerHTML = /*html*/ `
     }
     .${cls.bottomMenuItemListItem[0]}[data-e115-submenu-id]:hover {
         background-color: var(--e115-highlight);
-    }
-
-    .e115-list {
-        list-stye: none;
-        margin: 0;
-        padding: 0;
-    }
-    .e115-list li:hover {
-        background: var(--e115-highlight-faded-10);
-    }
-    .e115-list li a {
-        display: block;
-        padding: 10px;
-    }
-
-    .e115-button {
-        color: var(--e115-highlight);
-        border-color: var(--e115-highlight);
-    }
-    .e115-button:hover:not(:disabled) {
-        background-color: var(--e115-highlight-faded-25);
-    }
-    .e115-button .e115-button-corner {
-        stroke: var(--e115-highlight);
-    }
-
-    .e115-faded {
-        opacity: 0.5;
-    }
-
-    .e115-hidden {
-        display: none !important;
     }
 `;
 document.head.appendChild(elStyleE115);

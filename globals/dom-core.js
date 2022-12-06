@@ -79,7 +79,6 @@ function injectStandardWindow(title, url) {
     const elNewWindowHeaderWarning = createEl('a', cls.button, ['e115-button', 'e115-cursor-full']);
     elNewWindowHeaderWarning.innerHTML = /*html*/ `
         ⚠&nbsp;&nbsp;Safety Tips
-        ${svg.e115ButtonCorner}
     `;
     elNewWindowHeaderWarning.setAttribute('onmouseenter', `
         const el = this.closest('.e115-window');
@@ -99,7 +98,6 @@ function injectStandardWindow(title, url) {
     elNewWindowHeaderButton.innerHTML = /*html*/ `
         ${svg.e115IconClose}
         Open in new window
-        ${svg.e115ButtonCorner}
     `;
     elNewWindowHeader.appendChild(elNewWindowHeaderButton);
     // Prepare new standard window > close
