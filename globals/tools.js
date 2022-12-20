@@ -32,6 +32,7 @@ const tools = [
         items: [
             {title: 'Crew Planner', author: 'Daharius', url: 'https://influence.daharius.com/CrewPlanner'},
             {title: 'Crew Member Services', author: 'Tyrell-Yutani', url: 'https://tyrell-yutani.app/#/crew'},
+            {title: 'Action Planner', author: 'Elerium115', url: 'https://elerium-115.github.io/influence-css/tool-action-planner/'},
         ],
     },
     {
