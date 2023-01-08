@@ -11,6 +11,7 @@ const tools = [
         category_short: 'Production',
         category: 'Production Tools',
         items: [
+            {title: 'Products', author: 'Elerium115', url: 'https://materials.adalia.id/products.html'},
             {title: 'Production Planner', author: 'Elerium115', url: 'https://materials.adalia.id/production-planner.html'},
             {title: 'Production Chains', author: 'Elerium115', url: 'https://materials.adalia.id/production.html'},
             {title: 'Product List', author: 'Daharius', url: 'https://influence.daharius.com/ProductList'},
