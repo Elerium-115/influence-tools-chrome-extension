@@ -125,6 +125,12 @@ function injectStandardWindow(title, url) {
     const asteroidMatches = location.pathname.match(/\/asteroids\/(\d+)/);
     if (asteroidMatches) {
         iframeUrl = injectUrlParam(iframeUrl, 'influence_asteroid', asteroidMatches[1]);
+        // Also inject spectral type of selected asteroid into the iframe URL
+        const elSpectralType = document.querySelector('svg text[data-name*="-type"]');
+        if (elSpectralType) {
+            const spectralType = elSpectralType.dataset.name.replace(/^(\w+)-type$/, '$1');
+            iframeUrl = injectUrlParam(iframeUrl, 'influence_asteroid_type', spectralType.toUpperCase());
+        }
     }
     // Inject ID of selected crew (if any) into the iframe URL
     const crewMatches = location.pathname.match(/\/crew\/(\d+)/);

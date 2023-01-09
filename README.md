@@ -27,17 +27,21 @@ If you are a developer or content creator looking to integrate your website into
 
 **Features:**
 
-- The asteroid ID / crew ID that's currently selected in-game (if any), is automatically injected in the iframe URL as a search-parameter, named `influence_asteroid` / `influence_crew`. This allows developers to pre-select stuff in their tool, if relevant to that asteroid / crew:
+- The asteroid ID (and type) / crew ID that's currently selected in-game (if any), is automatically injected in the iframe URL as a search-parameter, named `influence_asteroid` (and `influence_asteroid_type`) / `influence_crew`. This allows developers to pre-select stuff in their tool, if relevant to that asteroid (or spectral type) / crew:
     ```
     /**
     * Get asteroid ID injected from iframe parent, if any
-    * e.g. game URL: https://game.influenceth.io/asteroids/1234
-    * => iframe URL: https://adalia.stuff/tool.html?influence_asteroid=1234
+    * e.g. game URL: https://game.influenceth.io/asteroids/104
+    * => iframe URL: https://adalia.stuff/tool.html?influence_asteroid=104&influence_asteroid_type=CMS
     */
     const urlParams = new URLSearchParams(location.search);
     const influenceAsteroidId = urlParams.get('influence_asteroid');
+    const influenceAsteroidType = urlParams.get('influence_asteroid_type');
     if (influenceAsteroidId) {
         // Pre-select stuff for this asteroid ID ...
+    }
+    if (influenceAsteroidType) {
+        // Pre-select stuff for this asteroid type ...
     }
     ```
 
