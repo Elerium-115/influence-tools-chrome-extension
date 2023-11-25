@@ -32,6 +32,7 @@ const tools = [
         category: 'Crew Tools',
         items: [
             {title: 'Crew Planner', author: 'Daharius', url: 'https://influence.daharius.com/CrewPlanner'},
+            {title: 'Crew Builder', author: 'Grey Area', url: 'https://adalia.academy/POC/index.html'},
             {title: 'Crew Member Services', author: 'Tyrell-Yutani', url: 'https://tyrell-yutani.app/#/crew'},
             {title: 'Action Planner', author: 'Elerium115', url: 'https://elerium-115.github.io/influence-css/tool-action-planner/'},
         ],
@@ -40,6 +41,7 @@ const tools = [
         category_short: 'Information',
         category: 'Information Tools',
         items: [
+            {title: 'Adalia Academy', author: 'Grey Area & Skippy', url: 'https://adalia.academy/'},
             {title: 'Influence Sales', author: 'Teandy', url: 'https://influence-sales.space/'},
             {title: 'Adalia.Guide', author: 'Korivak', url: 'https://adalia.guide/'},
             {title: 'Last Night in Space', author: 'Korivak', url: 'https://lastnight.space/'},
