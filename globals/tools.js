@@ -3,17 +3,17 @@ const tools = [
         category_short: 'Mining',
         category: 'Mining Tools',
         items: [
-            {title: 'Raw Materials', author: 'Elerium115', url: 'https://materials.adalia.id/'},
-            {title: 'Materials Ratios', author: 'Elerium115', url: 'https://materials.adalia.id/ratios.html'},
+            {title: 'Raw Materials', author: 'Elerium115', url: 'https://influence.elerium.dev/'},
+            {title: 'Materials Ratios', author: 'Elerium115', url: 'https://influence.elerium.dev/ratios.html'},
         ],
     },
     {
         category_short: 'Production',
         category: 'Production Tools',
         items: [
-            {title: 'Products', author: 'Elerium115', url: 'https://materials.adalia.id/products.html'},
-            {title: 'Production Planner', author: 'Elerium115', url: 'https://materials.adalia.id/production-planner.html'},
-            {title: 'Production Chains', author: 'Elerium115', url: 'https://materials.adalia.id/production.html'},
+            {title: 'Products', author: 'Elerium115', url: 'https://influence.elerium.dev/products.html'},
+            {title: 'Production Planner', author: 'Elerium115', url: 'https://influence.elerium.dev/production-planner.html'},
+            // {title: 'Production Chains', author: 'Elerium115', url: 'https://influence.elerium.dev/production.html'}, // to be reworked
             {title: 'Product List', author: 'Daharius', url: 'https://influence.daharius.com/ProductList'},
         ],
     },
@@ -21,7 +21,7 @@ const tools = [
         category_short: 'Asteroids',
         category: 'Asteroids Tools',
         items: [
-            {title: 'Asteroids Planner', author: 'Elerium115', url: 'https://materials.adalia.id/asteroids-planner.html'},
+            {title: 'Asteroids Planner', author: 'Elerium115', url: 'https://influence.elerium.dev/asteroids-planner.html'},
             {title: 'Asteroid Management', author: 'Tyrell-Yutani', url: 'https://tyrell-yutani.app/#/asteroid'},
             {title: 'Asteroid Tracker & Visualizer', author: 'Daharius', url: 'https://influence.daharius.com/AsteroidsTracker'},
             {title: 'Adalia Co-orbital Rocks', author: 'RGR', url: 'https://adalia.coorbital.rocks/'},
@@ -44,7 +44,7 @@ const tools = [
             {title: 'Adalia.Guide', author: 'Korivak', url: 'https://adalia.guide/'},
             {title: 'Last Night in Space', author: 'Korivak', url: 'https://lastnight.space/'},
             {title: 'Adalia Info', author: 'Denker', url: 'https://adalia.info/'},
-            {title: 'Adalia.id', author: 'strwrsfrk & Myrhea', url: 'https://my.adalia.id/'},
+            // {title: 'Adalia.id', author: 'strwrsfrk & Myrhea', url: 'https://my.adalia.id/'}, // abandoned?
             {title: 'Analytics on Dune', author: 'brakmaar', url: 'https://dune.com/brakmaar/Influence-asteroids'}, // blocked by "dune.com"
         ],
     },
