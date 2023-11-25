@@ -40,7 +40,7 @@ const tools = [
         category_short: 'Information',
         category: 'Information Tools',
         items: [
-            {title: 'Influence Sales', author: 'Teandy', url: 'https://influence-sales.space/'},
+            {title: 'StarkSight.xyz (formerly Influence Sales)', author: 'Teandy', url: 'https://starksight.xyz/'},
             {title: 'Adalia.Guide', author: 'Korivak', url: 'https://adalia.guide/'},
             {title: 'Last Night in Space', author: 'Korivak', url: 'https://lastnight.space/'},
             {title: 'Adalia Info', author: 'Denker', url: 'https://adalia.info/'},
