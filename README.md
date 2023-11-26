@@ -2,17 +2,27 @@
 
 ## About
 
-This Chrome extension will inject a "Tools" menu item into the Influence game client, with links to community-developed tools and content, grouped into several categories: Mining, Production, Asteroids, Crew, Information, Lore, Games.
+**Discover and use community developed tools while playing Influence**
 
-<img src="./README-v2.png" width="100%">
+This Chrome extension will inject a "Tools" menu item into the Influence game client, with links to community developed tools and content, grouped into several categories: Mining, Production, Asteroids, Crew, Information, Lore, Games.
+
+<img src="./README.png" width="100%">
 
 **Note:** As of November 2023, this Chrome Extension only works with the "Limited Release" version of the Influence game client on Starknet mainnet:
-https://game.influenceth.io/
+- https://game.influenceth.io/
 
 ## How to use
 
-1. Download this repository and unpack it (if downloaded as ZIP) into a dedicated folder on your computer. This will be your unpacked extension.
-2. Follow these instructions for loading an unpacked extension in your Chromium-based browser (Chrome, Brave etc.)
+**Method 1 - recommended for most users:**
+
+Simply install the extension from the Chrome Web Store, and enjoy automatic updates:
+- https://chromewebstore.google.com/detail/influence-tools/kopdkjlnbfiegpdjiebogkakjfppfglj
+
+**Method 2 - for developers and power users:**
+
+This method allows you to change the extension's source code, but you will need to manually load it in your browser, every time you make changes, or when this respository is updated:
+- Download this repository and unpack it (if downloaded as ZIP) into a dedicated folder on your computer. This will be your unpacked extension.
+- Follow these instructions for loading an unpacked extension in your Chromium-based browser (Chrome, Brave etc.)
     - https://developer.chrome.com/docs/extensions/mv3/getstarted/development-basics/#load-unpacked
 
 ## Dev notes

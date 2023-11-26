@@ -58,7 +58,7 @@ const tools = [
         category: 'Influence Lore',
         items: [
             {title: 'Last Night in Space', author: 'Korivak', url: 'https://lastnight.space/'},
-            {title: 'Influence Lore by Korivak', author: 'Korivak', url: 'https://matthew.debarth.com/influence/the-incident-in-sixteen'}, // individual articles blocked by "medium.com"
+            {title: 'Influence Lore by Korivak', author: 'Korivak', url: 'https://matthew.debarth.com/influence'}, // individual articles blocked by "medium.com"
             {title: 'Influence Lore by strwrsfrk', author: 'strwrsfrk', url: 'https://strwrsfrk.medium.com/'}, // blocked by "medium.com"
         ],
     },
