@@ -2,7 +2,7 @@
 
 ## About
 
-This Chrome extension will inject a "Tools" menu item into the Influence game client, with links to community-developed tools and content, grouped into several categories: Mining, Production, Asteroids, Crew, Information, Lore.
+This Chrome extension will inject a "Tools" menu item into the Influence game client, with links to community-developed tools and content, grouped into several categories: Mining, Production, Asteroids, Crew, Information, Lore, Games.
 
 <img src="./README-v2.png" width="100%">
 

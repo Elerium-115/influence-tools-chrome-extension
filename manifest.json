@@ -1,8 +1,14 @@
 {
     "manifest_version": 3,
     "name": "Influence Tools",
-    "description": "Add menu items for several Influence tools created by the community, and open them in an in-game window.",
-    "version": "2.0",
+    "description": "Discover and use community developed tools while playing Influence",
+    "version": "1.0.0",
+    "icons": {
+        "16": "images/favicon-16-inner-12.png",
+        "32": "images/favicon-32-inner-24.png",
+        "48": "images/favicon-48-inner-36.png",
+        "128": "images/favicon-128-inner-96.png"
+    },
     "content_scripts": [
         {
             "world": "MAIN",
