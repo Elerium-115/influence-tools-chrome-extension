@@ -57,7 +57,7 @@ const existCondition = setInterval(async () => {
     // Save the class-list for the default hud-menu item (selected, at this point)
     hudMenuItemSelectedClassListValue = elHudMenuItemDefault.classList.value;
     // Inject the hud-menu item, now that the default hud-menu item is selected
-    injectHudMenuItemAndPanel('Tools', tools);
+    injectHudMenuItemAndPanel('Community Tools', tools);
     // De-select the default hud-menu item, in order to extract the class-list for "hudMenuClosedClassListValue"
     elHudMenuItemDefault.click();
     const targetSelectedStateReached = await waitForHudMenuItemSelectedState(elHudMenuItemDefault, false, checkIntervalMs);

@@ -1,4 +1,4 @@
-const svgIconShip = `<svg viewBox="0 0 221.73 94.58"><g><g><path fill="#fff" d="M221.73,47.3L110.78,0H0L71.49,30.77l-22.68,16.53,22.68,16.53L0,94.58H110.78l110.95-47.28Z"/></g></g></svg>`;
+const svgIconCommunityTools = `<svg version="1.1" viewBox="0 0 1200 1200" xmlns="http://www.w3.org/2000/svg"><path d="m700.36 208.62c37.5 9.5859 72.898 24.438 105.38 43.699l131.9-95.5 105.54 105.54-95.5 131.9c19.262 32.477 34.102 67.875 43.688 105.38l160.75 25.738v149.25l-160.74 25.738c-9.5859 37.5-24.438 72.898-43.699 105.38l95.5 131.9-105.54 105.54-131.9-95.5c-32.477 19.262-67.875 34.102-105.38 43.688l-25.738 160.75h-149.25l-25.738-160.74c-37.5-9.5859-72.898-24.438-105.38-43.699l-131.9 95.5-105.54-105.54 95.5-131.9c-19.262-32.477-34.102-67.875-43.688-105.38l-160.75-25.738v-149.25l160.75-25.738c9.5859-37.5 24.426-72.898 43.688-105.38l-95.5-131.9 105.54-105.54 131.9 95.5c32.477-19.262 67.875-34.102 105.38-43.688l25.738-160.75h149.25zm-100.36 120.89c-149.39 0-270.49 121.1-270.49 270.49 0 67.926 25.051 130 66.398 177.51 27.125-86.938 108.24-150.07 204.1-150.07 95.875 0 176.99 63.125 204.1 150.07 41.352-47.5 66.398-109.59 66.398-177.51-0.023438-149.39-121.12-270.49-270.51-270.49zm0-35.625c-169.06 0-306.11 137.05-306.11 306.11s137.05 306.11 306.11 306.11 306.11-137.05 306.11-306.11-137.05-306.11-306.11-306.11zm0 103.31c-59.688 0-108.09 48.387-108.09 108.07s48.387 108.07 108.09 108.07c59.688 0 108.07-48.387 108.07-108.07s-48.375-108.07-108.07-108.07z" fill-rule="evenodd"/></svg>`;
 
 /**
  * The default hud-menu item is "System Search", because this item is always available,
@@ -329,7 +329,7 @@ async function toggleInjectedMenuItemByLabel(label, shouldBeSelected) {
 }
 
 /**
- * @param label e.g. "Tools"
+ * @param label e.g. "Community Tools"
  * @param list see "tools.js"
  * 
  * NOTE: When this function is called, the default hud-menu item must be SELECTED
@@ -353,7 +353,7 @@ function injectHudMenuItemAndPanel(label, list) {
     elNewMenuItem.dataset.e115State = ''; // data-e115-state
     elNewMenuItem.dataset.onClickFunction = 'onClickInjectedHudMenuItem';
     elNewMenuItem.dataset.onClickArgs = JSON.stringify([label]);
-    elNewMenuItem.innerHTML = svgIconShip;
+    elNewMenuItem.innerHTML = svgIconCommunityTools;
     const elNewMenuItemSvg = elNewMenuItem.querySelector('svg');
     elNewMenuItemSvg.classList.add('icon');
     elNewMenuItemSvg.querySelector('path').removeAttribute('fill');

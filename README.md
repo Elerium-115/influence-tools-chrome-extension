@@ -4,7 +4,7 @@
 
 **Discover and use community developed tools while playing Influence**
 
-This Chrome extension will inject a "Tools" menu item into the Influence game client, with links to community developed tools and content, grouped into several categories: Mining, Production, Asteroids, Crew, Information, Lore, Games.
+This Chrome extension will inject a "Community Tools" menu item into the Influence game client, with links to community developed tools and content, grouped into several categories: Mining, Production, Asteroids, Crew, Information, Lore, Games.
 
 <img src="./README.png" width="100%">
 
