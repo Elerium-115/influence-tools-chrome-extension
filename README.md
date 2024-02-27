@@ -8,8 +8,9 @@ This Chrome extension will inject a "Community Tools" menu item into the Influen
 
 <img src="./README.png" width="100%">
 
-**Note:** As of November 2023, this Chrome Extension only works with the "Limited Release" version of the Influence game client on Starknet mainnet:
-- https://game.influenceth.io/
+As of February 2024, this Chrome Extension works with the following versions of the Influence game client:
+- "Limited Release" on Starknet mainnet - https://game.influenceth.io/
+- "Pre-Release" on Starknet Sepolia - https://game-prerelease.influenceth.io/
 
 ## How to use
 
