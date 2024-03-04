@@ -32,7 +32,6 @@ If you are a developer or content creator looking to integrate your website into
 
 - Consider using the styling from my [Influence CSS](https://github.com/Elerium-115/influence-css) library, as a starting point for your website.
 - Make sure that your website or hosted content can be displayed in an iframe. For example "medium.com" is blocking its content from being displayed in an iframe, so it is not currently supported by this Chrome extension.
-- Test locally by adding your website details into `/globals/tools.js`, using the data structure in that file. You may also make a pull request with your changes.
 
 **Features:**
 

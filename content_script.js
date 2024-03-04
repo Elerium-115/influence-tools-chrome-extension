@@ -3,6 +3,9 @@
  * re: Chrome extension content scripts not supporting modules (import / export).
  */
 
+// Pre-fetch the tools (async)
+updateToolsIfNotSet();
+
 // Inject the hud-menu item only after the hud-menu is loaded and visible
 const existCondition = setInterval(async () => {
     /**
@@ -56,6 +59,10 @@ const existCondition = setInterval(async () => {
     hudMenuOpenClassListValue = elHudMenu.classList.value;
     // Save the class-list for the default hud-menu item (selected, at this point)
     hudMenuItemSelectedClassListValue = elHudMenuItemDefault.classList.value;
+    // If tools not yet fetched (async), they need to be fetched now (sync), before continuing
+    if (!tools) {
+        await updateToolsIfNotSet();
+    }
     // Inject the hud-menu item, now that the default hud-menu item is selected
     injectHudMenuItemAndPanel('Community Tools', tools);
     // De-select the default hud-menu item, in order to extract the class-list for "hudMenuClosedClassListValue"

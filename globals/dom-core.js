@@ -6,6 +6,13 @@ const svgIconCommunityTools = `<svg version="1.1" viewBox="0 0 1200 1200" xmlns=
  */
 const defaultHudMenuItemLabel = 'System Search';
 
+const toolsEndpoint = 'https://elerium-influence-api.vercel.app/data/tools';
+
+/**
+ * This will be populated via API call to "toolsEndpoint"
+ */
+let tools = null;
+
 /**
  * This will contain a cloned DOM element for the hud-menu panel in an open state
  */
@@ -432,6 +439,18 @@ function injectHudMenuItemAndPanel(label, list) {
         elList.appendChild(elListItem);
     });
     hudMenuPanelContent.appendChild(elList);
+}
+
+async function updateToolsIfNotSet() {
+    if (tools) {
+        return;
+    }
+    try {
+        const toolsResponse = await fetch(toolsEndpoint);
+        tools = await toolsResponse.json();
+    } catch (error) {
+        // Swallow this error
+    }
 }
 
 // Source: https://gist.github.com/Machy8/1b0e3cd6c61f140a6b520269acdd645f
