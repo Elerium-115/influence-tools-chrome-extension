@@ -527,7 +527,10 @@ async function injectWidgets() {
         }
         // Inject widgets wrapper, before the realign-camera button
         elButtonRealignCamera.parentElement.insertBefore(elWidgetsWrapper, elButtonRealignCamera);
-        // Preload default widget in iframe only after the wrapper is injected
+        // Post-injection actions
+        // -- make the widgets draggable
+        initDragWidgetsContent();
+        // -- preload default widget in iframe
         loadWidgetIframe(iframeUrl);
     }, 1000);
 }
@@ -544,12 +547,14 @@ function loadWidgetIframe(url) {
     elWidgetIframe.src = url;
 }
 
-function toggleWidgets(shouldBeActive = undefined) {
+function toggleWidgets() {
     const elWidgetsWrapper = document.querySelector('.e115-widgets-wrapper');
     if (!elWidgetsWrapper) {
         return;
     }
-    elWidgetsWrapper.classList.toggle('active', shouldBeActive);
+    elWidgetsWrapper.classList.toggle('active');
+    // Pin widgets above other game-windows (e.g. marketplace) if active
+    elWidgetsWrapper.parentElement.classList.toggle('e115-widgets-pinned', elWidgetsWrapper.classList.contains('active'));
 }
 
 function selectWidget(title) {
@@ -566,6 +571,52 @@ function selectWidget(title) {
     const widget = widgets.find(widget => widget.title === title);
     if (widget) {
         loadWidgetIframe(widget.url);
+    }
+}
+
+// Source: https://stackoverflow.com/a/45831670
+function initDragWidgetsContent() {
+    const elWidgetsContent = document.querySelector('.e115-widgets-content');
+    if (!elWidgetsContent) {
+        return;
+    }
+    const elWidgetsDrag = elWidgetsContent.querySelector('.e115-widgets-drag');
+    const initialLeft = parseInt(getComputedStyle(elWidgetsContent).left);
+    const initialTop = parseInt(getComputedStyle(elWidgetsContent).top);
+    let isDown = false;
+    let offsetX = 0;
+    let offsetY = 0;
+    elWidgetsDrag.addEventListener('mousedown', e => {
+        elWidgetsContent.classList.add('dragging');
+        isDown = true;
+        offsetX = elWidgetsContent.offsetLeft - e.clientX;
+        offsetY = elWidgetsContent.offsetTop - e.clientY;
+    }, true);
+    document.addEventListener('mouseup', () => {
+        if (!isDown) {
+            return;
+        }
+        elWidgetsContent.classList.remove('dragging');
+        isDown = false;
+        // Snap back to initial position if close enough
+        const diffX = parseInt(elWidgetsContent.style.left) - initialLeft;
+        const diffY = parseInt(elWidgetsContent.style.top) - initialTop;
+        if (Math.abs(diffX) < 100 && Math.abs(diffY) < 100) {
+            resetPosition();
+        }
+    }, true);
+    document.addEventListener('mousemove', e => {
+        if (!isDown) {
+            return;
+        }
+        elWidgetsContent.style.left = (e.clientX + offsetX) + 'px';
+        elWidgetsContent.style.top  = (e.clientY + offsetY) + 'px';
+    }, true);
+    document.addEventListener('dblclick', resetPosition);
+
+    function resetPosition() {
+        elWidgetsContent.style.left = initialLeft + 'px';
+        elWidgetsContent.style.top  = initialTop + 'px';
     }
 }
 

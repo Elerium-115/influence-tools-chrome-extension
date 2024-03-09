@@ -226,6 +226,10 @@
     }
 }
 
+.e115-widgets-pinned {
+    z-index: 10 !important; // higher than z-index of e.g. marketplace
+}
+
 .e115-widgets-wrapper {
     border: 1px solid var(--color-influence);
     margin-right: 15px;
@@ -277,9 +281,14 @@
         opacity: 0;
         overflow: hidden;
         position: absolute;
-        right: -1px;
         top: 100%;
         transition: all 150ms ease 0s;
+        user-select: none; // do not highlight element while dragging via "initDragWidgetsContent"
+        width: calc(100% + 2px);
+
+        &.dragging {
+            transition: none;
+        }
 
         .e115-widgets-selector {
             --widgets-content-unit: 40px;
@@ -291,6 +300,7 @@
             .e115-widgets-drag {
                 align-items: center;
                 background: rgba(255, 255, 255, 0.15);
+                cursor: move;
                 display: flex;
                 font-size: 20px;
                 height: var(--widgets-content-unit);
