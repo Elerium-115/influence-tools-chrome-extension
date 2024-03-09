@@ -3,8 +3,9 @@
  * re: Chrome extension content scripts not supporting modules (import / export).
  */
 
-// Pre-fetch the tools (async)
+// Pre-fetch the tools and widgets (async)
 updateToolsIfNotSet();
+updateWidgetsIfNotSet();
 
 // Inject the hud-menu item only after the hud-menu is loaded and visible
 const existCondition = setInterval(async () => {
@@ -82,6 +83,8 @@ const existCondition = setInterval(async () => {
     }
 }, 1000);
 
+injectWidgets();
+
 // Handle onclick events for non-injected hud-menu items => CLOSE the injected hud-menu item
 on('click', `#hudMenu + div [data-for='hudMenu'][data-tip]:not([data-e115-menu-id])`, el => {
     // De-select the injected hud-menu item(s)
@@ -91,9 +94,9 @@ on('click', `#hudMenu + div [data-for='hudMenu'][data-tip]:not([data-e115-menu-i
     });
 });
 
-// Handle onclick events for injected elements
+// Handle click events for injected elements
 on('click', '[data-on-click-function]', el => {
-    const args = JSON.parse(el.dataset.onClickArgs);
+    const args = el.dataset.onClickArgs ? JSON.parse(el.dataset.onClickArgs) : [];
     switch (el.dataset.onClickFunction) {
         case 'onClickInjectedHudMenuItem': onClickInjectedHudMenuItem(args[0]); break;
         case 'onClickInjectedHudMenuPanelCloseButton': onClickInjectedHudMenuPanelCloseButton(args[0]); break;

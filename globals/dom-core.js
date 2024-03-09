@@ -1,4 +1,4 @@
-const svgIconCommunityTools = `<svg version="1.1" viewBox="0 0 1200 1200" xmlns="http://www.w3.org/2000/svg"><path d="m700.36 208.62c37.5 9.5859 72.898 24.438 105.38 43.699l131.9-95.5 105.54 105.54-95.5 131.9c19.262 32.477 34.102 67.875 43.688 105.38l160.75 25.738v149.25l-160.74 25.738c-9.5859 37.5-24.438 72.898-43.699 105.38l95.5 131.9-105.54 105.54-131.9-95.5c-32.477 19.262-67.875 34.102-105.38 43.688l-25.738 160.75h-149.25l-25.738-160.74c-37.5-9.5859-72.898-24.438-105.38-43.699l-131.9 95.5-105.54-105.54 95.5-131.9c-19.262-32.477-34.102-67.875-43.688-105.38l-160.75-25.738v-149.25l160.75-25.738c9.5859-37.5 24.426-72.898 43.688-105.38l-95.5-131.9 105.54-105.54 131.9 95.5c32.477-19.262 67.875-34.102 105.38-43.688l25.738-160.75h149.25zm-100.36 120.89c-149.39 0-270.49 121.1-270.49 270.49 0 67.926 25.051 130 66.398 177.51 27.125-86.938 108.24-150.07 204.1-150.07 95.875 0 176.99 63.125 204.1 150.07 41.352-47.5 66.398-109.59 66.398-177.51-0.023438-149.39-121.12-270.49-270.51-270.49zm0-35.625c-169.06 0-306.11 137.05-306.11 306.11s137.05 306.11 306.11 306.11 306.11-137.05 306.11-306.11-137.05-306.11-306.11-306.11zm0 103.31c-59.688 0-108.09 48.387-108.09 108.07s48.387 108.07 108.09 108.07c59.688 0 108.07-48.387 108.07-108.07s-48.375-108.07-108.07-108.07z" fill-rule="evenodd"/></svg>`;
+const svgIconCommunityTools = `<svg class="e115-icon-community-tools" version="1.1" viewBox="0 0 1200 1200" xmlns="http://www.w3.org/2000/svg"><path d="m700.36 208.62c37.5 9.5859 72.898 24.438 105.38 43.699l131.9-95.5 105.54 105.54-95.5 131.9c19.262 32.477 34.102 67.875 43.688 105.38l160.75 25.738v149.25l-160.74 25.738c-9.5859 37.5-24.438 72.898-43.699 105.38l95.5 131.9-105.54 105.54-131.9-95.5c-32.477 19.262-67.875 34.102-105.38 43.688l-25.738 160.75h-149.25l-25.738-160.74c-37.5-9.5859-72.898-24.438-105.38-43.699l-131.9 95.5-105.54-105.54 95.5-131.9c-19.262-32.477-34.102-67.875-43.688-105.38l-160.75-25.738v-149.25l160.75-25.738c9.5859-37.5 24.426-72.898 43.688-105.38l-95.5-131.9 105.54-105.54 131.9 95.5c32.477-19.262 67.875-34.102 105.38-43.688l25.738-160.75h149.25zm-100.36 120.89c-149.39 0-270.49 121.1-270.49 270.49 0 67.926 25.051 130 66.398 177.51 27.125-86.938 108.24-150.07 204.1-150.07 95.875 0 176.99 63.125 204.1 150.07 41.352-47.5 66.398-109.59 66.398-177.51-0.023438-149.39-121.12-270.49-270.51-270.49zm0-35.625c-169.06 0-306.11 137.05-306.11 306.11s137.05 306.11 306.11 306.11 306.11-137.05 306.11-306.11-137.05-306.11-306.11-306.11zm0 103.31c-59.688 0-108.09 48.387-108.09 108.07s48.387 108.07 108.09 108.07c59.688 0 108.07-48.387 108.07-108.07s-48.375-108.07-108.07-108.07z" fill-rule="evenodd"/></svg>`;
 
 /**
  * The default hud-menu item is "System Search", because this item is always available,
@@ -7,11 +7,17 @@ const svgIconCommunityTools = `<svg version="1.1" viewBox="0 0 1200 1200" xmlns=
 const defaultHudMenuItemLabel = 'System Search';
 
 const toolsEndpoint = 'https://elerium-influence-api.vercel.app/data/tools';
+const widgetsEndpoint = 'https://elerium-influence-api.vercel.app/data/widgets';
 
 /**
  * This will be populated via API call to "toolsEndpoint"
  */
 let tools = null;
+
+/**
+ * This will be populated via API call to "widgetsEndpoint"
+ */
+let widgets = null;
 
 /**
  * This will contain a cloned DOM element for the hud-menu panel in an open state
@@ -450,6 +456,116 @@ async function updateToolsIfNotSet() {
         tools = await toolsResponse.json();
     } catch (error) {
         // Swallow this error
+    }
+}
+
+async function updateWidgetsIfNotSet() {
+    if (widgets) {
+        return;
+    }
+    try {
+        const widgetsResponse = await fetch(widgetsEndpoint);
+        widgets = await widgetsResponse.json();
+    } catch (error) {
+        // Swallow this error
+    }
+}
+
+async function injectWidgets() {
+    // Inject the widgets button only after the realign-camera button is loaded and visible
+    const existCondition2 = setInterval(async () => {
+        // Wait for the realign-camera button to become visible.
+        const elButtonRealignCamera = document.querySelector('button[data-tip="Realign camera to poles"]');
+        if (!elButtonRealignCamera || !elButtonRealignCamera.offsetParent) {
+            // Not yet visible
+            return;
+        }
+        // Stop waiting
+        clearInterval(existCondition2);
+        // Prepare widgets wrapper
+        const elWidgetsWrapper = createEl('div', ['e115-widgets-wrapper', 'e115-cursor-full']);
+        elWidgetsWrapper.innerHTML = /*html*/ `
+            <div class="e115-widgets-header">
+                <div class="e115-widgets-title">Community Widgets</div>
+                ${svgIconCommunityTools}
+            </div>
+            <div class="e115-widgets-content">
+                <div class="e115-widgets-selector">
+                    <div class="e115-widgets-drag"></div>
+                    <div class="e115-widgets-list">
+                        <ul></ul>
+                    </div>
+                </div>
+                <iframe></iframe>
+            </div>
+        `;
+        const elWidgetsHeader = elWidgetsWrapper.querySelector('.e115-widgets-header');
+        elWidgetsHeader.setAttribute('onclick', 'toggleWidgets()');
+        // Adjust widgets icon styling
+        const elWidgetsIcon = elWidgetsWrapper.querySelector('.e115-icon-community-tools');
+        elWidgetsIcon.classList.add('icon');
+        // If widgets not yet fetched (async), they need to be fetched now (sync), before continuing
+        if (!widgets) {
+            await updateWidgetsIfNotSet();
+        }
+        let iframeUrl = null;
+        if (widgets) {
+            // Inject items into widgets list
+            const elWidgetsList = elWidgetsWrapper.querySelector('.e115-widgets-list ul');
+            widgets.forEach(widget => {
+                const elListItem = document.createElement('li');
+                elListItem.textContent = widget.title;
+                elListItem.dataset.title = widget.title;
+                elListItem.setAttribute('onclick', `selectWidget('${widget.title}')`);
+                if (widget.default) {
+                    // Preselect default widget
+                    elListItem.classList.add('active');
+                    iframeUrl = widget.url;
+                }
+                elWidgetsList.appendChild(elListItem);
+            });
+        }
+        // Inject widgets wrapper, before the realign-camera button
+        elButtonRealignCamera.parentElement.insertBefore(elWidgetsWrapper, elButtonRealignCamera);
+        // Preload default widget in iframe only after the wrapper is injected
+        loadWidgetIframe(iframeUrl);
+    }, 1000);
+}
+
+function loadWidgetIframe(url) {
+    if (!url) {
+        return;
+    }
+    const elWidgetsWrapper = document.querySelector('.e115-widgets-wrapper');
+    if (!elWidgetsWrapper) {
+        return;
+    }
+    const elWidgetIframe = elWidgetsWrapper.querySelector('iframe');
+    elWidgetIframe.src = url;
+}
+
+function toggleWidgets(shouldBeActive = undefined) {
+    const elWidgetsWrapper = document.querySelector('.e115-widgets-wrapper');
+    if (!elWidgetsWrapper) {
+        return;
+    }
+    elWidgetsWrapper.classList.toggle('active', shouldBeActive);
+}
+
+function selectWidget(title) {
+    const elWidgetsWrapper = document.querySelector('.e115-widgets-wrapper');
+    if (!elWidgetsWrapper) {
+        return;
+    }
+    const elWidgetsList = elWidgetsWrapper.querySelector('.e115-widgets-list');
+    elWidgetsList.querySelector(`li.active`).classList.remove('active');
+    elWidgetsList.querySelector(`li[data-title="${title}"]`).classList.add('active');
+    if (!widgets) {
+        return;
+    }
+    const widget = widgets.find(widget => widget.title === title);
+    if (widget) {
+        loadWidgetIframe(widget.url);
     }
 }
 

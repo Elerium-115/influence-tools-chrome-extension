@@ -1,6 +1,8 @@
 :root {
     --color-influence: rgb(54, 167, 205);
+    --color-influence-faded-35: rgba(54, 167, 205, 0.35);
     --color-influence-faded-25: rgba(54, 167, 205, 0.25);
+    --color-influence-faded-175: rgba(54, 167, 205, 0.175);
 }
 
 .e115-color-influence {
@@ -220,6 +222,200 @@
                     }
                 }
             }
+        }
+    }
+}
+
+.e115-widgets-wrapper {
+    border: 1px solid var(--color-influence);
+    margin-right: 15px;
+    min-width: 40px;
+    padding: 3px;
+    position: relative;
+    transition: all 300ms ease 0s;
+
+    .e115-widgets-header {
+        align-items: center;
+        background: var(--color-influence-faded-175);
+        color: var(--color-influence);
+        display: flex;
+        justify-content: space-between;
+        min-height: 32px;
+        padding-left: 3px;
+        padding-right: 3px;
+        transition: all 300ms ease 0s;
+
+        &:hover {
+            background: var(--color-influence-faded-35);
+        }
+
+        .e115-widgets-title {
+            flex-grow: 1;
+            font-size: 16px;
+            max-width: 0px;
+            overflow: hidden;
+            padding-left: 0px;
+            text-transform: uppercase;
+            transition: all 300ms ease 0s;
+            white-space: nowrap;
+        }
+
+        svg {
+            fill: var(--color-influence);
+            font-size: 26px;
+            transition: all 300ms ease 0s;
+        }
+    }
+
+    .e115-widgets-content {
+        background: rgba(15, 15, 15, 0.85);
+        border: 1px solid var(--color-influence);
+        display: flex;
+        flex-direction: column;
+        left: -1px;
+        max-height: 0px;
+        opacity: 0;
+        overflow: hidden;
+        position: absolute;
+        right: -1px;
+        top: 100%;
+        transition: all 150ms ease 0s;
+
+        .e115-widgets-selector {
+            --widgets-content-unit: 40px;
+            align-items: center;
+            box-shadow: 0 10px 20px black;
+            display: flex;
+            justify-content: space-between;
+
+            .e115-widgets-drag {
+                align-items: center;
+                background: rgba(255, 255, 255, 0.15);
+                display: flex;
+                font-size: 20px;
+                height: var(--widgets-content-unit);
+                justify-content: center;
+                width: var(--widgets-content-unit);
+
+                &::before {
+                    content: '✥';
+                }
+
+                &:hover {
+                    background: var(--color-influence);
+                    color: white;
+
+                    &::before {
+                        animation: drag-widgets-content 3000ms linear infinite;
+                    }
+
+                    @keyframes drag-widgets-content {
+                        0% { margin: 0; }
+                        10% { margin: 0; margin-left: -10px; }
+                        20% { margin: 0; margin-bottom: -5px; }
+                        30% { margin: 0; margin-top: -5px; }
+                        40% { margin: 0; margin-right: -10px; }
+                        50% { margin: 0; }
+                    }
+                }
+            }
+
+            .e115-widgets-list {
+                flex-grow: 1;
+                height: var(--widgets-content-unit);
+                position: relative;
+
+                ul {
+                    backdrop-filter: blur(8px);
+                    background: rgba(15, 15, 15, 0.85);
+                    height: var(--widgets-content-unit);
+                    left: 0;
+                    list-style-type: none;
+                    margin: 0;
+                    overflow: hidden;
+                    padding: 0;
+                    position: absolute;
+                    right: 0;
+                    top: 0;
+
+                    &:hover {
+                        box-shadow: 0 10px 20px black;
+                        height: unset;
+
+                        li.active {
+                            background: var(--color-influence);
+                            color: white;
+                        }
+                    }
+
+                    &:not(:hover) {
+                        &::after {
+                            align-items: center;
+                            background: rgba(255, 255, 255, 0.15);
+                            bottom: 0;
+                            content: "▼";
+                            display: flex;
+                            justify-content: center;
+                            position: absolute;
+                            right: 0;
+                            top: 0;
+                            width: var(--widgets-content-unit);
+                        }
+
+                        li:not(.active) {
+                            display: none;
+                        }
+                    }
+
+                    li {
+                        background: rgba(255, 255, 255, 0.05);
+                        line-height: var(--widgets-content-unit);
+                        padding-left: 16px;
+                        padding-right: 16px;
+
+                        &:hover {
+                            color: white;
+
+                            &:not(.active) {
+                                background: rgba(255, 255, 255, 0.15);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        iframe {
+            border: none;
+            flex-grow: 1;
+        }
+    }
+
+    &.active {
+        --active-width: 375px;
+        min-width: var(--active-width);
+
+        .e115-widgets-header {
+            color: white;
+
+            .e115-widgets-title {
+                max-width: var(--active-width);
+                padding-left: 10px;
+            }
+
+            svg {
+                fill: white;
+            }
+        }
+
+        .e115-widgets-content {
+            animation: expand-widgets-content 150ms linear 150ms forwards;
+            overflow: auto;
+        }
+
+        @keyframes expand-widgets-content {
+            0% { min-height: 0px; max-height: 0px; opacity: 0; }
+            100% { min-height: 50vh; max-height: 50vh; opacity: 1; }
         }
     }
 }
