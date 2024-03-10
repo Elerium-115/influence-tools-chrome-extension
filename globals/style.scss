@@ -272,8 +272,11 @@
     }
 
     .e115-widgets-content {
-        background: rgba(15, 15, 15, 0.85);
+        --bg-widgets-content: rgba(15, 15, 15, 0.9);
+        backdrop-filter: blur(4px);
+        background: var(--bg-widgets-content);
         border: 1px solid var(--color-influence);
+        box-shadow: 0 10px 20px black;
         display: flex;
         flex-direction: column;
         left: -1px;
@@ -336,8 +339,7 @@
                 position: relative;
 
                 ul {
-                    backdrop-filter: blur(8px);
-                    background: rgba(15, 15, 15, 0.85);
+                    background: var(--bg-widgets-content);
                     height: var(--widgets-content-unit);
                     left: 0;
                     list-style-type: none;
