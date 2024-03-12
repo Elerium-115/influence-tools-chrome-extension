@@ -496,7 +496,7 @@ async function injectWidgets() {
                         <ul></ul>
                     </div>
                 </div>
-                <iframe></iframe>
+                <iframe allow="clipboard-write"></iframe>
             </div>
         `;
         const elWidgetsHeader = elWidgetsWrapper.querySelector('.e115-widgets-header');
