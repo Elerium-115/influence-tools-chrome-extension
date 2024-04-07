@@ -396,4 +396,11 @@
     max-height: 50vh;
     opacity: 1;
   }
+}
+
+.e115-button-search-marketplace {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+  margin-left: 15px;
 }/*# sourceMappingURL=style.css.map */

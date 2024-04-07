@@ -1,13 +1,21 @@
 const svgIconCommunityTools = `<svg class="e115-icon-community-tools" version="1.1" viewBox="0 0 1200 1200" xmlns="http://www.w3.org/2000/svg"><path d="m700.36 208.62c37.5 9.5859 72.898 24.438 105.38 43.699l131.9-95.5 105.54 105.54-95.5 131.9c19.262 32.477 34.102 67.875 43.688 105.38l160.75 25.738v149.25l-160.74 25.738c-9.5859 37.5-24.438 72.898-43.699 105.38l95.5 131.9-105.54 105.54-131.9-95.5c-32.477 19.262-67.875 34.102-105.38 43.688l-25.738 160.75h-149.25l-25.738-160.74c-37.5-9.5859-72.898-24.438-105.38-43.699l-131.9 95.5-105.54-105.54 95.5-131.9c-19.262-32.477-34.102-67.875-43.688-105.38l-160.75-25.738v-149.25l160.75-25.738c9.5859-37.5 24.426-72.898 43.688-105.38l-95.5-131.9 105.54-105.54 131.9 95.5c32.477-19.262 67.875-34.102 105.38-43.688l25.738-160.75h149.25zm-100.36 120.89c-149.39 0-270.49 121.1-270.49 270.49 0 67.926 25.051 130 66.398 177.51 27.125-86.938 108.24-150.07 204.1-150.07 95.875 0 176.99 63.125 204.1 150.07 41.352-47.5 66.398-109.59 66.398-177.51-0.023438-149.39-121.12-270.49-270.51-270.49zm0-35.625c-169.06 0-306.11 137.05-306.11 306.11s137.05 306.11 306.11 306.11 306.11-137.05 306.11-306.11-137.05-306.11-306.11-306.11zm0 103.31c-59.688 0-108.09 48.387-108.09 108.07s48.387 108.07 108.09 108.07c59.688 0 108.07-48.387 108.07-108.07s-48.375-108.07-108.07-108.07z" fill-rule="evenodd"/></svg>`;
 
-/**
- * The default hud-menu item is "System Search", because this item is always available,
- * even if the user is not logged-in, and no asteroid is pre-selected.
- */
-const defaultHudMenuItemLabel = 'System Search';
+// Source: icon in "Zoom to lot" button @ "Lot Info" hud-menu panel
+const svgIconSearch = `<svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>`;
 
 const toolsEndpoint = 'https://elerium-influence-api.vercel.app/data/tools';
 const widgetsEndpoint = 'https://elerium-influence-api.vercel.app/data/widgets';
+
+const selectorHudMenu = '#hudMenu + div';
+const selectorHudMenuPanel = '#hudMenu + div + div';
+
+/**
+ * The default hud-menu item is "System Search", because this item is always available in the map-view,
+ * even if the user is not logged-in, and no asteroid is pre-selected.
+ */
+const hudMenuItemLabelDefault = 'System Search';
+
+const hudMenuItemLabelMarketplace = 'Asteroid Markets';
 
 /**
  * This will be populated via API call to "toolsEndpoint"
@@ -68,7 +76,7 @@ function getReactPropsForEl(el) {
 }
 
 function getElHudMenu() {
-    const elHudMenu = document.querySelector(`#hudMenu + div`);
+    const elHudMenu = document.querySelector(selectorHudMenu);
     if (!elHudMenu) {
         console.log(`%c--- [getElHudMenu] ERROR: elHudMenu not found`, 'background: red');
     }
@@ -76,7 +84,7 @@ function getElHudMenu() {
 }
 
 function getElHudMenuPanel() {
-    const elHudMenuPanel = document.querySelector(`#hudMenu + div + div`);
+    const elHudMenuPanel = document.querySelector(selectorHudMenuPanel);
     if (!elHudMenuPanel) {
         console.log(`%c--- [getElHudMenuPanel] ERROR: elHudMenuPanel not found`, 'background: red');
     }
@@ -617,6 +625,80 @@ function initDragWidgetsContent() {
     function resetPosition() {
         elWidgetsContent.style.left = initialLeft + 'px';
         elWidgetsContent.style.top  = initialTop + 'px';
+    }
+}
+
+async function searchMarketplace(searchText) {
+    const elHudMenuMarketplace = getElHudMenuItemByLabel(hudMenuItemLabelMarketplace);
+    if (!elHudMenuMarketplace) {
+        return;
+    }
+    elHudMenuMarketplace.click();
+    // Wait for the Marketplace window to load
+    await delay(1000);
+    const elInput = document.querySelector('input[placeholder="Search by Name"]');
+    if (!elInput) {
+        console.log(`%c--- [searchMarketplace] ERROR: elInput not found`, 'background: red');
+        return;
+    }
+    // Source: https://stackoverflow.com/a/76212435
+    Object.defineProperty(elInput, "value", {
+        value: searchText,
+        writable: true,
+    });
+    var inputEvent = new Event('input', {bubbles: true});
+    elInput.dispatchEvent(inputEvent);
+    // Wait for search results to load
+    await delay(500);
+    const elResultsList = elInput.parentElement.nextElementSibling.firstChild;
+    const elsResults = [...elResultsList.children];
+    if (elsResults.length === 1) {
+        // Auto-click if single result matching the search
+        elsResults[0].click();
+    }
+}
+
+/**
+ * Inject a "Search in Marketplace" button in the inventory-footer, if a single inventory item is selected.
+ * 
+ * NOTE:
+ * - This only works for inventories where the "Marketplace" button exists in the hud-menu (Warehouse / contruction site).
+ * - It does NOT work for ship-cargo and ship-propellant inventories.
+ */
+function onClickInventoryItem(elItem) {
+    const elHudMenuMarketplace = getElHudMenuItemByLabel(hudMenuItemLabelMarketplace);
+    if (!elHudMenuMarketplace) {
+        return;
+    }
+    const elItemWrapper = elItem.parentElement;
+    const elItemsList = elItemWrapper.parentElement;
+    const elInventoryFooter = elItemsList.nextElementSibling;
+    let countSelected = 0;
+    let elItemSelected = null;
+    [...elItemsList.children].forEach(elParsedItemWrapper => {
+        const reactProps = getReactPropsForEl(elParsedItemWrapper);
+        if (reactProps && reactProps.selected) {
+            elItemSelected = elParsedItemWrapper;
+            countSelected++;
+        }
+    });
+    if (countSelected === 1) {
+        // Single item selected => inject the button
+        const elItemSelectedName = elItemSelected.querySelector('[data-tip]').dataset.tip;
+        const elMarketplaceButton = createEl('div', ['e115-button', 'e115-button-search-marketplace']);
+        elMarketplaceButton.innerHTML = /*html*/ `
+            ${svgIconSearch}
+            <span>Search in Marketplace</span>
+        `;
+        elMarketplaceButton.dataset.onClickFunction = 'searchMarketplace';
+        elMarketplaceButton.dataset.onClickArgs = JSON.stringify([elItemSelectedName]);
+        elInventoryFooter.appendChild(elMarketplaceButton);
+    } else {
+        // No item / multiple items selected => remove the button
+        const elMarketplaceButton = elInventoryFooter.querySelector('.e115-button-search-marketplace');
+        if (elMarketplaceButton) {
+            elInventoryFooter.removeChild(elMarketplaceButton);
+        }
     }
 }
 

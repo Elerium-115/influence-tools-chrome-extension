@@ -13,7 +13,7 @@ const existCondition = setInterval(async () => {
      * Wait for the default hud-menu item ("System Search") to become visible.
      * Source: https://stackoverflow.com/a/21696585
      */
-    const elHudMenuItemDefault = getElHudMenuItemByLabel(defaultHudMenuItemLabel);
+    const elHudMenuItemDefault = getElHudMenuItemByLabel(hudMenuItemLabelDefault);
     if (!elHudMenuItemDefault || !elHudMenuItemDefault.offsetParent) {
         // Not yet visible
         return;
@@ -86,12 +86,18 @@ const existCondition = setInterval(async () => {
 injectWidgets();
 
 // Handle onclick events for non-injected hud-menu items => CLOSE the injected hud-menu item
-on('click', `#hudMenu + div [data-for='hudMenu'][data-tip]:not([data-e115-menu-id])`, el => {
+on('click', `${selectorHudMenu} [data-for='hudMenu'][data-tip]:not([data-e115-menu-id])`, el => {
     // De-select the injected hud-menu item(s)
     document.querySelectorAll('[data-e115-menu-id]').forEach(elInjectedHudMenuItem => {
         const label = elInjectedHudMenuItem.dataset.e115MenuId;
         toggleInjectedMenuItemByLabel(label, false);
     });
+});
+
+// Handle onclick events for inventory items in the hud-menu panel
+on('click', `${selectorHudMenuPanel} [data-for='hudMenu'][data-tip]`, el => {
+    // Handle via setTimeout, allowing the React property "selected" to change first
+    setTimeout(() => onClickInventoryItem(el));
 });
 
 // Handle click events for injected elements
@@ -103,5 +109,6 @@ on('click', '[data-on-click-function]', el => {
         case 'onClickCategoryTitle': onClickCategoryTitle(args[0]); break;
         case 'onClickCategoryItem': onClickCategoryItem(args[0], args[1]); break;
         case 'onClickNewWindowClose': onClickNewWindowClose(args[0]); break;
+        case 'searchMarketplace': searchMarketplace(args[0]); break;
     }
 });
