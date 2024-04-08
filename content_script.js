@@ -85,6 +85,9 @@ const existCondition = setInterval(async () => {
 
 injectWidgets();
 
+// Handle messages e.g. from widgets iframe
+window.addEventListener('message', handleMessage, false);
+
 // Handle onclick events for non-injected hud-menu items => CLOSE the injected hud-menu item
 on('click', `${selectorHudMenu} [data-for='hudMenu'][data-tip]:not([data-e115-menu-id])`, el => {
     // De-select the injected hud-menu item(s)

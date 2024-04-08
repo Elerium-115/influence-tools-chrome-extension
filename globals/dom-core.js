@@ -702,6 +702,21 @@ function onClickInventoryItem(elItem) {
     }
 }
 
+/**
+ * Handle messages e.g. from widgets iframe
+ */
+function handleMessage(event) {
+    if (!event.data.widgetEventKey || !event.data.widgetEventValue) {
+        // Not a valid message from the widgets iframe
+        return;
+    }
+    switch (event.data.widgetEventKey) {
+        case 'SHOPPING_LIST_CLICKED_PRODUCT_NAME':
+            searchMarketplace(event.data.widgetEventValue);
+            break;
+    }
+}
+
 // Source: https://gist.github.com/Machy8/1b0e3cd6c61f140a6b520269acdd645f
 function on(eventType, selector, callback) {
     document.addEventListener(eventType, event => {
