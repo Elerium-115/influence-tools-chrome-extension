@@ -403,4 +403,60 @@
   display: flex;
   gap: 8px;
   margin-left: 15px;
+}
+
+#e115-config-panel-wrapper {
+  --e115-config-padding: 12px;
+  background-color: black;
+  bottom: 0;
+  font-size: 80%;
+  position: absolute;
+  left: 60px;
+  padding: 0 calc(var(--e115-config-padding) * 2) var(--e115-config-padding) calc(var(--e115-config-padding) * 2);
+  width: 280px;
+  z-index: 9999;
+}
+#e115-config-panel-wrapper:hover #e115-config-panel #e115-config-title {
+  color: var(--color-influence);
+}
+#e115-config-panel-wrapper:not(:hover) {
+  opacity: 0.5;
+}
+#e115-config-panel-wrapper:not(.active) {
+  background-color: transparent;
+}
+#e115-config-panel-wrapper:not(.active) #e115-config-panel #e115-config-options {
+  display: none;
+}
+#e115-config-panel-wrapper #e115-config-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+#e115-config-panel-wrapper #e115-config-panel #e115-config-title {
+  text-align: center;
+}
+#e115-config-panel-wrapper #e115-config-panel #e115-config-options {
+  padding-top: calc(var(--e115-config-padding) * 2);
+}
+#e115-config-panel-wrapper #e115-config-panel #e115-config-options label {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+}
+
+body[data-inventory-item-names=true] #hudMenu + div + div :not(:hover) > [data-for=hudMenu][data-tip]::after {
+  background-color: rgba(0, 0, 0, 0.33);
+  color: white;
+  content: attr(data-tip);
+  display: block;
+  filter: drop-shadow(1px 1px 0 black);
+  font-size: 80%;
+  left: 0;
+  line-height: 1em;
+  max-height: calc(3em - 1px);
+  overflow: hidden;
+  padding: 3px;
+  position: absolute;
+  right: 9px;
 }/*# sourceMappingURL=style.css.map */

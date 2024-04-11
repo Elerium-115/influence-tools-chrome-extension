@@ -83,6 +83,7 @@ const existCondition = setInterval(async () => {
     }
 }, 1000);
 
+injectConfig();
 injectWidgets();
 
 // Handle messages e.g. from widgets iframe
@@ -101,6 +102,16 @@ on('click', `${selectorHudMenu} [data-for='hudMenu'][data-tip]:not([data-e115-me
 on('click', `${selectorHudMenuPanel} [data-for='hudMenu'][data-tip]`, el => {
     // Handle via setTimeout, allowing the React property "selected" to change first
     setTimeout(() => onClickInventoryItem(el));
+});
+
+// Handle onclick events for extension-config title
+on('click', '#e115-config-title', el => {
+    onClickConfigTitle();
+});
+
+// Handle onclick events for extension-config options
+on('click', '#e115-config-options label input', el => {
+    onClickConfigOptions(el);
 });
 
 // Handle click events for injected elements

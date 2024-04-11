@@ -673,6 +673,9 @@ function onClickInventoryItem(elItem) {
     const elItemWrapper = elItem.parentElement;
     const elItemsList = elItemWrapper.parentElement;
     const elInventoryFooter = elItemsList.nextElementSibling;
+    if (!elInventoryFooter) {
+        return;
+    }
     let countSelected = 0;
     let elItemSelected = null;
     [...elItemsList.children].forEach(elParsedItemWrapper => {
@@ -713,6 +716,38 @@ function handleMessage(event) {
     switch (event.data.widgetEventKey) {
         case 'SHOPPING_LIST_CLICKED_PRODUCT_NAME':
             searchMarketplace(event.data.widgetEventValue);
+            break;
+    }
+}
+
+function injectConfig() {
+    const elConfigPanel = document.createElement('div');
+    elConfigPanel.id = 'e115-config-panel-wrapper';
+    elConfigPanel.innerHTML = /*html*/ `
+        <div id="e115-config-panel">
+            <div id="e115-config-options">
+                <label>
+                    <input type="checkbox" name="inventory-item-names" checked><span>Overlay names for inventory items</span>
+                </label>
+            </div>
+            <div id="e115-config-title">Influence Tools extension</div>
+        </div>
+    `;
+    document.body.appendChild(elConfigPanel);
+
+    //// TO DO: save this value into local-storage => pre-load it
+    document.body.dataset.inventoryItemNames = 'true';
+}
+
+function onClickConfigTitle() {
+    // Show / hide the extension-config options
+    document.getElementById('e115-config-panel-wrapper').classList.toggle('active');
+}
+
+function onClickConfigOptions(el) {
+    switch (el.name) {
+        case 'inventory-item-names':
+            document.body.dataset.inventoryItemNames = el.checked.toString();
             break;
     }
 }
