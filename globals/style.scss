@@ -445,7 +445,7 @@
     bottom: 0;
     font-size: 80%;
     position: absolute;
-    left: 60px;
+    left: 100px;
     padding: 0 calc(var(--e115-config-padding) * 2) var(--e115-config-padding) calc(var(--e115-config-padding) * 2);
     width: 280px;
     z-index: 9999;
@@ -494,12 +494,12 @@
 }
 
 // Inventory items in the hud-menu panel, with their wrapper NOT hovered
-body[data-inventory-item-names='true'] #hudMenu + div + div :not(:hover) > [data-for='hudMenu'][data-tip] {
+body[data-inventory-item-names='true'] #hudMenuPanel :not(:hover) > [data-tooltip-id='hudMenuTooltip'][data-tooltip-content] {
     // Overlay item names
     &::after {
         background-color: rgba(0, 0, 0, 0.33);
         color: white;
-        content: attr(data-tip);
+        content: attr(data-tooltip-content);
         display: block;
         filter: drop-shadow(1px 1px 0 black);
         font-size: 80%;

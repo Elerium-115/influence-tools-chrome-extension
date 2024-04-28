@@ -90,7 +90,7 @@ injectWidgets();
 window.addEventListener('message', handleMessage, false);
 
 // Handle onclick events for non-injected hud-menu items => CLOSE the injected hud-menu item
-on('click', `${selectorHudMenu} [data-for='hudMenu'][data-tip]:not([data-e115-menu-id])`, el => {
+on('click', `${selectorHudMenu} [data-tooltip-id='hudMenuTooltip'][data-tooltip-content]:not([data-e115-menu-id])`, el => {
     // De-select the injected hud-menu item(s)
     document.querySelectorAll('[data-e115-menu-id]').forEach(elInjectedHudMenuItem => {
         const label = elInjectedHudMenuItem.dataset.e115MenuId;
@@ -99,7 +99,7 @@ on('click', `${selectorHudMenu} [data-for='hudMenu'][data-tip]:not([data-e115-me
 });
 
 // Handle onclick events for inventory items in the hud-menu panel
-on('click', `${selectorHudMenuPanel} [data-for='hudMenu'][data-tip]`, el => {
+on('click', `${selectorHudMenuPanel} [data-tooltip-id='hudMenuTooltip'][data-tooltip-content]`, el => {
     // Handle via setTimeout, allowing the React property "selected" to change first
     setTimeout(() => onClickInventoryItem(el));
 });

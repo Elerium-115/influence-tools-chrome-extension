@@ -4,11 +4,17 @@
 
 **Discover and use community developed tools while playing Influence**
 
-This Chrome extension will inject a "Community Tools" menu item into the Influence game client, with links to community developed tools and content, grouped into several categories: Mining, Production, Asteroids, Crew, Information, Lore, Games.
+This Chrome extension makes community-developed tools and widgets available inside the Influence game client.
+
+It adds a "Widgets" button in the top-right, giving you an in-game "Shopping List" and "Marketplace Prices" (more widgets to follow).
+
+If you load the game in the star-view, it also adds a "Tools" panel in the right-side menu, with links to community developed tools and content, grouped into several categories: Mining, Production, Asteroids, Crew, Flight, Information, Lore, Games.
+
+And it also adds other functionalities in-game, such as a "Search in Marketplace" button, when you select an item from an inventory.
 
 <img src="./README.png" width="100%">
 
-As of February 2024, this Chrome Extension works with the following versions of the Influence game client:
+As of April 2024, this Chrome Extension works with the following versions of the Influence game client:
 - "Limited Release" on Starknet mainnet - https://game.influenceth.io/
 - "Pre-Release" on Starknet Sepolia - https://game-prerelease.influenceth.io/
 

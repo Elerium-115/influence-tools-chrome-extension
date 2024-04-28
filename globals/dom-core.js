@@ -6,8 +6,8 @@ const svgIconSearch = `<svg stroke="currentColor" fill="none" stroke-width="2" v
 const toolsEndpoint = 'https://elerium-influence-api.vercel.app/data/tools';
 const widgetsEndpoint = 'https://elerium-influence-api.vercel.app/data/widgets';
 
-const selectorHudMenu = '#hudMenu + div';
-const selectorHudMenuPanel = '#hudMenu + div + div';
+const selectorHudMenu = '#hudMenu';
+const selectorHudMenuPanel = '#hudMenuPanel';
 
 /**
  * The default hud-menu item is "System Search", because this item is always available in the map-view,
@@ -96,7 +96,7 @@ function getElHudMenuItemByLabel(label) {
     if (!elHudMenu) {
         return null;
     }
-    return elHudMenu.querySelector(`[data-for='hudMenu'][data-tip='${label}']`);
+    return elHudMenu.querySelector(`[data-tooltip-id='hudMenuTooltip'][data-tooltip-content='${label}']`);
 }
 
 function getElHudMenuItemSelected() {
@@ -369,7 +369,7 @@ function injectHudMenuItemAndPanel(label, list) {
 
     // Prepare new hud-menu item
     const elNewMenuItem = elHudMenuItemUnselected.cloneNode(true);
-    elNewMenuItem.dataset.tip = label;
+    elNewMenuItem.dataset.tooltipContent = label;
     elNewMenuItem.dataset.e115MenuId = label; // data-e115-menu-id
     elNewMenuItem.dataset.e115State = ''; // data-e115-state
     elNewMenuItem.dataset.onClickFunction = 'onClickInjectedHudMenuItem';
@@ -483,7 +483,7 @@ async function injectWidgets() {
     // Inject the widgets button only after the realign-camera button is loaded and visible
     const existCondition2 = setInterval(async () => {
         // Wait for the realign-camera button to become visible.
-        const elButtonRealignCamera = document.querySelector('button[data-tip="Realign camera to poles"]');
+        const elButtonRealignCamera = document.querySelector('button[data-tooltip-content="Realign camera to poles"]');
         if (!elButtonRealignCamera || !elButtonRealignCamera.offsetParent) {
             // Not yet visible
             return;
@@ -687,7 +687,7 @@ function onClickInventoryItem(elItem) {
     });
     if (countSelected === 1) {
         // Single item selected => inject the button
-        const elItemSelectedName = elItemSelected.querySelector('[data-tip]').dataset.tip;
+        const elItemSelectedName = elItemSelected.querySelector('[data-tooltip-content]').dataset.tooltipContent;
         const elMarketplaceButton = createEl('div', ['e115-button', 'e115-button-search-marketplace']);
         elMarketplaceButton.innerHTML = /*html*/ `
             ${svgIconSearch}
