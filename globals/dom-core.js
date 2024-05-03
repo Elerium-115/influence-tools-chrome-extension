@@ -483,7 +483,26 @@ async function injectWidgets() {
     // Inject the widgets button only after the realign-camera button is loaded and visible
     const existCondition2 = setInterval(async () => {
         // Wait for the realign-camera button to become visible.
-        const elButtonRealignCamera = document.querySelector('button[data-tooltip-content="Realign camera to poles"]');
+        let elButtonRealignCamera = document.querySelector('button[data-tooltip-content="Realign camera to poles"]');
+
+        //// QUICK-FIX re: "elButtonRealignCamera" removed from the DOM, as of 2024-05-04
+        if (!elButtonRealignCamera) {
+            const elHudMenu = getElHudMenu();
+            if (elHudMenu) {
+                // Faking "elButtonRealignCamera" as the first VISIBLE element inside that expected container
+                const elButtonRealignCameraWrapper = elHudMenu.parentElement.nextElementSibling;
+                if (elButtonRealignCameraWrapper) {
+                    [...elButtonRealignCameraWrapper.children].some(elChild => {
+                        if (elChild.offsetParent) {
+                            // Visible child found in the expected container => fake "elButtonRealignCamera"
+                            elButtonRealignCamera = elChild;
+                            return true;
+                        }
+                    });
+                }
+            }
+        }
+
         if (!elButtonRealignCamera || !elButtonRealignCamera.offsetParent) {
             // Not yet visible
             return;
