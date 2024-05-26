@@ -480,35 +480,16 @@ async function updateWidgetsIfNotSet() {
 }
 
 async function injectWidgets() {
-    // Inject the widgets button only after the realign-camera button is loaded and visible
-    const existCondition2 = setInterval(async () => {
-        // Wait for the realign-camera button to become visible.
-        let elButtonRealignCamera = document.querySelector('button[data-tooltip-content="Realign camera to poles"]');
-
-        //// QUICK-FIX re: "elButtonRealignCamera" removed from the DOM, as of 2024-05-04
-        if (!elButtonRealignCamera) {
-            const elHudMenu = getElHudMenu();
-            if (elHudMenu) {
-                // Faking "elButtonRealignCamera" as the first VISIBLE element inside that expected container
-                const elButtonRealignCameraWrapper = elHudMenu.parentElement.nextElementSibling;
-                if (elButtonRealignCameraWrapper) {
-                    [...elButtonRealignCameraWrapper.children].some(elChild => {
-                        if (elChild.offsetParent) {
-                            // Visible child found in the expected container => fake "elButtonRealignCamera"
-                            elButtonRealignCamera = elChild;
-                            return true;
-                        }
-                    });
-                }
-            }
-        }
-
-        if (!elButtonRealignCamera || !elButtonRealignCamera.offsetParent) {
+    // Inject the widgets button only after the top-menu is loaded and visible
+    const existCondition = setInterval(async () => {
+        // Wait for the top-menu to become visible
+        const elTopMenu = document.getElementById('topMenu');
+        if (!elTopMenu || !elTopMenu.offsetParent) {
             // Not yet visible
             return;
         }
         // Stop waiting
-        clearInterval(existCondition2);
+        clearInterval(existCondition);
         // Prepare widgets wrapper
         const elWidgetsWrapper = createEl('div', ['e115-widgets-wrapper', 'e115-cursor-full']);
         elWidgetsWrapper.innerHTML = /*html*/ `
@@ -552,8 +533,8 @@ async function injectWidgets() {
                 elWidgetsList.appendChild(elListItem);
             });
         }
-        // Inject widgets wrapper, before the realign-camera button
-        elButtonRealignCamera.parentElement.insertBefore(elWidgetsWrapper, elButtonRealignCamera);
+        // Inject widgets wrapper into the top-menu, as the first child
+        elTopMenu.prepend(elWidgetsWrapper);
         // Post-injection actions
         // -- make the widgets draggable
         initDragWidgetsContent();
@@ -645,6 +626,56 @@ function initDragWidgetsContent() {
         elWidgetsContent.style.left = initialLeft + 'px';
         elWidgetsContent.style.top  = initialTop + 'px';
     }
+}
+
+function getGameTimeDays() {
+    const elTimeMenu = document.getElementById('timeMenu');
+    return elTimeMenu.firstChild.lastChild.textContent.replace(/,/g, '');
+}
+
+function injectRealTime() {
+    // Inject the real-time only after the time-menu is loaded and visible
+    const existCondition = setInterval(async () => {
+        // Wait for the time-menu to become visible
+        const elTimeMenu = document.getElementById('timeMenu');
+        if (!elTimeMenu || !elTimeMenu.offsetParent) {
+            // Not yet visible
+            return;
+        }
+        // Stop waiting
+        clearInterval(existCondition);
+        const elRealTime = document.createElement('div');
+        elRealTime.id = 'e115-real-time';
+        elTimeMenu.appendChild(elRealTime);
+        let gameTimeDaysCurrent = getGameTimeDays();
+        // Periodically update the real-time, based on the game-time
+        setInterval(() => {
+            const elGameTimeControls = elTimeMenu.firstChild.firstChild;
+            if (!elGameTimeControls) {
+                return;
+            }
+            if (elGameTimeControls.hasAttribute('open')) {
+                // Game-time controls open => show real-time
+                elRealTime.classList.remove('e115-hidden');
+                // Update the real-time, based on the user-previewed game-time
+                const gameTimeDaysPreviewed = getGameTimeDays();
+                const realTimeDaysDiff = (gameTimeDaysPreviewed - gameTimeDaysCurrent) / 24;
+                const nowTs = new Date().getTime();
+                const realTimeDiffTs = realTimeDaysDiff * 24 * 60 * 60 * 1000;
+                const realTimePreviewedDate = new Date(nowTs + realTimeDiffTs);
+                // Format real-time based on the user's locale and timezone
+                elRealTime.textContent = Intl.DateTimeFormat(undefined, {
+                    dateStyle: 'long',
+                    timeStyle: 'long',
+                }).format(realTimePreviewedDate);
+            } else {
+                // Game-time controls closed => hide real-time
+                elRealTime.classList.add('e115-hidden');
+                // Save the current game-time
+                gameTimeDaysCurrent = getGameTimeDays();
+            }
+        }, 100);
+    }, 1000);
 }
 
 async function searchMarketplace(searchText) {

@@ -85,6 +85,7 @@ const existCondition = setInterval(async () => {
 
 injectConfig();
 injectWidgets();
+injectRealTime();
 
 // Handle messages e.g. from widgets iframe
 window.addEventListener('message', handleMessage, false);

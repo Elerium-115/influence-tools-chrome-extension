@@ -512,3 +512,10 @@ body[data-inventory-item-names='true'] #hudMenuPanel :not(:hover) > [data-toolti
         right: 9px;
     }
 }
+
+#timeMenu {
+    align-items: center;
+    display: flex;
+    flex-direction: row-reverse;
+    gap: 15px;
+}

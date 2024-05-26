@@ -459,4 +459,11 @@ body[data-inventory-item-names=true] #hudMenuPanel :not(:hover) > [data-tooltip-
   padding: 3px;
   position: absolute;
   right: 9px;
+}
+
+#timeMenu {
+  align-items: center;
+  display: flex;
+  flex-direction: row-reverse;
+  gap: 15px;
 }/*# sourceMappingURL=style.css.map */
