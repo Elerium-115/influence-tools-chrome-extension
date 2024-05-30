@@ -3,6 +3,9 @@ const svgIconCommunityTools = `<svg class="e115-icon-community-tools" version="1
 // Source: icon in "Zoom to lot" button @ "Lot Info" hud-menu panel
 const svgIconSearch = `<svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>`;
 
+// Source: https://www.iconfinder.com/icons/4763233/hierarchy_network_organization_sitemap_structure_icon
+const svgIconProductionChains = `<svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 24 24" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><g><path d="M20,16.18V11H13V7.82a3,3,0,1,0-2,0V11H4v5.18a3,3,0,1,0,2,0V13h5v3.18a3,3,0,1,0,2,0V13h5v3.18a3,3,0,1,0,2,0Z"></path></g></svg>`;
+
 const toolsEndpoint = 'https://elerium-influence-api.vercel.app/data/tools';
 const widgetsEndpoint = 'https://elerium-influence-api.vercel.app/data/widgets';
 
@@ -121,6 +124,72 @@ function getElHudMenuItemSelected() {
     return null;
 }
 
+function getCurrentAsteroidId() {
+    let asteroidId = null;
+    try {
+        asteroidId = JSON.parse(localStorage.influence).state.asteroids.origin;
+    } catch (error) {
+        // Swallow this error, and continue with fallback
+    }
+    if (!asteroidId) {
+        // Fallback from URL (only when the asteroid-details panel is open)
+        const asteroidMatches = location.pathname.match(/\/asteroids\/(\d+)/);
+        if (asteroidMatches) {
+            asteroidId = Number(asteroidMatches[1]);
+        }
+    }
+    return asteroidId;
+}
+
+function getCurrentCrewId() {
+    let crewId = null;
+    try {
+        crewId = JSON.parse(localStorage.influence).state.selectedCrewId;
+    } catch (error) {
+        // Swallow this error, and continue with fallback
+    }
+    if (!crewId) {
+        // Fallback from URL (only when the crew-details panel is open)
+        const crewMatches = location.pathname.match(/\/crew\/(\d+)/);
+        if (crewMatches) {
+            crewId = Number(crewMatches[1]);
+        }
+    }
+    return crewId;
+}
+
+/**
+ * e.g. "Thin-film Resistor" => "Thin-filmResistor"
+ */
+function getCompactName(name) {
+    return name.replace(/\s+/g, '');
+}
+
+function getToolUrlProductionPlanner() {
+    // Hardcoding the URL from "tools" for {author: "Elerium115", title: "Production Planner"}
+    return 'https://influence.elerium.dev/production-planner.html';
+}
+
+function getCloseButtonFromHudMenuPanel() {
+    let elCloseButton = null;
+    const elHudMenuPanel = getElHudMenuPanel();
+    if (elHudMenuPanel) {
+        // Find the wrapper for the header-buttons
+        const elFirstButton = elHudMenuPanel.querySelector('button');
+        if (elFirstButton) {
+            const elHeaderButtonsWrapper = elFirstButton.parentElement;
+            // The "close" button should be the last of the header-buttons
+            elCloseButton = [...elHeaderButtonsWrapper.querySelectorAll('button')].pop();
+        }
+    }
+    if (!elCloseButton) {
+        // Fallback to ugly "close" button
+        elCloseButton = createEl('div');
+        elCloseButton.textContent = '✕';
+    }
+    return elCloseButton;
+}
+
 /**
  * Return TRUE if the "targetSelectedState" has been reached, or FALSE otherwise / on timeout
  */
@@ -221,30 +290,17 @@ function onClickCategoryItem(title, url) {
     const elNewWindowIframe = createEl('iframe', ['e115-window-content']);
     let iframeUrl = url;
 
-    //// TO DO: rework this via asteroid ID = "JSON.parse(localStorage.influence).state.asteroids.origin"
-    //// ...
     // Inject ID of selected asteroid (if any) into the iframe URL
-    const asteroidMatches = location.pathname.match(/\/asteroids\/(\d+)/);
-    if (asteroidMatches) {
-        iframeUrl = injectUrlParam(iframeUrl, 'influence_asteroid', asteroidMatches[1]);
-
-        //// TO DO: rework this if possible
-        //// ...
-        // // Also inject spectral type of selected asteroid into the iframe URL
-        // const elSpectralType = document.querySelector('svg text[data-name*="-type"]');
-        // if (elSpectralType) {
-        //     const spectralType = elSpectralType.dataset.name.replace(/^(\w+)-type$/, '$1');
-        //     iframeUrl = injectUrlParam(iframeUrl, 'influence_asteroid_type', spectralType.toUpperCase());
-        // }
+    const asteroidId = getCurrentAsteroidId();
+    if (asteroidId) {
+        iframeUrl = injectUrlParam(iframeUrl, 'influence_asteroid', asteroidId);
     }
 
-    //// TO DO: rework as "crewmate" or remove completely?
-    //// ...
-    // // Inject ID of selected crew (if any) into the iframe URL
-    // const crewMatches = location.pathname.match(/\/crew\/(\d+)/);
-    // if (crewMatches) {
-    //     iframeUrl = injectUrlParam(iframeUrl, 'influence_crew', crewMatches[1]);
-    // }
+    // Inject ID of selected crew (if any) into the iframe URL
+    const crewId = getCurrentCrewId();
+    if (crewId) {
+        iframeUrl = injectUrlParam(iframeUrl, 'influence_crew', crewId);
+    }
 
     elNewWindowIframe.src = iframeUrl;
     elNewWindow.appendChild(elNewWindowIframe);
@@ -630,6 +686,10 @@ function initDragWidgetsContent() {
 
 function getGameTimeDays() {
     const elTimeMenu = document.getElementById('timeMenu');
+    if (!elTimeMenu) {
+        // Not yet visible, or element removed from DOM on low-res
+        return 0;
+    }
     return elTimeMenu.firstChild.lastChild.textContent.replace(/,/g, '');
 }
 
@@ -709,17 +769,13 @@ async function searchMarketplace(searchText) {
 }
 
 /**
- * Inject a "Search in Marketplace" button in the inventory-footer, if a single inventory item is selected.
+ * Inject relevant buttons in the inventory-footer, if a single inventory item is selected.
  * 
- * NOTE:
+ * NOTE re: injecting the "Search in Marketplace" button
  * - This only works for inventories where the "Marketplace" button exists in the hud-menu (Warehouse / contruction site).
  * - It does NOT work for ship-cargo and ship-propellant inventories.
  */
 function onClickInventoryItem(elItem) {
-    const elHudMenuMarketplace = getElHudMenuItemByLabel(hudMenuItemLabelMarketplace);
-    if (!elHudMenuMarketplace) {
-        return;
-    }
     const elItemWrapper = elItem.parentElement;
     const elItemsList = elItemWrapper.parentElement;
     const elInventoryFooter = elItemsList.nextElementSibling;
@@ -736,22 +792,42 @@ function onClickInventoryItem(elItem) {
         }
     });
     if (countSelected === 1) {
-        // Single item selected => inject the button
+        // Single item selected => inject relevant buttons
         const elItemSelectedName = elItemSelected.querySelector('[data-tooltip-content]').dataset.tooltipContent;
-        const elMarketplaceButton = createEl('div', ['e115-button', 'e115-button-search-marketplace']);
-        elMarketplaceButton.innerHTML = /*html*/ `
-            ${svgIconSearch}
-            <span>Search in Marketplace</span>
-        `;
-        elMarketplaceButton.dataset.onClickFunction = 'searchMarketplace';
-        elMarketplaceButton.dataset.onClickArgs = JSON.stringify([elItemSelectedName]);
-        elInventoryFooter.appendChild(elMarketplaceButton);
-    } else {
-        // No item / multiple items selected => remove the button
-        const elMarketplaceButton = elInventoryFooter.querySelector('.e115-button-search-marketplace');
-        if (elMarketplaceButton) {
-            elInventoryFooter.removeChild(elMarketplaceButton);
+        // -- Inject "Search in Marketplace" button
+        // ---- This only works for inventories where the "Marketplace" button exists in the hud-menu (Warehouse / contruction site).
+        // ---- It does NOT work for ship-cargo and ship-propellant inventories.
+        const elHudMenuMarketplace = getElHudMenuItemByLabel(hudMenuItemLabelMarketplace);
+        if (elHudMenuMarketplace) {
+            const elMarketplaceButton = createEl('div', ['e115-button', 'e115-button-inventory-footer']);
+            elMarketplaceButton.innerHTML = /*html*/ `
+                ${svgIconSearch}
+                <span>Marketplace</span>
+            `;
+            elMarketplaceButton.dataset.onClickFunction = 'searchMarketplace';
+            elMarketplaceButton.dataset.onClickArgs = JSON.stringify([elItemSelectedName]);
+            elInventoryFooter.appendChild(elMarketplaceButton);
         }
+        // -- Inject "Production Planner" button
+        const elProductionButton = createEl('div', ['e115-button', 'e115-button-inventory-footer']);
+        elProductionButton.innerHTML = /*html*/ `
+            ${svgIconProductionChains}
+            <span>Production</span>
+        `;
+        // ---- On click, open the item's production chain using the "Production Planner" tool
+        const itemNameCompact = getCompactName(elItemSelectedName);
+        const productionPlannerUrl = getToolUrlProductionPlanner() + '#' + itemNameCompact;
+        if (!closeButtonClone) {
+            closeButtonClone = getCloseButtonFromHudMenuPanel().cloneNode(true);
+        }
+        elProductionButton.dataset.onClickFunction = 'onClickCategoryItem';
+        elProductionButton.dataset.onClickArgs = JSON.stringify(['Production Planner', productionPlannerUrl]);
+        elInventoryFooter.appendChild(elProductionButton);
+    } else {
+        // No item / multiple items selected => remove any injected buttons
+        elInventoryFooter.querySelectorAll('.e115-button-inventory-footer').forEach(elButton => {
+            elButton.parentElement.removeChild(elButton);
+        });
     }
 }
 

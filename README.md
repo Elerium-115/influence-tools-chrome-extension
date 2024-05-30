@@ -11,7 +11,7 @@ It adds a "Widgets" button in the top-right, giving you an in-game "Shopping Lis
 If you load the game in the star-view, it also adds a "Tools" panel in the right-side menu, with links to community developed tools and content, grouped into several categories: Mining, Production, Asteroids, Crew, Flight, Information, Lore, Games.
 
 And it also adds other functionalities in-game, such as:
-- a "Search in Marketplace" button, when you select an item from an inventory
+- buttons for "Search in Marketplace" and "Production Chain", when you select an item from an inventory
 - the real-time, based on the game-time that's being previewed while using the time-controls
 
 <img src="./README.png" width="100%">
