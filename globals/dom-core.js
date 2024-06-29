@@ -11,6 +11,8 @@ const widgetsEndpoint = 'https://elerium-influence-api.vercel.app/data/widgets';
 
 const selectorHudMenu = '#hudMenu';
 const selectorHudMenuPanel = '#hudMenuPanel';
+const selectorTimeMenu = '#timeMenu';
+const selectorTopMenu = '#topMenu';
 
 /**
  * The default hud-menu item is "System Search", because this item is always available in the map-view,
@@ -535,75 +537,110 @@ async function updateWidgetsIfNotSet() {
     }
 }
 
-async function injectWidgets() {
-    // Inject the widgets button only after the top-menu is loaded and visible
-    const existCondition = setInterval(async () => {
-        // Wait for the top-menu to become visible
-        const elTopMenu = document.getElementById('topMenu');
-        if (!elTopMenu || !elTopMenu.offsetParent) {
-            // Not yet visible
-            return;
+/**
+ * Get the VISIBLE top-menu, depending on the state of the main-menu:
+ * - main-menu open => 2 elements matching "selectorTopMenu" (only 1 visible)
+ * - main-menu closed => 1 element matching "selectorTopMenu" (visible)
+ */
+function getVisibleTopMenu() {
+    const elsTopMenu = document.querySelectorAll(selectorTopMenu);
+    for (const elTopMenu of elsTopMenu) {
+        if (elTopMenu.offsetParent) {
+            // Visible top-menu
+            return elTopMenu;
         }
-        // Stop waiting
-        clearInterval(existCondition);
-        // Prepare widgets wrapper
-        const elWidgetsWrapper = createEl('div', ['e115-widgets-wrapper', 'e115-cursor-full']);
-        elWidgetsWrapper.innerHTML = /*html*/ `
-            <div class="e115-widgets-header">
-                <div class="e115-widgets-title">Community Widgets</div>
-                ${svgIconCommunityTools}
-            </div>
-            <div class="e115-widgets-content">
-                <div class="e115-widgets-selector">
-                    <div class="e115-widgets-drag"></div>
-                    <div class="e115-widgets-list">
-                        <ul></ul>
-                    </div>
-                </div>
-                <iframe allow="clipboard-write"></iframe>
-            </div>
-        `;
-        const elWidgetsHeader = elWidgetsWrapper.querySelector('.e115-widgets-header');
-        elWidgetsHeader.setAttribute('onclick', 'toggleWidgets()');
-        // Adjust widgets icon styling
-        const elWidgetsIcon = elWidgetsWrapper.querySelector('.e115-icon-community-tools');
-        elWidgetsIcon.classList.add('icon');
-        // If widgets not yet fetched (async), they need to be fetched now (sync), before continuing
-        if (!widgets) {
-            await updateWidgetsIfNotSet();
+    }
+    // No visible top-menu
+    return null;
+}
+
+/**
+ * Get the widgets button from the VISIBLE top-menu, if any
+ */
+function getVisibleWidgetsButton() {
+    const elTopMenuVisible = getVisibleTopMenu();
+    if (!elTopMenuVisible) {
+        return null;
+    }
+    return elTopMenuVisible.querySelector('.e115-widgets-wrapper');
+}
+
+/**
+ * Re-inject the widgets button periodically into the VISIBLE top-menu, if needed
+ */
+function reInjectWidgetsPeriodically() {
+    // Inject a widgets button only when there is NO other VISIBLE widgets button
+    setInterval(() => {
+        const elVisibleWidgetsButton = getVisibleWidgetsButton();
+        if (!elVisibleWidgetsButton) {
+            injectWidgets();
         }
-        let iframeUrl = null;
-        if (widgets) {
-            // Inject items into widgets list
-            const elWidgetsList = elWidgetsWrapper.querySelector('.e115-widgets-list ul');
-            widgets.forEach(widget => {
-                const elListItem = document.createElement('li');
-                elListItem.textContent = widget.title;
-                elListItem.dataset.title = widget.title;
-                elListItem.setAttribute('onclick', `selectWidget('${widget.title}')`);
-                if (widget.default) {
-                    // Preselect default widget
-                    elListItem.classList.add('active');
-                    iframeUrl = widget.url;
-                }
-                elWidgetsList.appendChild(elListItem);
-            });
-        }
-        // Inject widgets wrapper into the top-menu, as the first child
-        elTopMenu.prepend(elWidgetsWrapper);
-        // Post-injection actions
-        // -- make the widgets draggable
-        initDragWidgetsContent();
-        // -- preload default widget in iframe
-        loadWidgetIframe(iframeUrl);
     }, 1000);
+}
+
+async function injectWidgets() {
+    // Ensure there is a VISIBLE top-menu
+    const elTopMenuVisible = getVisibleTopMenu();
+    if (!elTopMenuVisible) {
+        return;
+    }
+    // Prepare widgets wrapper
+    const elWidgetsWrapper = createEl('div', ['e115-widgets-wrapper', 'e115-cursor-full']);
+    elWidgetsWrapper.innerHTML = /*html*/ `
+        <div class="e115-widgets-header">
+            <div class="e115-widgets-title">Community Widgets</div>
+            ${svgIconCommunityTools}
+        </div>
+        <div class="e115-widgets-content">
+            <div class="e115-widgets-selector">
+                <div class="e115-widgets-drag"></div>
+                <div class="e115-widgets-list">
+                    <ul></ul>
+                </div>
+            </div>
+            <iframe allow="clipboard-write"></iframe>
+        </div>
+    `;
+    const elWidgetsHeader = elWidgetsWrapper.querySelector('.e115-widgets-header');
+    elWidgetsHeader.setAttribute('onclick', 'toggleWidgets()');
+    // Adjust widgets icon styling
+    const elWidgetsIcon = elWidgetsWrapper.querySelector('.e115-icon-community-tools');
+    elWidgetsIcon.classList.add('icon');
+    // If widgets not yet fetched (async), they need to be fetched now (sync), before continuing
+    if (!widgets) {
+        await updateWidgetsIfNotSet();
+    }
+    let iframeUrl = null;
+    if (widgets) {
+        // Inject items into widgets list
+        const elWidgetsList = elWidgetsWrapper.querySelector('.e115-widgets-list ul');
+        widgets.forEach(widget => {
+            const elListItem = document.createElement('li');
+            elListItem.textContent = widget.title;
+            elListItem.dataset.title = widget.title;
+            elListItem.setAttribute('onclick', `selectWidget('${widget.title}')`);
+            if (widget.default) {
+                // Preselect default widget
+                elListItem.classList.add('active');
+                iframeUrl = widget.url;
+            }
+            elWidgetsList.appendChild(elListItem);
+        });
+    }
+    // Inject widgets wrapper into the VISIBLE top-menu, as the first child
+    elTopMenuVisible.prepend(elWidgetsWrapper);
+    // Post-injection actions
+    // -- make the widgets draggable
+    initDragWidgetsContent();
+    // -- preload default widget in iframe
+    loadWidgetIframe(iframeUrl);
 }
 
 function loadWidgetIframe(url) {
     if (!url) {
         return;
     }
-    const elWidgetsWrapper = document.querySelector('.e115-widgets-wrapper');
+    const elWidgetsWrapper = getVisibleWidgetsButton();
     if (!elWidgetsWrapper) {
         return;
     }
@@ -612,7 +649,7 @@ function loadWidgetIframe(url) {
 }
 
 function toggleWidgets() {
-    const elWidgetsWrapper = document.querySelector('.e115-widgets-wrapper');
+    const elWidgetsWrapper = getVisibleWidgetsButton();
     if (!elWidgetsWrapper) {
         return;
     }
@@ -622,7 +659,7 @@ function toggleWidgets() {
 }
 
 function selectWidget(title) {
-    const elWidgetsWrapper = document.querySelector('.e115-widgets-wrapper');
+    const elWidgetsWrapper = getVisibleWidgetsButton();
     if (!elWidgetsWrapper) {
         return;
     }
@@ -685,7 +722,7 @@ function initDragWidgetsContent() {
 }
 
 function getGameTimeDays() {
-    const elTimeMenu = document.getElementById('timeMenu');
+    const elTimeMenu = document.querySelector(selectorTimeMenu);
     if (!elTimeMenu) {
         // Not yet visible, or element removed from DOM on low-res
         return 0;
@@ -697,7 +734,7 @@ function injectRealTime() {
     // Inject the real-time only after the time-menu is loaded and visible
     const existCondition = setInterval(async () => {
         // Wait for the time-menu to become visible
-        const elTimeMenu = document.getElementById('timeMenu');
+        const elTimeMenu = document.querySelector(selectorTimeMenu);
         if (!elTimeMenu || !elTimeMenu.offsetParent) {
             // Not yet visible
             return;
