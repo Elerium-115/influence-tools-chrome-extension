@@ -721,13 +721,27 @@ function initDragWidgetsContent() {
     }
 }
 
-function getGameTimeDays() {
+function getElGameTimeWrapper() {
     const elTimeMenu = document.querySelector(selectorTimeMenu);
     if (!elTimeMenu) {
         // Not yet visible, or element removed from DOM on low-res
+        return null;
+    }
+    let elGameTimeWrapper = elTimeMenu.lastElementChild;
+    if (elGameTimeWrapper.id === 'e115-real-time') {
+        // Real-time already injected => game-time is the previous element
+        elGameTimeWrapper = elGameTimeWrapper.previousElementSibling;
+    }
+    return elGameTimeWrapper;
+}
+
+function getGameTimeDays() {
+    const elGameTimeWrapper = getElGameTimeWrapper();
+    if (!elGameTimeWrapper) {
+        // Not yet visible, or element removed from DOM on low-res
         return 0;
     }
-    return elTimeMenu.firstChild.lastChild.textContent.replace(/,/g, '');
+    return elGameTimeWrapper.lastElementChild.textContent.replace(/,/g, '');
 }
 
 function injectRealTime() {
@@ -747,10 +761,11 @@ function injectRealTime() {
         let gameTimeDaysCurrent = getGameTimeDays();
         // Periodically update the real-time, based on the game-time
         setInterval(() => {
-            const elGameTimeControls = elTimeMenu.firstChild.firstChild;
-            if (!elGameTimeControls) {
+            const elGameTimeWrapper = getElGameTimeWrapper();
+            if (!elGameTimeWrapper) {
                 return;
             }
+            const elGameTimeControls = elGameTimeWrapper.firstElementChild;
             if (elGameTimeControls.hasAttribute('open')) {
                 // Game-time controls open => show real-time
                 elRealTime.classList.remove('e115-hidden');
@@ -797,7 +812,7 @@ async function searchMarketplace(searchText) {
     elInput.dispatchEvent(inputEvent);
     // Wait for search results to load
     await delay(500);
-    const elResultsList = elInput.parentElement.nextElementSibling.firstChild;
+    const elResultsList = elInput.parentElement.nextElementSibling.firstElementChild;
     const elsResults = [...elResultsList.children];
     if (elsResults.length === 1) {
         // Auto-click if single result matching the search
