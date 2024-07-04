@@ -493,8 +493,9 @@
     }
 }
 
-// Inventory items in the hud-menu panel, with their wrapper NOT hovered
-body[data-inventory-item-names='true'] #hudMenuPanel :not(:hover) > [data-tooltip-id='hudMenuTooltip'][data-tooltip-content] {
+// Inventory items in the hud-menu panel, with their wrapper NOT hovered.
+// Apply only for "[data-tooltip-place='top']", to avoid matching (some) non-inventory panels.
+body[data-inventory-item-names='true'] #hudMenuPanel :not(:hover) > [data-tooltip-id='hudMenuTooltip'][data-tooltip-place='top'][data-tooltip-content] {
     // Overlay item names
     &::after {
         background-color: rgba(0, 0, 0, 0.33);
@@ -518,4 +519,11 @@ body[data-inventory-item-names='true'] #hudMenuPanel :not(:hover) > [data-toolti
     display: flex;
     flex-direction: row-reverse;
     gap: 15px;
+}
+
+// Volatile changes for dynamic class names
+
+#hudMenuPanel .eUlTUS > img {
+    // Enhance the class-specific background color for crewmates in the hud menu
+    backdrop-filter: brightness(4);
 }
