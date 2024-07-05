@@ -468,6 +468,13 @@ body[data-inventory-item-names=true] #hudMenuPanel :not(:hover) > [data-tooltip-
   gap: 15px;
 }
 
+#e115-captain-video {
+  background: black;
+  height: 100%;
+  position: absolute;
+  width: 100%;
+}
+
 #hudMenuPanel .eUlTUS > img {
   -webkit-backdrop-filter: brightness(4);
           backdrop-filter: brightness(4);

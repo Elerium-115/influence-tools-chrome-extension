@@ -3,7 +3,8 @@
  * re: Chrome extension content scripts not supporting modules (import / export).
  */
 
-// Pre-fetch the tools and widgets (async)
+// Pre-fetch data from Elerium API
+updateCrewmateVideosIfNotSet();
 updateToolsIfNotSet();
 updateWidgetsIfNotSet();
 
@@ -86,6 +87,7 @@ const existCondition = setInterval(async () => {
 injectConfig();
 injectRealTime();
 reInjectWidgetsPeriodically();
+injectCaptainVideoOnCrewOpen();
 
 // Handle messages e.g. from widgets iframe
 window.addEventListener('message', handleMessage, false);

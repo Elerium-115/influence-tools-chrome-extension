@@ -521,6 +521,13 @@ body[data-inventory-item-names='true'] #hudMenuPanel :not(:hover) > [data-toolti
     gap: 15px;
 }
 
+#e115-captain-video {
+    background: black;
+    height: 100%;
+    position: absolute;
+    width: 100%;
+}
+
 // Volatile changes for dynamic class names
 
 #hudMenuPanel .eUlTUS > img {

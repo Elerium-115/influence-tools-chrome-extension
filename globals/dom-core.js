@@ -6,8 +6,11 @@ const svgIconSearch = `<svg stroke="currentColor" fill="none" stroke-width="2" v
 // Source: https://www.iconfinder.com/icons/4763233/hierarchy_network_organization_sitemap_structure_icon
 const svgIconProductionChains = `<svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 24 24" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><g><path d="M20,16.18V11H13V7.82a3,3,0,1,0-2,0V11H4v5.18a3,3,0,1,0,2,0V13h5v3.18a3,3,0,1,0,2,0V13h5v3.18a3,3,0,1,0,2,0Z"></path></g></svg>`;
 
-const toolsEndpoint = 'https://elerium-influence-api.vercel.app/data/tools';
-const widgetsEndpoint = 'https://elerium-influence-api.vercel.app/data/widgets';
+const eleriumApiUrl = 'https://elerium-influence-api.vercel.app';
+
+const crewmateVideosEndpoint = `${eleriumApiUrl}/data/crewmate-videos`;
+const toolsEndpoint = `${eleriumApiUrl}/data/tools`;
+const widgetsEndpoint = `${eleriumApiUrl}/data/widgets`;
 
 const selectorHudMenu = '#hudMenu';
 const selectorHudMenuPanel = '#hudMenuPanel';
@@ -21,6 +24,11 @@ const selectorTopMenu = '#topMenu';
 const hudMenuItemLabelDefault = 'System Search';
 
 const hudMenuItemLabelMarketplace = 'Asteroid Markets';
+
+/**
+ * This will be populated via API call to "crewmateVideosEndpoint"
+ */
+let crewmateVideos = null;
 
 /**
  * This will be populated via API call to "toolsEndpoint"
@@ -513,6 +521,18 @@ function injectHudMenuItemAndPanel(label, list) {
     hudMenuPanelContent.appendChild(elList);
 }
 
+async function updateCrewmateVideosIfNotSet() {
+    if (crewmateVideos) {
+        return;
+    }
+    try {
+        const crewmateVideosResponse = await fetch(crewmateVideosEndpoint);
+        crewmateVideos = await crewmateVideosResponse.json();
+    } catch (error) {
+        // Swallow this error
+    }
+}
+
 async function updateToolsIfNotSet() {
     if (tools) {
         return;
@@ -881,6 +901,45 @@ function onClickInventoryItem(elItem) {
             elButton.parentElement.removeChild(elButton);
         });
     }
+}
+
+/**
+ * Inject the captain-video if available for the currently opened crew, if any
+ */
+function injectCaptainVideoOnCrewOpen() {
+    setInterval(async () => {
+        if (location.pathname.match(/^\/crew\/(\d+)/)) {
+            // Crew window open
+            if (document.getElementById('e115-captain-video')) {
+                // Captain video already injected
+                return;
+            }
+            const elOwnedCrewBg = document.querySelector('div[src*="OwnedCrew"]');
+            if (!elOwnedCrewBg) {
+                return;
+            }
+            const elCaptainImg = elOwnedCrewBg.parentElement.querySelector('img[src*="/crewmates/"]');
+            if (!elCaptainImg) {
+                return;
+            }
+            const elCaptainCrewmateIdMatches = elCaptainImg.src.match(/\/crewmates\/(\d+)/);
+            if (!elCaptainCrewmateIdMatches) {
+                return;
+            }
+            const elCaptainCrewmateId = elCaptainCrewmateIdMatches[1];
+            // If crewmate-videos not yet fetched (async), they need to be fetched now (sync), before continuing
+            if (!crewmateVideos) {
+                await updateCrewmateVideosIfNotSet();
+            }
+            if (crewmateVideos && crewmateVideos[elCaptainCrewmateId]) {
+                const elCaptainVideo = document.createElement('video');
+                elCaptainVideo.id = 'e115-captain-video';
+                elCaptainVideo.controls = true;
+                elCaptainVideo.src = crewmateVideos[elCaptainCrewmateId];
+                elCaptainImg.parentElement.prepend(elCaptainVideo);
+            }
+        }
+    }, 1000);
 }
 
 /**
