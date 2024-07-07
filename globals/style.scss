@@ -530,7 +530,20 @@ body[data-inventory-item-names='true'] #hudMenuPanel :not(:hover) > [data-toolti
 
 // Volatile changes for dynamic class names
 
-#hudMenuPanel .eUlTUS > img {
-    // Enhance the class-specific background color for crewmates in the hud menu
+.eUlTUS > img:not(:hover) {
+    // Enhance the class-specific background color for crewmates only when NOT hovering
     backdrop-filter: brightness(4);
+}
+
+#hudMenuPanel .eUlTUS > img {
+    // Enhance the class-specific background color for crewmates in the hud menu, even when hovering
+    backdrop-filter: brightness(4);
+}
+
+div[src*="OwnedCrew"] + div .eUlTUS > img {
+    // Do NOT enhance the class-specific background color for crewmates in the "Crew Details" window.
+    // This avoids some issues:
+    // -- hovering over those crewmates would make them too bright
+    // -- the captain-video would not be overlayed as expected
+    backdrop-filter: unset;
 }

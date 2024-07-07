@@ -475,7 +475,17 @@ body[data-inventory-item-names=true] #hudMenuPanel :not(:hover) > [data-tooltip-
   width: 100%;
 }
 
+.eUlTUS > img:not(:hover) {
+  -webkit-backdrop-filter: brightness(4);
+          backdrop-filter: brightness(4);
+}
+
 #hudMenuPanel .eUlTUS > img {
   -webkit-backdrop-filter: brightness(4);
           backdrop-filter: brightness(4);
+}
+
+div[src*=OwnedCrew] + div .eUlTUS > img {
+  -webkit-backdrop-filter: unset;
+          backdrop-filter: unset;
 }/*# sourceMappingURL=style.css.map */
