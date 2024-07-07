@@ -903,6 +903,28 @@ function onClickInventoryItem(elItem) {
     }
 }
 
+function onMouseoverCaptainVideoPlay() {
+    const elCaptainVideoWrapper = document.getElementById('e115-captain-video-wrapper');
+    if (!elCaptainVideoWrapper) {
+        return;
+    }
+    elCaptainVideoWrapper.classList.remove('e115-video-icon-only');
+    // Load the video from the start
+    elCaptainVideo = document.getElementById('e115-captain-video');
+    if (!elCaptainVideo) {
+        return;
+    }
+    elCaptainVideo.load();
+}
+
+function onCaptainVideoEnded() {
+    const elCaptainVideoWrapper = document.getElementById('e115-captain-video-wrapper');
+    if (!elCaptainVideoWrapper) {
+        return;
+    }
+    elCaptainVideoWrapper.classList.add('e115-video-icon-only');
+}
+
 /**
  * Inject the captain-video if available for the currently opened crew, if any
  */
@@ -932,11 +954,20 @@ function injectCaptainVideoOnCrewOpen() {
                 await updateCrewmateVideosIfNotSet();
             }
             if (crewmateVideos && crewmateVideos[elCaptainCrewmateId]) {
+                const elCaptainVideoWrapper = document.createElement('div');
+                elCaptainVideoWrapper.id = 'e115-captain-video-wrapper';
                 const elCaptainVideo = document.createElement('video');
                 elCaptainVideo.id = 'e115-captain-video';
                 elCaptainVideo.controls = true;
                 elCaptainVideo.src = crewmateVideos[elCaptainCrewmateId];
-                elCaptainImg.parentElement.prepend(elCaptainVideo);
+                elCaptainVideo.addEventListener('ended', onCaptainVideoEnded);
+                elCaptainVideoWrapper.append(elCaptainVideo);
+                // Inject overlay with "play" icon over the captain-video (hidden if the video is visible)
+                const elCaptainVideoPlayIcon = document.createElement('div');
+                elCaptainVideoPlayIcon.id = 'e115-video-play-icon';
+                elCaptainVideoPlayIcon.addEventListener('mouseenter', onMouseoverCaptainVideoPlay);
+                elCaptainVideoWrapper.append(elCaptainVideoPlayIcon);
+                elCaptainImg.parentElement.prepend(elCaptainVideoWrapper);
             }
         }
     }, 1000);
