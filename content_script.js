@@ -88,6 +88,7 @@ injectConfig();
 injectRealTime();
 reInjectWidgetsPeriodically();
 injectCaptainVideoOnCrewOpen();
+injectFilterOnSelectProcessOpen();
 
 // Handle messages e.g. from widgets iframe
 window.addEventListener('message', handleMessage, false);

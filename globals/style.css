@@ -22,6 +22,16 @@
   display: none !important;
 }
 
+.e115-input {
+  background: transparent;
+  border: 1px solid var(--color-influence);
+  color: #ccc;
+  font-size: 14px;
+  height: 34px;
+  padding: 0 5px;
+  width: 300px;
+}
+
 .e115-button {
   --corner-size: 10px;
   border: 1px solid var(--color-influence);
@@ -502,6 +512,18 @@ body[data-inventory-item-names=true] #hudMenuPanel :not(:hover) > [data-tooltip-
 }
 #e115-captain-video-wrapper #e115-video-play-icon::after {
   content: "►";
+}
+
+#e115-filter-select-process {
+  align-items: center;
+  border: none;
+  display: flex;
+  font-size: unset;
+  gap: 10px;
+  padding: 0 100px;
+}
+#e115-filter-select-process::before {
+  content: "Filter";
 }
 
 .eUlTUS > img:not(:hover) {

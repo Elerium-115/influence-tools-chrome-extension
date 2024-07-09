@@ -222,8 +222,11 @@ async function waitForHudMenuItemSelectedState(el, targetSelectedState, checkInt
     return false;
 }
 
-function createEl(nodeType, classes = null) {
+function createEl(nodeType, id = null, classes = null) {
     const el = document.createElement(nodeType);
+    if (id) {
+        el.id = id;
+    }
     if (classes) {
         classes.forEach(className => el.classList.add(className));
     }
@@ -250,43 +253,42 @@ function onClickCategoryItem(title, url) {
         elOldWindowClose.click();
     }
     // Prepare new standard window > wrapper
-    const elNewWindowWrapper = createEl('div', ['e115-window-wrapper']);
+    const elNewWindowWrapper = createEl('div', null, ['e115-window-wrapper']);
     elNewWindowWrapper.dataset.e115WindowId = title; // data-e115-window-id
     // Prepare new standard window
-    const elNewWindow = createEl('div', ['e115-window']);
-    elNewWindowWrapper.appendChild(elNewWindow);
+    const elNewWindow = createEl('div', null, ['e115-window']);
+    elNewWindowWrapper.append(elNewWindow);
     // Prepare new standard window > header
-    const elNewWindowHeader = createEl('div', ['e115-window-header']);
-    elNewWindow.appendChild(elNewWindowHeader);
+    const elNewWindowHeader = createEl('div', null, ['e115-window-header']);
+    elNewWindow.append(elNewWindowHeader);
     // Prepare new standard window > header > title
-    const elNewWindowHeaderTitle = createEl('h1', ['e115-window-title']);
+    const elNewWindowHeaderTitle = createEl('h1', null, ['e115-window-title']);
     elNewWindowHeaderTitle.textContent = title;
-    elNewWindowHeader.appendChild(elNewWindowHeaderTitle);
+    elNewWindowHeader.append(elNewWindowHeaderTitle);
     // Prepare new standard window > header > buttons-wrapper
-    const elNewWindowHeaderButtons = createEl('div');
-    elNewWindowHeaderButtons.classList.add('e115-window-buttons');
-    elNewWindowHeader.appendChild(elNewWindowHeaderButtons);
+    const elNewWindowHeaderButtons = createEl('div', null, ['e115-window-buttons']);
+    elNewWindowHeader.append(elNewWindowHeaderButtons);
     // Prepare new standard window > header > buttons-wrapper > "Safety Tips"
-    const elNewWindowHeaderWarning = createEl('div', ['e115-button', 'e115-cursor-full']);
+    const elNewWindowHeaderWarning = createEl('div', null, ['e115-button', 'e115-cursor-full']);
     elNewWindowHeaderWarning.textContent = 'Safety Tips';
     elNewWindowHeaderWarning.setAttribute('onmouseenter', 'toggleSafetyTips(true)');
     elNewWindowHeaderWarning.setAttribute('onmouseleave', 'toggleSafetyTips(false)');
-    elNewWindowHeaderButtons.appendChild(elNewWindowHeaderWarning);
+    elNewWindowHeaderButtons.append(elNewWindowHeaderWarning);
     // Prepare new standard window > header > buttons-wrapper > "Open in new window"
-    const elNewWindowHeaderButton = createEl('a', ['e115-button', 'e115-cursor-full']);
+    const elNewWindowHeaderButton = createEl('a', null, ['e115-button', 'e115-cursor-full']);
     elNewWindowHeaderButton.href = url;
     elNewWindowHeaderButton.target = '_blank';
     elNewWindowHeaderButton.textContent = 'Open in new window';
-    elNewWindowHeaderButtons.appendChild(elNewWindowHeaderButton);
+    elNewWindowHeaderButtons.append(elNewWindowHeaderButton);
     // Prepare new standard window > header > buttons-wrapper > close
     const elNewWindowClose = closeButtonClone.cloneNode(true);
     elNewWindowClose.classList.add('e115-window-close'); // class used for closing the injected window
     // Define onclick handler to delete this window
     elNewWindowClose.dataset.onClickFunction = 'onClickNewWindowClose';
     elNewWindowClose.dataset.onClickArgs = JSON.stringify([title]);
-    elNewWindowHeaderButtons.appendChild(elNewWindowClose);
+    elNewWindowHeaderButtons.append(elNewWindowClose);
     // Prepare new standard window > content > Safety Tips
-    const elNewWindowSafety = createEl('div', ['e115-window-content', 'e115-window-safety', 'e115-hidden']);
+    const elNewWindowSafety = createEl('div', null, ['e115-window-content', 'e115-window-safety', 'e115-hidden']);
     elNewWindowSafety.innerHTML = /*html*/ `
         <h2>Safety Tips</h2>
         <ul>
@@ -295,9 +297,9 @@ function onClickCategoryItem(title, url) {
             <li>Ensure that you fully understand the origin and impact of any wallet request, before you approve it!</li>
         </ul>
     `;
-    elNewWindow.appendChild(elNewWindowSafety);
+    elNewWindow.append(elNewWindowSafety);
     // Prepare new standard window > content > iframe
-    const elNewWindowIframe = createEl('iframe', ['e115-window-content']);
+    const elNewWindowIframe = createEl('iframe', null, ['e115-window-content']);
     let iframeUrl = url;
 
     // Inject ID of selected asteroid (if any) into the iframe URL
@@ -313,7 +315,7 @@ function onClickCategoryItem(title, url) {
     }
 
     elNewWindowIframe.src = iframeUrl;
-    elNewWindow.appendChild(elNewWindowIframe);
+    elNewWindow.append(elNewWindowIframe);
     // Inject new standard window, as the first element in the "grand-parent" of the hud-menu
     const elHudMenu = getElHudMenu();
     const elWindowParent = elHudMenu.parentElement.parentElement;
@@ -394,7 +396,7 @@ async function toggleInjectedMenuItemByLabel(label, shouldBeSelected) {
         // The real hud-menu panel (closed, at this point) must be completely hidden
         elHudMenuPanel.style.display = 'none';
         // Inject the cloned hud-menu panel into the DOM
-        elHudMenuPanel.parentElement.appendChild(hudMenuPanelOpenClone);
+        elHudMenuPanel.parentElement.append(hudMenuPanelOpenClone);
         // Mark the hud-menu as open
         elHudMenu.classList.value = hudMenuOpenClassListValue;
     } else {
@@ -489,9 +491,9 @@ function injectHudMenuItemAndPanel(label, list) {
     // Empty the hud-menu panel's content, before injecting the list
     hudMenuPanelContent.textContent = '';
     // Inject the list into the hud-menu panel's content
-    const elList = createEl('div', ['e115-hud-menu-list']);
+    const elList = createEl('div', null, ['e115-hud-menu-list']);
     list.forEach(listItemData => {
-        const elListItem = createEl('div', ['e115-hud-menu-list-item']);
+        const elListItem = createEl('div', null, ['e115-hud-menu-list-item']);
         elListItem.innerHTML = /*html*/ `
             <div class="${listItemWrapperClassListValue} e115-category-title e115-cursor-full">
                 <div class="${listItemSvgWrapperClassListValue}">${hudMenuPanelListItemSvgClone.outerHTML}</div>
@@ -507,18 +509,18 @@ function injectHudMenuItemAndPanel(label, list) {
         const elCategoryItems = elListItem.querySelector(".e115-category-items");
         // Inject the sub-list of items for the current category
         listItemData.items.forEach(categoryItemData => {
-            const elCategoryItem = createEl('div', ['e115-category-item', 'e115-cursor-full']);
+            const elCategoryItem = createEl('div', null, ['e115-category-item', 'e115-cursor-full']);
             elCategoryItem.innerHTML = /*html*/ `
                 <div class="e115-category-item-title">${categoryItemData.title}</div>
                 <div class="e115-category-item-author">${categoryItemData.author}</div>
             `;
             elCategoryItem.dataset.onClickFunction = 'onClickCategoryItem';
             elCategoryItem.dataset.onClickArgs = JSON.stringify([categoryItemData.title, categoryItemData.url]);
-            elCategoryItems.appendChild(elCategoryItem);
+            elCategoryItems.append(elCategoryItem);
         });
-        elList.appendChild(elListItem);
+        elList.append(elListItem);
     });
-    hudMenuPanelContent.appendChild(elList);
+    hudMenuPanelContent.append(elList);
 }
 
 async function updateCrewmateVideosIfNotSet() {
@@ -605,7 +607,7 @@ async function injectWidgets() {
         return;
     }
     // Prepare widgets wrapper
-    const elWidgetsWrapper = createEl('div', ['e115-widgets-wrapper', 'e115-cursor-full']);
+    const elWidgetsWrapper = createEl('div', null, ['e115-widgets-wrapper', 'e115-cursor-full']);
     elWidgetsWrapper.innerHTML = /*html*/ `
         <div class="e115-widgets-header">
             <div class="e115-widgets-title">Community Widgets</div>
@@ -635,7 +637,7 @@ async function injectWidgets() {
         // Inject items into widgets list
         const elWidgetsList = elWidgetsWrapper.querySelector('.e115-widgets-list ul');
         widgets.forEach(widget => {
-            const elListItem = document.createElement('li');
+            const elListItem = createEl('li');
             elListItem.textContent = widget.title;
             elListItem.dataset.title = widget.title;
             elListItem.setAttribute('onclick', `selectWidget('${widget.title}')`);
@@ -644,7 +646,7 @@ async function injectWidgets() {
                 elListItem.classList.add('active');
                 iframeUrl = widget.url;
             }
-            elWidgetsList.appendChild(elListItem);
+            elWidgetsList.append(elListItem);
         });
     }
     // Inject widgets wrapper into the VISIBLE top-menu, as the first child
@@ -775,9 +777,8 @@ function injectRealTime() {
         }
         // Stop waiting
         clearInterval(existCondition);
-        const elRealTime = document.createElement('div');
-        elRealTime.id = 'e115-real-time';
-        elTimeMenu.appendChild(elRealTime);
+        const elRealTime = createEl('div', 'e115-real-time');
+        elTimeMenu.append(elRealTime);
         let gameTimeDaysCurrent = getGameTimeDays();
         // Periodically update the real-time, based on the game-time
         setInterval(() => {
@@ -871,17 +872,17 @@ function onClickInventoryItem(elItem) {
         // ---- It does NOT work for ship-cargo and ship-propellant inventories.
         const elHudMenuMarketplace = getElHudMenuItemByLabel(hudMenuItemLabelMarketplace);
         if (elHudMenuMarketplace) {
-            const elMarketplaceButton = createEl('div', ['e115-button', 'e115-button-inventory-footer']);
+            const elMarketplaceButton = createEl('div', null, ['e115-button', 'e115-button-inventory-footer']);
             elMarketplaceButton.innerHTML = /*html*/ `
                 ${svgIconSearch}
                 <span>Marketplace</span>
             `;
             elMarketplaceButton.dataset.onClickFunction = 'searchMarketplace';
             elMarketplaceButton.dataset.onClickArgs = JSON.stringify([elItemSelectedName]);
-            elInventoryFooter.appendChild(elMarketplaceButton);
+            elInventoryFooter.append(elMarketplaceButton);
         }
         // -- Inject "Production Planner" button
-        const elProductionButton = createEl('div', ['e115-button', 'e115-button-inventory-footer']);
+        const elProductionButton = createEl('div', null, ['e115-button', 'e115-button-inventory-footer']);
         elProductionButton.innerHTML = /*html*/ `
             ${svgIconProductionChains}
             <span>Production</span>
@@ -894,7 +895,7 @@ function onClickInventoryItem(elItem) {
         }
         elProductionButton.dataset.onClickFunction = 'onClickCategoryItem';
         elProductionButton.dataset.onClickArgs = JSON.stringify(['Production Planner', productionPlannerUrl]);
-        elInventoryFooter.appendChild(elProductionButton);
+        elInventoryFooter.append(elProductionButton);
     } else {
         // No item / multiple items selected => remove any injected buttons
         elInventoryFooter.querySelectorAll('.e115-button-inventory-footer').forEach(elButton => {
@@ -954,23 +955,81 @@ function injectCaptainVideoOnCrewOpen() {
                 await updateCrewmateVideosIfNotSet();
             }
             if (crewmateVideos && crewmateVideos[elCaptainCrewmateId]) {
-                const elCaptainVideoWrapper = document.createElement('div');
-                elCaptainVideoWrapper.id = 'e115-captain-video-wrapper';
-                const elCaptainVideo = document.createElement('video');
-                elCaptainVideo.id = 'e115-captain-video';
+                const elCaptainVideoWrapper = createEl('div', 'e115-captain-video-wrapper');
+                const elCaptainVideo = createEl('video', 'e115-captain-video');
                 elCaptainVideo.controls = true;
                 elCaptainVideo.src = crewmateVideos[elCaptainCrewmateId];
                 elCaptainVideo.addEventListener('ended', onCaptainVideoEnded);
                 elCaptainVideoWrapper.append(elCaptainVideo);
                 // Inject overlay with "play" icon over the captain-video (hidden if the video is visible)
-                const elCaptainVideoPlayIcon = document.createElement('div');
-                elCaptainVideoPlayIcon.id = 'e115-video-play-icon';
+                const elCaptainVideoPlayIcon = createEl('div', 'e115-video-play-icon');
                 elCaptainVideoPlayIcon.addEventListener('mouseenter', onMouseoverCaptainVideoPlay);
                 elCaptainVideoWrapper.append(elCaptainVideoPlayIcon);
                 elCaptainImg.parentElement.prepend(elCaptainVideoWrapper);
             }
         }
     }, 1000);
+}
+
+/**
+ * Inject a filter into the "Select Process" window, if any
+ */
+function injectFilterOnSelectProcessOpen() {
+    setInterval(async () => {
+        if (document.getElementById('e115-filter-select-process')) {
+            // Filter already injected
+            return;
+        }
+        const elSelectProcessWindow = [...document.body.children].find(el => el.textContent.toLocaleLowerCase().includes('select process'));
+        if (!elSelectProcessWindow) {
+            // Select Process window not yet open
+            return;
+        }
+        // Select Process window open
+        elSelectProcessWindow.classList.add('e115-select-process-window');
+        const elSelectProcessTitle = [...elSelectProcessWindow.getElementsByTagName('div')].find(el => el.firstChild.nodeName === '#text' && el.firstChild.textContent.trim().toLocaleLowerCase() === 'select process');
+        if (!elSelectProcessTitle) {
+            // Maybe the game's DOM structure has changed?
+            return;
+        }
+        const elSelectProcessHeader = elSelectProcessTitle.parentElement;
+        const elFilterWrapper = createEl('div', 'e115-filter-select-process');
+        elFilterWrapper.innerHTML = /*html*/ `
+            <input type="text" class="e115-input" oninput="filterProcessesList(this)" placeholder="Name of process, input or output">
+        `;
+        // Inject the filter right after the title (before the close-button)
+        elSelectProcessHeader.insertBefore(elFilterWrapper, elSelectProcessTitle.nextSibling);
+    }, 1000);
+}
+
+function filterProcessesList(elInput) {
+    const elSelectProcessWindow = document.querySelector('.e115-select-process-window');
+    if (!elSelectProcessWindow) {
+        // This function should NOT be called without the "Select Process" window having been marked, during the filter-injection
+        return;
+    }
+    const filterText = elInput.value.toLowerCase().trim();
+    [...elSelectProcessWindow.querySelectorAll("tbody tr")].forEach(elRow => {
+        if (!filterText) {
+            // Show all processes if no text in filter-input
+            elRow.classList.remove('e115-hidden');
+            return;
+        }
+        let isMatch = false;
+        if (elRow.textContent.toLowerCase().includes(filterText)) {
+            // Process name matches the filter
+            isMatch = true;
+        } else {
+            [...elRow.querySelectorAll('[data-tooltip-content]')].some(elProduct => {
+                if (elProduct.dataset.tooltipContent.toLowerCase().includes(filterText)) {
+                    // An input or output name matches the filter
+                    isMatch = true;
+                    return true; // skip remaining inputs / outputs
+                }
+            });
+        }
+        elRow.classList.toggle('e115-hidden', !isMatch);
+    });
 }
 
 /**
@@ -989,8 +1048,7 @@ function handleMessage(event) {
 }
 
 function injectConfig() {
-    const elConfigPanel = document.createElement('div');
-    elConfigPanel.id = 'e115-config-panel-wrapper';
+    const elConfigPanel = createEl('div', 'e115-config-panel-wrapper');
     elConfigPanel.innerHTML = /*html*/ `
         <div id="e115-config-panel">
             <div id="e115-config-options">
@@ -1001,7 +1059,7 @@ function injectConfig() {
             <div id="e115-config-title">Influence Tools extension</div>
         </div>
     `;
-    document.body.appendChild(elConfigPanel);
+    document.body.append(elConfigPanel);
 
     //// TO DO: save this value into local-storage => pre-load it
     document.body.dataset.inventoryItemNames = 'true';
