@@ -12,7 +12,9 @@ If you load the game in the star-view, it also adds a "Tools" panel in the right
 
 And it also adds other functionalities in-game, such as:
 - buttons for "Search in Marketplace" and "Production Chain", when you select an item from an inventory
-- the real-time, based on the game-time that's being previewed while using the time-controls
+- a filter to search among the processes of Refineries, Factories and Shipyards
+- an AI-generated captain-video in the crew window
+- the real-world time, based on the in-game time that's being previewed while using the time-controls
 
 <img src="./README.png" width="100%">
 

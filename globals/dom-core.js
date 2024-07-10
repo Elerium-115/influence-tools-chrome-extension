@@ -987,28 +987,42 @@ function injectFilterOnSelectProcessOpen() {
         }
         // Select Process window open
         elSelectProcessWindow.classList.add('e115-select-process-window');
-        const elSelectProcessTitle = [...elSelectProcessWindow.getElementsByTagName('div')].find(el => el.firstChild.nodeName === '#text' && el.firstChild.textContent.trim().toLocaleLowerCase() === 'select process');
+        const elSelectProcessTitle = [...elSelectProcessWindow.getElementsByTagName('div')].find(el => el.firstChild && el.firstChild.nodeName === '#text' && el.firstChild.textContent.trim().toLocaleLowerCase() === 'select process');
         if (!elSelectProcessTitle) {
             // Maybe the game's DOM structure has changed?
             return;
         }
         const elSelectProcessHeader = elSelectProcessTitle.parentElement;
         const elFilterWrapper = createEl('div', 'e115-filter-select-process');
-        elFilterWrapper.innerHTML = /*html*/ `
-            <input type="text" class="e115-input" oninput="filterProcessesList(this)" placeholder="Name of process, input or output">
-        `;
+        const elFilterInput = createEl('input', null, ['e115-input']);
+        elFilterInput.type = 'text';
+        elFilterInput.placeholder = 'Filter by process, input or output';
+        elFilterInput.addEventListener('keyup', event => {
+            /**
+             * Prevent event-bubbling when the user presses any key other than "Escape", while typing into the filter-input.
+             * - This allows the native logic to close the "Select Process" window when the user presses "Escape".
+             * - But it prevents the window from closing when the user presses "Space" - e.g. typing "iron oxide".
+             */
+            if (event.key !== 'Escape') {
+                event.stopPropagation();
+            }
+        });
+        elFilterInput.addEventListener('input', () => {
+            filterProcessesList(elFilterInput.value);
+        });
+        elFilterWrapper.append(elFilterInput);
         // Inject the filter right after the title (before the close-button)
         elSelectProcessHeader.insertBefore(elFilterWrapper, elSelectProcessTitle.nextSibling);
     }, 1000);
 }
 
-function filterProcessesList(elInput) {
+function filterProcessesList(elFilterInputValue) {
     const elSelectProcessWindow = document.querySelector('.e115-select-process-window');
     if (!elSelectProcessWindow) {
         // This function should NOT be called without the "Select Process" window having been marked, during the filter-injection
         return;
     }
-    const filterText = elInput.value.toLowerCase().trim();
+    const filterText = elFilterInputValue.toLowerCase().trim();
     [...elSelectProcessWindow.querySelectorAll("tbody tr")].forEach(elRow => {
         if (!filterText) {
             // Show all processes if no text in filter-input

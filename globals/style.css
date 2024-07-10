@@ -26,6 +26,7 @@
   background: transparent;
   border: 1px solid var(--color-influence);
   color: #ccc;
+  font-family: Jura, sans-serif;
   font-size: 14px;
   height: 34px;
   padding: 0 5px;
@@ -515,15 +516,9 @@ body[data-inventory-item-names=true] #hudMenuPanel :not(:hover) > [data-tooltip-
 }
 
 #e115-filter-select-process {
-  align-items: center;
   border: none;
-  display: flex;
   font-size: unset;
-  gap: 10px;
   padding: 0 100px;
-}
-#e115-filter-select-process::before {
-  content: "Filter";
 }
 
 .eUlTUS > img:not(:hover) {
