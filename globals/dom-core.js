@@ -1013,6 +1013,7 @@ function injectFilterOnSelectProcessOpen() {
         elFilterWrapper.append(elFilterInput);
         // Inject the filter right after the title (before the close-button)
         elSelectProcessHeader.insertBefore(elFilterWrapper, elSelectProcessTitle.nextSibling);
+        elFilterInput.focus();
     }, 1000);
 }
 
@@ -1044,6 +1045,39 @@ function filterProcessesList(elFilterInputValue) {
         }
         elRow.classList.toggle('e115-hidden', !isMatch);
     });
+}
+
+/**
+ * Inject links on products from "My Open Limit Orders", if that window is open
+ */
+function injectProductLinksOnOrdersOpen() {
+    setInterval(async () => {
+        if (location.pathname.match(/^\/marketplace\/(\d+)\/all\/orders/)) {
+            // My Open Limit Orders window open
+            const elMarketplaceHeader = document.querySelector('div[src*="/static/media/Marketplace"]');
+            if (!elMarketplaceHeader || !elMarketplaceHeader.offsetParent) {
+                // Not yet visible (e.g. on full page reload) with this URL)
+                return;
+            }
+            const elsOrderRows = elMarketplaceHeader.parentElement.querySelectorAll('table tbody tr');
+            [...elsOrderRows].some(elOrderRow => {
+                if (elOrderRow.classList.contains('e115-marked')) {
+                    // Order already parsed
+                    return;
+                }
+                const elProductCell = elOrderRow.querySelector('td:nth-child(3)');
+                if (!elProductCell) {
+                    // Maybe the game's DOM structure has changed?
+                    return true; // skip remaining orders
+                }
+                elProductCell.classList.add('e115-color-influence', 'e115-cursor-full');
+                elProductCell.addEventListener('click', () => {
+                    searchMarketplace(elProductCell.textContent.trim());
+                });
+                elOrderRow.classList.add('e115-marked');
+            });
+        }
+    }, 1000);
 }
 
 /**

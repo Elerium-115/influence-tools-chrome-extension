@@ -7,7 +7,7 @@
 }
 
 .e115-color-influence {
-  color: var(--color-influence);
+  color: var(--color-influence) !important;
 }
 
 .e115-cursor {
