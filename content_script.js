@@ -8,84 +8,10 @@ updateCrewmateVideosIfNotSet();
 updateToolsIfNotSet();
 updateWidgetsIfNotSet();
 
-// Inject the hud-menu item only after the hud-menu is loaded and visible
-const existCondition = setInterval(async () => {
-    /**
-     * Wait for the default hud-menu item ("System Search") to become visible.
-     * Source: https://stackoverflow.com/a/21696585
-     */
-    const elHudMenuItemDefault = getElHudMenuItemByLabel(hudMenuItemLabelDefault);
-    if (!elHudMenuItemDefault || !elHudMenuItemDefault.offsetParent) {
-        // Not yet visible
-        return;
-    }
-    // Stop waiting
-    clearInterval(existCondition);
-    // Ensure reactProps can be accessed
-    const hudMenuItemDefaultReactProps = getReactPropsForEl(elHudMenuItemDefault);
-    if (!hudMenuItemDefaultReactProps) {
-        // reactProps can NOT be accessed => ABORT
-        console.log(`%c--- ABORT re: reactProps can NOT be accessed`, 'background: orange; color: black');
-        return;
-    }
-    const elHudMenuPanel = getElHudMenuPanel();
-    if (!elHudMenuPanel) {
-        // hud-menu panel NOT found => ABORT
-        console.log(`%c--- ABORT re: elHudMenuPanel NOT found`, 'background: orange; color: black');
-        return;
-    }
-    /**
-     * Wait using a very short "checkIntervalMs" during these initializations,
-     * to "hide" the forced selections / de-selections, as much as possible.
-     */
-    const checkIntervalMs = 10;
-    // Get the pre-selected hud-menu item, if any
-    const elHudMenuItemPreselected = getElHudMenuItemSelected();
-    if (elHudMenuItemDefault !== elHudMenuItemPreselected) {
-        /**
-         * The default hud-menu item is NOT pre-selected.
-         * Select the default hud-menu item, in order to trigger the default hud-menu panel.
-         */
-        elHudMenuItemDefault.click();
-        const targetSelectedStateReached = await waitForHudMenuItemSelectedState(elHudMenuItemDefault, true, checkIntervalMs);
-        if (!targetSelectedStateReached) {
-            // hud-menu item did NOT become selected => ABORT
-            console.log(`%c--- ABORT re: elHudMenuItemDefault did NOT become selected`, 'background: orange; color: black');
-            return;
-        }
-    }
-    // Clone the default hud-menu panel (open, at this point)
-    hudMenuPanelOpenClone = elHudMenuPanel.cloneNode(true);
-    const elHudMenu = getElHudMenu();
-    // Save the class-list for the hud-menu (open, at this point)
-    hudMenuOpenClassListValue = elHudMenu.classList.value;
-    // Save the class-list for the default hud-menu item (selected, at this point)
-    hudMenuItemSelectedClassListValue = elHudMenuItemDefault.classList.value;
-    // If tools not yet fetched (async), they need to be fetched now (sync), before continuing
-    if (!tools) {
-        await updateToolsIfNotSet();
-    }
-    // Inject the hud-menu item, now that the default hud-menu item is selected
-    injectHudMenuItemAndPanel('Community Tools', tools);
-    // De-select the default hud-menu item, in order to extract the class-list for "hudMenuClosedClassListValue"
-    elHudMenuItemDefault.click();
-    const targetSelectedStateReached = await waitForHudMenuItemSelectedState(elHudMenuItemDefault, false, checkIntervalMs);
-    if (!targetSelectedStateReached) {
-        // hud-menu item did NOT become de-selected => ABORT
-        console.log(`%c--- ABORT re: elHudMenuItemDefault did NOT become de-selected`, 'background: orange; color: black');
-        return;
-    }
-    // Save the class-list for the hud-menu (closed, at this point)
-    hudMenuClosedClassListValue = elHudMenu.classList.value;
-    // Revert the hud-menu selection to its initial state
-    if (elHudMenuItemPreselected) {
-        // Re-select the pre-selected hud-menu item
-        elHudMenuItemPreselected.click();
-    }
-}, 1000);
-
+// Inject config, tools, widgets, features...
 injectConfig();
 injectRealTime();
+reInjectToolsPeriodically();
 reInjectWidgetsPeriodically();
 injectCaptainVideoOnCrewOpen();
 injectFilterOnSelectProcessOpen();

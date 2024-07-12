@@ -8,10 +8,11 @@ This Chrome extension makes community-developed tools and widgets available insi
 
 It adds a "Widgets" button in the top-right, giving you an in-game "Shopping List" and "Marketplace Prices" (more widgets to follow).
 
-If you load the game in the star-view, it also adds a "Tools" panel in the right-side menu, with links to community developed tools and content, grouped into several categories: Mining, Production, Asteroids, Crew, Flight, Information, Lore, Games.
+It also adds a "Tools" panel in the right-side menu, with links to community developed tools and content, grouped into several categories: Mining, Production, Asteroids, Crew, Flight, Information, Lore, Games.
 
 And it also adds other functionalities in-game, such as:
 - buttons for "Search in Marketplace" and "Production Chain", when you select an item from an inventory
+- links to market-search for products in the Marketplace window "My Open Limit Orders"
 - a filter to search among the processes of Refineries, Factories and Shipyards
 - an AI-generated captain-video in the crew window
 - the real-world time, based on the in-game time that's being previewed while using the time-controls

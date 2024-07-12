@@ -18,12 +18,16 @@ const selectorTimeMenu = '#timeMenu';
 const selectorTopMenu = '#topMenu';
 
 /**
- * The default hud-menu item is "System Search", because this item is always available in the map-view,
- * even if the user is not logged-in, and no asteroid is pre-selected.
+ * The default hud-menu item is "My Crews", because it always exists for a logged-in user:
+ * - regardless of view (system view / asteroid view / surface view / ship view)
+ * - regardless of page-load-screen being visible / dismissed (i.e. before / after clicking "Play")
+ * - regardless of user actually having any crews
  */
-const hudMenuItemLabelDefault = 'System Search';
+const hudMenuItemLabelDefault = 'My Crews';
 
 const hudMenuItemLabelMarketplace = 'Asteroid Markets';
+
+const hudMenuItemLabelTools = 'Community Tools'; // to be injected
 
 /**
  * This will be populated via API call to "crewmateVideosEndpoint"
@@ -88,8 +92,15 @@ function getReactPropsForEl(el) {
     return el[reactPropsKey];
 }
 
+/**
+ * Get the VISIBLE hud-menu.
+ * 
+ * NOTE: On page-load, there may be 2 hud-menus with the same ID,
+ * until the player clicks "Play" (if logged-in) or "Explore World" (if not logged-in).
+ */
 function getElHudMenu() {
-    const elHudMenu = document.querySelector(selectorHudMenu);
+    // Select the VISIBLE hud-menu, if any
+    const elHudMenu = [...document.querySelectorAll(selectorHudMenu)].find(el => el.offsetParent);
     if (!elHudMenu) {
         console.log(`%c--- [getElHudMenu] ERROR: elHudMenu not found`, 'background: red');
     }
@@ -117,17 +128,21 @@ function getElHudMenuItemSelected() {
     if (!elHudMenu) {
         return null;
     }
-    for (const elHudMenuItem of elHudMenu.children) {
-        if (elHudMenuItem.dataset.e115MenuId) {
-            // Parsing an injected hud-menu item
-            if (elHudMenuItem.dataset.e115State === 'selected') {
-                return elHudMenuItem;
-            }
-        } else {
-            // Parsing a non-injected hud-menu item
-            const reactProps = getReactPropsForEl(elHudMenuItem);
-            if (reactProps && reactProps.selected) {
-                return elHudMenuItem;
+    // Parse sub-menus (each sub-menu then contains the actual menu-items)
+    for (const elHudMenuSubmenu of elHudMenu.children) {
+        // Parse each menu-item in this sub-menu
+        for (const elHudMenuItem of elHudMenuSubmenu.children) {
+            if (elHudMenuItem.dataset.e115MenuId) {
+                // Parsing an injected hud-menu item
+                if (elHudMenuItem.dataset.e115State === 'selected') {
+                    return elHudMenuItem;
+                }
+            } else {
+                // Parsing a non-injected hud-menu item
+                const reactProps = getReactPropsForEl(elHudMenuItem);
+                if (reactProps && reactProps.selected) {
+                    return elHudMenuItem;
+                }
             }
         }
     }
@@ -386,7 +401,7 @@ async function toggleInjectedMenuItemByLabel(label, shouldBeSelected) {
             const targetSelectedStateReached = await waitForHudMenuItemSelectedState(elHudMenuItemSelected, false);
             if (!targetSelectedStateReached) {
                 // hud-menu item did NOT become de-selected => ABORT
-                console.log(`%c--- ABORT re: elHudMenuItemSelected did NOT become de-selected`, 'background: orange; color: black');
+                console.log(`%c--- [toggleInjectedMenuItemByLabel] ABORT re: elHudMenuItemSelected did NOT become de-selected`, 'background: orange; color: black');
                 return;
             }
         }
@@ -417,110 +432,22 @@ async function toggleInjectedMenuItemByLabel(label, shouldBeSelected) {
     }
 }
 
-/**
- * @param label e.g. "Community Tools"
- * @param list see "tools.js"
- * 
- * NOTE: When this function is called, the default hud-menu item must be SELECTED
- */
-function injectHudMenuItemAndPanel(label, list) {
-    /**
-     * The "Advanced Search" item will be cloned, instead of the default item ("System Search"),
-     * because the default item should be selected at this point (i.e. different DOM classes).
-     */
-    const elHudMenuItemUnselected = getElHudMenuItemByLabel('Advanced Search');
-    // Check if it will be possible to inject the new hud-menu item
-    if (!elHudMenuItemUnselected) {
-        return;
-    }
-    hudMenuItemUnselectedClassListValue = elHudMenuItemUnselected.classList.value;
-
-    // Prepare new hud-menu item
-    const elNewMenuItem = elHudMenuItemUnselected.cloneNode(true);
-    elNewMenuItem.dataset.tooltipContent = label;
-    elNewMenuItem.dataset.e115MenuId = label; // data-e115-menu-id
-    elNewMenuItem.dataset.e115State = ''; // data-e115-state
-    elNewMenuItem.dataset.onClickFunction = 'onClickInjectedHudMenuItem';
-    elNewMenuItem.dataset.onClickArgs = JSON.stringify([label]);
-    elNewMenuItem.innerHTML = svgIconCommunityTools;
-    const elNewMenuItemSvg = elNewMenuItem.querySelector('svg');
-    elNewMenuItemSvg.classList.add('icon');
-    elNewMenuItemSvg.querySelector('path').removeAttribute('fill');
-
-    /**
-     * Inject new menu item, BEFORE the first menu item.
-     * This ensures that the injected item remains the first item,
-     * after e.g. switching to / from an asteroid view.
-     */
-    elHudMenuItemUnselected.parentElement.prepend(elNewMenuItem);
-
-    // NOTE: The operations below assume that there will NOT be multiple hud-menu items injected
-
-    // Process buttons in the hud-menu panel's header
-    const hudMenuPanelButtonFirst = hudMenuPanelOpenClone.querySelector('button');
-    if (!hudMenuPanelButtonFirst) {
-        console.log(`%c--- [injectHudMenuItemAndPanel] ERROR: hudMenuPanelButtonFirst NOT found`, 'background: red');
-        return;
-    }
-    const hudMenuPanelHeader = hudMenuPanelButtonFirst.parentElement;
-    // Remove all non-"close" buttons (if any) from the hud-menu panel's header
-    while (hudMenuPanelHeader.querySelectorAll('button').length >= 2) {
-        const firstButton = hudMenuPanelHeader.querySelector('button');
-        firstButton.parentElement.removeChild(firstButton);
-    }
-    // Handle click on "close" button
-    const closeButton = hudMenuPanelHeader.querySelector('button');
-    if (!closeButton) {
-        console.log(`%c--- [injectHudMenuItemAndPanel] ERROR: closeButton NOT found`, 'background: red');
-        return;
-    }
-    closeButtonClone = closeButton.cloneNode(true);
-    closeButton.dataset.onClickFunction = 'onClickInjectedHudMenuPanelCloseButton';
-    closeButton.dataset.onClickArgs = JSON.stringify([label]);
-    // Update the title in the hud-menu panel's header
-    hudMenuPanelHeader.firstElementChild.textContent = label;
-    const hudMenuPanelContent = hudMenuPanelHeader.nextElementSibling;
-    // Save various class-lists for the list
-    const hudMenuPanelListItemSvg = hudMenuPanelContent.querySelector('svg');
-    const elListItemSvgWrapper = hudMenuPanelListItemSvg.parentElement;
-    const listItemSvgWrapperClassListValue = elListItemSvgWrapper.classList.value;
-    const listItemLabelWrapperClassListValue = elListItemSvgWrapper.nextElementSibling.classList.value;
-    const listItemWrapperClassListValue = elListItemSvgWrapper.parentElement.classList.value;
-    // Clone the SVG for list items inside the hud-menu panel's content
-    hudMenuPanelListItemSvgClone = hudMenuPanelListItemSvg.cloneNode(true);
-    // Empty the hud-menu panel's content, before injecting the list
-    hudMenuPanelContent.textContent = '';
-    // Inject the list into the hud-menu panel's content
-    const elList = createEl('div', null, ['e115-hud-menu-list']);
-    list.forEach(listItemData => {
-        const elListItem = createEl('div', null, ['e115-hud-menu-list-item']);
-        elListItem.innerHTML = /*html*/ `
-            <div class="${listItemWrapperClassListValue} e115-category-title e115-cursor-full">
-                <div class="${listItemSvgWrapperClassListValue}">${hudMenuPanelListItemSvgClone.outerHTML}</div>
-                <div class="${listItemLabelWrapperClassListValue}">${listItemData.category_short.toUpperCase()}</div>
+function injectConfig() {
+    const elConfigPanel = createEl('div', 'e115-config-panel-wrapper');
+    elConfigPanel.innerHTML = /*html*/ `
+        <div id="e115-config-panel">
+            <div id="e115-config-options">
+                <label>
+                    <input type="checkbox" name="inventory-item-names" checked><span>Overlay names for inventory items</span>
+                </label>
             </div>
-            <div class="e115-category-items"></div>
-        `;
-        elListItem.dataset.e115ListItemCategory = listItemData.category; // data-e115-list-item-category
-        elListItem.style.setProperty('--items-count', listItemData.items.length);
-        const elCategoryTitle = elListItem.querySelector(".e115-category-title");
-        elCategoryTitle.dataset.onClickFunction = 'onClickCategoryTitle';
-        elCategoryTitle.dataset.onClickArgs = JSON.stringify([listItemData.category]);
-        const elCategoryItems = elListItem.querySelector(".e115-category-items");
-        // Inject the sub-list of items for the current category
-        listItemData.items.forEach(categoryItemData => {
-            const elCategoryItem = createEl('div', null, ['e115-category-item', 'e115-cursor-full']);
-            elCategoryItem.innerHTML = /*html*/ `
-                <div class="e115-category-item-title">${categoryItemData.title}</div>
-                <div class="e115-category-item-author">${categoryItemData.author}</div>
-            `;
-            elCategoryItem.dataset.onClickFunction = 'onClickCategoryItem';
-            elCategoryItem.dataset.onClickArgs = JSON.stringify([categoryItemData.title, categoryItemData.url]);
-            elCategoryItems.append(elCategoryItem);
-        });
-        elList.append(elListItem);
-    });
-    hudMenuPanelContent.append(elList);
+            <div id="e115-config-title">Influence Tools extension</div>
+        </div>
+    `;
+    document.body.append(elConfigPanel);
+
+    //// TO DO: save this value into local-storage => pre-load it
+    document.body.dataset.inventoryItemNames = 'true';
 }
 
 async function updateCrewmateVideosIfNotSet() {
@@ -574,173 +501,6 @@ function getVisibleTopMenu() {
     }
     // No visible top-menu
     return null;
-}
-
-/**
- * Get the widgets button from the VISIBLE top-menu, if any
- */
-function getVisibleWidgetsButton() {
-    const elTopMenuVisible = getVisibleTopMenu();
-    if (!elTopMenuVisible) {
-        return null;
-    }
-    return elTopMenuVisible.querySelector('.e115-widgets-wrapper');
-}
-
-/**
- * Re-inject the widgets button periodically into the VISIBLE top-menu, if needed
- */
-function reInjectWidgetsPeriodically() {
-    // Inject a widgets button only when there is NO other VISIBLE widgets button
-    setInterval(() => {
-        const elVisibleWidgetsButton = getVisibleWidgetsButton();
-        if (!elVisibleWidgetsButton) {
-            injectWidgets();
-        }
-    }, 1000);
-}
-
-async function injectWidgets() {
-    // Ensure there is a VISIBLE top-menu
-    const elTopMenuVisible = getVisibleTopMenu();
-    if (!elTopMenuVisible) {
-        return;
-    }
-    // Prepare widgets wrapper
-    const elWidgetsWrapper = createEl('div', null, ['e115-widgets-wrapper', 'e115-cursor-full']);
-    elWidgetsWrapper.innerHTML = /*html*/ `
-        <div class="e115-widgets-header">
-            <div class="e115-widgets-title">Community Widgets</div>
-            ${svgIconCommunityTools}
-        </div>
-        <div class="e115-widgets-content">
-            <div class="e115-widgets-selector">
-                <div class="e115-widgets-drag"></div>
-                <div class="e115-widgets-list">
-                    <ul></ul>
-                </div>
-            </div>
-            <iframe allow="clipboard-write"></iframe>
-        </div>
-    `;
-    const elWidgetsHeader = elWidgetsWrapper.querySelector('.e115-widgets-header');
-    elWidgetsHeader.setAttribute('onclick', 'toggleWidgets()');
-    // Adjust widgets icon styling
-    const elWidgetsIcon = elWidgetsWrapper.querySelector('.e115-icon-community-tools');
-    elWidgetsIcon.classList.add('icon');
-    // If widgets not yet fetched (async), they need to be fetched now (sync), before continuing
-    if (!widgets) {
-        await updateWidgetsIfNotSet();
-    }
-    let iframeUrl = null;
-    if (widgets) {
-        // Inject items into widgets list
-        const elWidgetsList = elWidgetsWrapper.querySelector('.e115-widgets-list ul');
-        widgets.forEach(widget => {
-            const elListItem = createEl('li');
-            elListItem.textContent = widget.title;
-            elListItem.dataset.title = widget.title;
-            elListItem.setAttribute('onclick', `selectWidget('${widget.title}')`);
-            if (widget.default) {
-                // Preselect default widget
-                elListItem.classList.add('active');
-                iframeUrl = widget.url;
-            }
-            elWidgetsList.append(elListItem);
-        });
-    }
-    // Inject widgets wrapper into the VISIBLE top-menu, as the first child
-    elTopMenuVisible.prepend(elWidgetsWrapper);
-    // Post-injection actions
-    // -- make the widgets draggable
-    initDragWidgetsContent();
-    // -- preload default widget in iframe
-    loadWidgetIframe(iframeUrl);
-}
-
-function loadWidgetIframe(url) {
-    if (!url) {
-        return;
-    }
-    const elWidgetsWrapper = getVisibleWidgetsButton();
-    if (!elWidgetsWrapper) {
-        return;
-    }
-    const elWidgetIframe = elWidgetsWrapper.querySelector('iframe');
-    elWidgetIframe.src = url;
-}
-
-function toggleWidgets() {
-    const elWidgetsWrapper = getVisibleWidgetsButton();
-    if (!elWidgetsWrapper) {
-        return;
-    }
-    elWidgetsWrapper.classList.toggle('active');
-    // Pin widgets above other game-windows (e.g. marketplace) if active
-    elWidgetsWrapper.parentElement.classList.toggle('e115-widgets-pinned', elWidgetsWrapper.classList.contains('active'));
-}
-
-function selectWidget(title) {
-    const elWidgetsWrapper = getVisibleWidgetsButton();
-    if (!elWidgetsWrapper) {
-        return;
-    }
-    const elWidgetsList = elWidgetsWrapper.querySelector('.e115-widgets-list');
-    elWidgetsList.querySelector(`li.active`).classList.remove('active');
-    elWidgetsList.querySelector(`li[data-title="${title}"]`).classList.add('active');
-    if (!widgets) {
-        return;
-    }
-    const widget = widgets.find(widget => widget.title === title);
-    if (widget) {
-        loadWidgetIframe(widget.url);
-    }
-}
-
-// Source: https://stackoverflow.com/a/45831670
-function initDragWidgetsContent() {
-    const elWidgetsContent = document.querySelector('.e115-widgets-content');
-    if (!elWidgetsContent) {
-        return;
-    }
-    const elWidgetsDrag = elWidgetsContent.querySelector('.e115-widgets-drag');
-    const initialLeft = parseInt(getComputedStyle(elWidgetsContent).left);
-    const initialTop = parseInt(getComputedStyle(elWidgetsContent).top);
-    let isDown = false;
-    let offsetX = 0;
-    let offsetY = 0;
-    elWidgetsDrag.addEventListener('mousedown', e => {
-        elWidgetsContent.classList.add('dragging');
-        isDown = true;
-        offsetX = elWidgetsContent.offsetLeft - e.clientX;
-        offsetY = elWidgetsContent.offsetTop - e.clientY;
-    }, true);
-    document.addEventListener('mouseup', () => {
-        if (!isDown) {
-            return;
-        }
-        elWidgetsContent.classList.remove('dragging');
-        isDown = false;
-        // Snap back to initial position if close enough
-        const diffX = parseInt(elWidgetsContent.style.left) - initialLeft;
-        const diffY = parseInt(elWidgetsContent.style.top) - initialTop;
-        if (Math.abs(diffX) < 100 && Math.abs(diffY) < 100) {
-            resetPosition();
-        }
-    }, true);
-    document.addEventListener('mousemove', e => {
-        if (!isDown) {
-            return;
-        }
-        elWidgetsContent.style.left = (e.clientX + offsetX) + 'px';
-        elWidgetsContent.style.top  = (e.clientY + offsetY) + 'px';
-    }, true);
-    document.addEventListener('dblclick', resetPosition);
-
-    function resetPosition() {
-        elWidgetsContent.style.left = initialLeft + 'px';
-        elWidgetsContent.style.top  = initialTop + 'px';
-    }
 }
 
 function getElGameTimeWrapper() {
@@ -1056,7 +816,7 @@ function injectProductLinksOnOrdersOpen() {
             // My Open Limit Orders window open
             const elMarketplaceHeader = document.querySelector('div[src*="/static/media/Marketplace"]');
             if (!elMarketplaceHeader || !elMarketplaceHeader.offsetParent) {
-                // Not yet visible (e.g. on full page reload) with this URL)
+                // Not yet visible (e.g. on full page reload with this URL)
                 return;
             }
             const elsOrderRows = elMarketplaceHeader.parentElement.querySelectorAll('table tbody tr');
@@ -1093,24 +853,6 @@ function handleMessage(event) {
             searchMarketplace(event.data.widgetEventValue);
             break;
     }
-}
-
-function injectConfig() {
-    const elConfigPanel = createEl('div', 'e115-config-panel-wrapper');
-    elConfigPanel.innerHTML = /*html*/ `
-        <div id="e115-config-panel">
-            <div id="e115-config-options">
-                <label>
-                    <input type="checkbox" name="inventory-item-names" checked><span>Overlay names for inventory items</span>
-                </label>
-            </div>
-            <div id="e115-config-title">Influence Tools extension</div>
-        </div>
-    `;
-    document.body.append(elConfigPanel);
-
-    //// TO DO: save this value into local-storage => pre-load it
-    document.body.dataset.inventoryItemNames = 'true';
 }
 
 function onClickConfigTitle() {
