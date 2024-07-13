@@ -183,6 +183,17 @@ function getCurrentCrewId() {
     return crewId;
 }
 
+function getCurrentWalletAddress() {
+    let walletAddress = null;
+    try {
+        const sessions = JSON.parse(localStorage.influence).state.sessions;
+        walletAddress = Object.keys(sessions)[0];
+    } catch (error) {
+        // Swallow this error, and continue with fallback
+    }
+    return walletAddress;
+}
+
 /**
  * e.g. "Thin-film Resistor" => "Thin-filmResistor"
  */
@@ -329,6 +340,13 @@ function onClickCategoryItem(title, url) {
         iframeUrl = injectUrlParam(iframeUrl, 'influence_crew', crewId);
     }
 
+    // Inject the player's wallet address (if any) into the iframe URL
+    const walletAddress = getCurrentWalletAddress();
+    if (walletAddress) {
+        // URL param name compatible with adalia.info tools, as of July 2024
+        iframeUrl = injectUrlParam(iframeUrl, 'walletAddress', walletAddress);
+    }
+
     elNewWindowIframe.src = iframeUrl;
     elNewWindow.append(elNewWindowIframe);
     // Inject new standard window, as the first element in the "grand-parent" of the hud-menu
@@ -388,6 +406,10 @@ function onClickInjectedHudMenuPanelCloseButton(label) {
 
 async function toggleInjectedMenuItemByLabel(label, shouldBeSelected) {
     const elInjectedHudMenuItem = getElHudMenuItemByLabel(label);
+    if (!elInjectedHudMenuItem) {
+        //// TO DO: investigate how this may happen (observed once during local dev)
+        return null;
+    }
     const elHudMenu = getElHudMenu();
     if (shouldBeSelected) {
         if (elInjectedHudMenuItem.dataset.e115State === 'selected') {
