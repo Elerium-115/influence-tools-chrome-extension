@@ -905,8 +905,19 @@ async function injectAndApplyExtractionPercent() {
     elMaxButton.click();
     // Wait for the animated increase of the extraction amount
     await delay(500);
-    // Save the MAX extraction amount (i.e. 100% of deposit amount)
-    extractionAmountMax = parseFloat(elMaxButton.parentElement.textContent.replace(/,/g, ''));
+    /**
+     * Save the MAX extraction amount (i.e. 100% of deposit amount).
+     * The value must be retrieved from the input (triggered via "mouseenter"),
+     * to avoid issues with parsing "textContent" in different locales => different number formats.
+     */
+    const elAmountTextWrapper = elMaxButton.parentElement.children[0];
+    await triggerExtractionAmountInput(elAmountTextWrapper);
+    const elAmountInput = elAmountTextWrapper.querySelector('input');
+    if (!elAmountInput) {
+        // Maybe the game's DOM structure has changed?
+        return;
+    }
+    extractionAmountMax = elAmountInput.value;
     // Apply the preferred extraction-percent from local-storage, if any
     applyExtractionPercent(elPercentWrapper);
 }
@@ -932,18 +943,7 @@ async function applyExtractionPercent(elPercentWrapper, percentValue = null) {
     localStorage.e115ExtractionPercent = percentValue;
     // Apply the extraction-percent, via hover over "elAmountWrapper"
     const elAmountTextWrapper = elPercentWrapper.previousElementSibling;
-    if (!elAmountTextWrapper) {
-        // Maybe the game's DOM structure has changed?
-        return;
-    }
-    const reactPropsWrapper = getReactPropsForEl(elAmountTextWrapper);
-    if (!reactPropsWrapper || typeof reactPropsWrapper.onMouseEnter !== 'function') {
-        // Maybe something else has changed?
-        return;
-    }
-    reactPropsWrapper.onMouseEnter(new Event('mouseenter'));
-    // Wait for the amount input to appear
-    await delay(100);
+    await triggerExtractionAmountInput(elAmountTextWrapper);
     const elAmountInput = elAmountTextWrapper.querySelector('input');
     if (!elAmountInput) {
         // Maybe the game's DOM structure has changed?
@@ -964,6 +964,25 @@ async function applyExtractionPercent(elPercentWrapper, percentValue = null) {
         valueSetter.call(elAmountInput, newAmount);
     }
     elAmountInput.dispatchEvent(new Event('input', {bubbles: true}));
+}
+
+async function triggerExtractionAmountInput(elAmountTextWrapper) {
+    if (elAmountTextWrapper.querySelector('input')) {
+        // Input already triggered
+        return;
+    }
+    if (!elAmountTextWrapper) {
+        // Maybe the game's DOM structure has changed?
+        return;
+    }
+    const reactPropsWrapper = getReactPropsForEl(elAmountTextWrapper);
+    if (!reactPropsWrapper || typeof reactPropsWrapper.onMouseEnter !== 'function') {
+        // Maybe something else has changed?
+        return;
+    }
+    reactPropsWrapper.onMouseEnter(new Event('mouseenter'));
+    // Wait for the amount input to appear
+    await delay(100);
 }
 
 /**

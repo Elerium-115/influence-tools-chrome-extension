@@ -590,7 +590,7 @@ body[data-inventory-item-names='true'] #hudMenuPanel :not(:hover) > [data-toolti
     margin-right: 50px;
 
     &::before {
-        content: 'Extraction percent';
+        content: 'Preferred percentage';
         padding-right: 5px;
     }
 

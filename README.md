@@ -14,6 +14,7 @@ And it also adds other functionalities in-game, such as:
 - buttons for "Search in Marketplace" and "Production Chain", when you select an item from an inventory
 - links to market-search for products in the Marketplace window "My Open Limit Orders"
 - a filter to search among the processes of Refineries, Factories and Shipyards
+- an input for setting your preferred extraction percentage, to be used before you start each extraction
 - an AI-generated captain-video in the crew window
 - the real-world time, based on the in-game time that's being previewed while using the time-controls
 

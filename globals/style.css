@@ -527,7 +527,7 @@ body[data-inventory-item-names=true] #hudMenuPanel :not(:hover) > [data-tooltip-
   margin-right: 50px;
 }
 #e115-extraction-percent-wrapper::before {
-  content: "Extraction percent";
+  content: "Preferred percentage";
   padding-right: 5px;
 }
 #e115-extraction-percent-wrapper::after {
