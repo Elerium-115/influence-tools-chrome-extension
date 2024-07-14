@@ -2,7 +2,7 @@
     "manifest_version": 3,
     "name": "Influence Tools",
     "description": "Discover and use community developed tools while playing the space strategy MMO Influence",
-    "version": "1.0.28",
+    "version": "1.0.29",
     "icons": {
         "16": "images/favicon-16-inner-12.png",
         "32": "images/favicon-32-inner-24.png",

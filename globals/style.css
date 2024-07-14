@@ -30,7 +30,6 @@
   font-size: 14px;
   height: 34px;
   padding: 0 5px;
-  width: 300px;
 }
 
 .e115-button {
@@ -519,6 +518,25 @@ body[data-inventory-item-names=true] #hudMenuPanel :not(:hover) > [data-tooltip-
   border: none;
   font-size: unset;
   padding: 0 100px;
+}
+#e115-filter-select-process .e115-input {
+  width: 300px;
+}
+
+#e115-extraction-percent-wrapper {
+  margin-right: 50px;
+}
+#e115-extraction-percent-wrapper::before {
+  content: "Extraction percent";
+  padding-right: 5px;
+}
+#e115-extraction-percent-wrapper::after {
+  content: "%";
+  padding-left: 5px;
+}
+#e115-extraction-percent-wrapper input {
+  text-align: right;
+  width: 50px;
 }
 
 .eUlTUS > img:not(:hover) {

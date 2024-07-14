@@ -29,7 +29,6 @@
     font-size: 14px;
     height: 34px;
     padding: 0 5px;
-    width: 300px;
 }
 
 .e115-button {
@@ -581,6 +580,29 @@ body[data-inventory-item-names='true'] #hudMenuPanel :not(:hover) > [data-toolti
     border: none;
     font-size: unset;
     padding: 0 100px;
+
+    .e115-input {
+        width: 300px;
+    }
+}
+
+#e115-extraction-percent-wrapper {
+    margin-right: 50px;
+
+    &::before {
+        content: 'Extraction percent';
+        padding-right: 5px;
+    }
+
+    &::after {
+        content: '%';
+        padding-left: 5px;
+    }
+
+    input {
+        text-align: right;
+        width: 50px;
+    }
 }
 
 // Volatile changes for dynamic class names

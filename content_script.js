@@ -12,10 +12,7 @@ updateWidgetsIfNotSet();
 injectConfig();
 injectRealTime();
 reInjectToolsPeriodically();
-reInjectWidgetsPeriodically();
-injectCaptainVideoOnCrewOpen();
-injectFilterOnSelectProcessOpen();
-injectProductLinksOnOrdersOpen();
+injectFeaturesPeriodically();
 
 // Handle messages e.g. from widgets iframe
 window.addEventListener('message', handleMessage, false);

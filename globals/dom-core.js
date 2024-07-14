@@ -79,6 +79,12 @@ let hudMenuItemSelectedClassListValue = null;
  */
 let hudMenuItemUnselectedClassListValue = null;
 
+/**
+ * MAX extraction amount (i.e. 100% of deposit amount).
+ * This will be updated during "injectAndApplyExtractionPercent".
+ */
+let extractionAmountMax = 0;
+
 function delay(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
@@ -711,92 +717,88 @@ function onCaptainVideoEnded() {
 /**
  * Inject the captain-video if available for the currently opened crew, if any
  */
-function injectCaptainVideoOnCrewOpen() {
-    setInterval(async () => {
-        if (location.pathname.match(/^\/crew\/(\d+)/)) {
-            // Crew window open
-            if (document.getElementById('e115-captain-video')) {
-                // Captain video already injected
-                return;
-            }
-            const elOwnedCrewBg = document.querySelector('div[src*="OwnedCrew"]');
-            if (!elOwnedCrewBg) {
-                return;
-            }
-            const elCaptainImg = elOwnedCrewBg.parentElement.querySelector('img[src*="/crewmates/"]');
-            if (!elCaptainImg) {
-                return;
-            }
-            const elCaptainCrewmateIdMatches = elCaptainImg.src.match(/\/crewmates\/(\d+)/);
-            if (!elCaptainCrewmateIdMatches) {
-                return;
-            }
-            const elCaptainCrewmateId = elCaptainCrewmateIdMatches[1];
-            // If crewmate-videos not yet fetched (async), they need to be fetched now (sync), before continuing
-            if (!crewmateVideos) {
-                await updateCrewmateVideosIfNotSet();
-            }
-            if (crewmateVideos && crewmateVideos[elCaptainCrewmateId]) {
-                const elCaptainVideoWrapper = createEl('div', 'e115-captain-video-wrapper');
-                const elCaptainVideo = createEl('video', 'e115-captain-video');
-                elCaptainVideo.controls = true;
-                elCaptainVideo.src = crewmateVideos[elCaptainCrewmateId];
-                elCaptainVideo.addEventListener('ended', onCaptainVideoEnded);
-                elCaptainVideoWrapper.append(elCaptainVideo);
-                // Inject overlay with "play" icon over the captain-video (hidden if the video is visible)
-                const elCaptainVideoPlayIcon = createEl('div', 'e115-video-play-icon');
-                elCaptainVideoPlayIcon.addEventListener('mouseenter', onMouseoverCaptainVideoPlay);
-                elCaptainVideoWrapper.append(elCaptainVideoPlayIcon);
-                elCaptainImg.parentElement.prepend(elCaptainVideoWrapper);
-            }
-        }
-    }, 1000);
+async function injectCaptainVideo() {
+    if (!location.pathname.match(/^\/crew\/(\d+)/)) {
+        // Crew window NOT open
+        return;
+    }
+    if (document.getElementById('e115-captain-video')) {
+        // Captain video already injected
+        return;
+    }
+    const elOwnedCrewBg = document.querySelector('div[src*="OwnedCrew"]');
+    if (!elOwnedCrewBg) {
+        return;
+    }
+    const elCaptainImg = elOwnedCrewBg.parentElement.querySelector('img[src*="/crewmates/"]');
+    if (!elCaptainImg) {
+        return;
+    }
+    const elCaptainCrewmateIdMatches = elCaptainImg.src.match(/\/crewmates\/(\d+)/);
+    if (!elCaptainCrewmateIdMatches) {
+        return;
+    }
+    const elCaptainCrewmateId = elCaptainCrewmateIdMatches[1];
+    // If crewmate-videos not yet fetched (async), they need to be fetched now (sync), before continuing
+    if (!crewmateVideos) {
+        await updateCrewmateVideosIfNotSet();
+    }
+    if (crewmateVideos && crewmateVideos[elCaptainCrewmateId]) {
+        const elCaptainVideoWrapper = createEl('div', 'e115-captain-video-wrapper');
+        const elCaptainVideo = createEl('video', 'e115-captain-video');
+        elCaptainVideo.controls = true;
+        elCaptainVideo.src = crewmateVideos[elCaptainCrewmateId];
+        elCaptainVideo.addEventListener('ended', onCaptainVideoEnded);
+        elCaptainVideoWrapper.append(elCaptainVideo);
+        // Inject overlay with "play" icon over the captain-video (hidden if the video is visible)
+        const elCaptainVideoPlayIcon = createEl('div', 'e115-video-play-icon');
+        elCaptainVideoPlayIcon.addEventListener('mouseenter', onMouseoverCaptainVideoPlay);
+        elCaptainVideoWrapper.append(elCaptainVideoPlayIcon);
+        elCaptainImg.parentElement.prepend(elCaptainVideoWrapper);
+    }
 }
 
 /**
  * Inject a filter into the "Select Process" window, if any
  */
-function injectFilterOnSelectProcessOpen() {
-    setInterval(async () => {
-        if (document.getElementById('e115-filter-select-process')) {
-            // Filter already injected
-            return;
+function injectProcessFilter() {
+    if (document.getElementById('e115-filter-select-process')) {
+        // Filter already injected
+        return;
+    }
+    const elSelectProcessWindow = [...document.body.children].find(el => el.textContent.toLocaleLowerCase().includes('select process'));
+    if (!elSelectProcessWindow) {
+        // Select Process window NOT open
+        return;
+    }
+    elSelectProcessWindow.classList.add('e115-select-process-window');
+    const elSelectProcessTitle = [...elSelectProcessWindow.getElementsByTagName('div')].find(el => el.firstChild && el.firstChild.nodeName === '#text' && el.firstChild.textContent.trim().toLocaleLowerCase() === 'select process');
+    if (!elSelectProcessTitle) {
+        // Maybe the game's DOM structure has changed?
+        return;
+    }
+    const elSelectProcessHeader = elSelectProcessTitle.parentElement;
+    const elFilterWrapper = createEl('div', 'e115-filter-select-process');
+    const elFilterInput = createEl('input', null, ['e115-input']);
+    elFilterInput.type = 'text';
+    elFilterInput.placeholder = 'Filter by process, input or output';
+    elFilterInput.addEventListener('keyup', event => {
+        /**
+         * Prevent event-bubbling when the user presses any key other than "Escape", while typing into the filter-input.
+         * - This allows the native logic to close the "Select Process" window when the user presses "Escape".
+         * - But it prevents the window from closing when the user presses "Space" - e.g. typing "iron oxide".
+         */
+        if (event.key !== 'Escape') {
+            event.stopPropagation();
         }
-        const elSelectProcessWindow = [...document.body.children].find(el => el.textContent.toLocaleLowerCase().includes('select process'));
-        if (!elSelectProcessWindow) {
-            // Select Process window not yet open
-            return;
-        }
-        // Select Process window open
-        elSelectProcessWindow.classList.add('e115-select-process-window');
-        const elSelectProcessTitle = [...elSelectProcessWindow.getElementsByTagName('div')].find(el => el.firstChild && el.firstChild.nodeName === '#text' && el.firstChild.textContent.trim().toLocaleLowerCase() === 'select process');
-        if (!elSelectProcessTitle) {
-            // Maybe the game's DOM structure has changed?
-            return;
-        }
-        const elSelectProcessHeader = elSelectProcessTitle.parentElement;
-        const elFilterWrapper = createEl('div', 'e115-filter-select-process');
-        const elFilterInput = createEl('input', null, ['e115-input']);
-        elFilterInput.type = 'text';
-        elFilterInput.placeholder = 'Filter by process, input or output';
-        elFilterInput.addEventListener('keyup', event => {
-            /**
-             * Prevent event-bubbling when the user presses any key other than "Escape", while typing into the filter-input.
-             * - This allows the native logic to close the "Select Process" window when the user presses "Escape".
-             * - But it prevents the window from closing when the user presses "Space" - e.g. typing "iron oxide".
-             */
-            if (event.key !== 'Escape') {
-                event.stopPropagation();
-            }
-        });
-        elFilterInput.addEventListener('input', () => {
-            filterProcessesList(elFilterInput.value);
-        });
-        elFilterWrapper.append(elFilterInput);
-        // Inject the filter right after the title (before the close-button)
-        elSelectProcessHeader.insertBefore(elFilterWrapper, elSelectProcessTitle.nextSibling);
-        elFilterInput.focus();
-    }, 1000);
+    });
+    elFilterInput.addEventListener('input', () => {
+        filterProcessesList(elFilterInput.value);
+    });
+    elFilterWrapper.append(elFilterInput);
+    // Inject the filter right after the title (before the close-button)
+    elSelectProcessHeader.insertBefore(elFilterWrapper, elSelectProcessTitle.nextSibling);
+    elFilterInput.focus();
 }
 
 function filterProcessesList(elFilterInputValue) {
@@ -832,33 +834,148 @@ function filterProcessesList(elFilterInputValue) {
 /**
  * Inject links on products from "My Open Limit Orders", if that window is open
  */
-function injectProductLinksOnOrdersOpen() {
-    setInterval(async () => {
-        if (location.pathname.match(/^\/marketplace\/(\d+)\/all\/orders/)) {
-            // My Open Limit Orders window open
-            const elMarketplaceHeader = document.querySelector('div[src*="/static/media/Marketplace"]');
-            if (!elMarketplaceHeader || !elMarketplaceHeader.offsetParent) {
-                // Not yet visible (e.g. on full page reload with this URL)
-                return;
-            }
-            const elsOrderRows = elMarketplaceHeader.parentElement.querySelectorAll('table tbody tr');
-            [...elsOrderRows].some(elOrderRow => {
-                if (elOrderRow.classList.contains('e115-marked')) {
-                    // Order already parsed
-                    return;
-                }
-                const elProductCell = elOrderRow.querySelector('td:nth-child(3)');
-                if (!elProductCell) {
-                    // Maybe the game's DOM structure has changed?
-                    return true; // skip remaining orders
-                }
-                elProductCell.classList.add('e115-color-influence', 'e115-cursor-full');
-                elProductCell.addEventListener('click', () => {
-                    searchMarketplace(elProductCell.textContent.trim());
-                });
-                elOrderRow.classList.add('e115-marked');
-            });
+function injectMyOrdersProductLinks() {
+    if (!location.pathname.match(/^\/marketplace\/(\d+)\/all\/orders/)) {
+        // My Open Limit Orders window NOT open
+        return;
+    }
+    const elMarketplaceHeader = document.querySelector('div[src*="/static/media/Marketplace"]');
+    if (!elMarketplaceHeader || !elMarketplaceHeader.offsetParent) {
+        // Not yet visible (e.g. on full page reload with this URL, before clicking "Play")
+        return;
+    }
+    const elsOrderRows = elMarketplaceHeader.parentElement.querySelectorAll('table tbody tr');
+    [...elsOrderRows].some(elOrderRow => {
+        if (elOrderRow.classList.contains('e115-marked')) {
+            // Order already parsed
+            return;
         }
+        const elProductCell = elOrderRow.querySelector('td:nth-child(3)');
+        if (!elProductCell) {
+            // Maybe the game's DOM structure has changed?
+            return true; // skip remaining orders
+        }
+        elProductCell.classList.add('e115-color-influence', 'e115-cursor-full');
+        elProductCell.addEventListener('click', () => {
+            searchMarketplace(elProductCell.textContent.trim());
+        });
+        elOrderRow.classList.add('e115-marked');
+    });
+}
+
+/**
+ * Inject extraction-percent input if the "Extract Resource" window is open and ready to start extraction
+ */
+async function injectAndApplyExtractionPercent() {
+    if (document.getElementById('e115-extraction-percent-wrapper')) {
+        // Extraction-percent input already injected
+        return;
+    }
+    const elExtractionHeader = document.querySelector('div[src*="/static/media/Extraction"]');
+    if (!elExtractionHeader) {
+        // Extract Resource window NOT open
+        return;
+    }
+    // Find the "MAX" button, if any
+    const elMaxButton = [...elExtractionHeader.parentElement.querySelectorAll('button')].find(elButton => elButton.textContent.toLowerCase().includes('max'));
+    if (!elMaxButton) {
+        // NOT ready to start extraction
+        return;
+    }
+    const elExtractionDuration = elMaxButton.previousElementSibling;
+    if (elExtractionDuration.textContent.trim() === '0s' && elMaxButton.disabled) {
+        /**
+         * NO deposit selected, i.e. extraction duration "0s" AND "elMaxButton" disabled.
+         * 
+         * NOTE: If the deposit is selected AFTER this window is open,
+         * the extraction duration will remain "0s", but "elMaxButton" will become enabled.
+         */
+        return;
+    }
+    // Inject the extraction-percent input, before "elExtractionDuration"
+    const elPercentWrapper = createEl('div', 'e115-extraction-percent-wrapper');
+    const elPercentInput = createEl('input', null, ['e115-input']);
+    elPercentInput.type = 'text';
+    elPercentInput.addEventListener('input', () => {
+        applyExtractionPercent(elPercentWrapper, elPercentInput.value);
+    });
+    elPercentWrapper.append(elPercentInput);
+    elMaxButton.parentElement.insertBefore(elPercentWrapper, elExtractionDuration);
+    // Force-click the "MAX" button, in case the deposit was selected after this window was open
+    elMaxButton.click();
+    // Wait for the animated increase of the extraction amount
+    await delay(500);
+    // Save the MAX extraction amount (i.e. 100% of deposit amount)
+    extractionAmountMax = parseFloat(elMaxButton.parentElement.textContent.replace(/,/g, ''));
+    // Apply the preferred extraction-percent from local-storage, if any
+    applyExtractionPercent(elPercentWrapper);
+}
+
+/**
+ * Apply the extraction-percent, and save it into local-storage.
+ * If no "percentValue" given, apply the preferred extraction-percent from local-storage, if any.
+ */
+async function applyExtractionPercent(elPercentWrapper, percentValue = null) {
+    if (!percentValue) {
+        // NO value passed into this function => use the value from local-storage, or default to 100
+        percentValue = localStorage.e115ExtractionPercent ? Number(localStorage.e115ExtractionPercent) : 100;
+    }
+    // Ensure "percentValue" is integer, MAX 100
+    percentValue = Math.min(parseInt(`0${percentValue}`), 100);
+    /**
+     * Set "percentValue" into the input, in case it was either:
+     * - not passed into this function, but retrieved from local-storage
+     * - passed into this function as non-integer, and then forced to integer
+     */
+    elPercentWrapper.querySelector('input').value = percentValue;
+    // Save the value into local-storage
+    localStorage.e115ExtractionPercent = percentValue;
+    // Apply the extraction-percent, via hover over "elAmountWrapper"
+    const elAmountTextWrapper = elPercentWrapper.previousElementSibling;
+    if (!elAmountTextWrapper) {
+        // Maybe the game's DOM structure has changed?
+        return;
+    }
+    const reactPropsWrapper = getReactPropsForEl(elAmountTextWrapper);
+    if (!reactPropsWrapper || typeof reactPropsWrapper.onMouseEnter !== 'function') {
+        // Maybe something else has changed?
+        return;
+    }
+    reactPropsWrapper.onMouseEnter(new Event('mouseenter'));
+    // Wait for the amount input to appear
+    await delay(100);
+    const elAmountInput = elAmountTextWrapper.querySelector('input');
+    if (!elAmountInput) {
+        // Maybe the game's DOM structure has changed?
+        return;
+    }
+    // Round down, to avoid a new value larger than MAX for 100%
+    let newAmount = Math.floor(extractionAmountMax * percentValue / 100);
+    /**
+     * Set the new amount via workaround for React
+     * Source: https://stackoverflow.com/a/66663506
+     */
+    const valueSetter = Object.getOwnPropertyDescriptor(elAmountInput, 'value').set;
+    const prototype = Object.getPrototypeOf(elAmountInput);
+    const prototypeValueSetter = Object.getOwnPropertyDescriptor(prototype, 'value').set;
+    if (valueSetter && valueSetter !== prototypeValueSetter) {
+        prototypeValueSetter.call(elAmountInput, newAmount);
+    } else {
+        valueSetter.call(elAmountInput, newAmount);
+    }
+    elAmountInput.dispatchEvent(new Event('input', {bubbles: true}));
+}
+
+/**
+ * Inject various features into the DOM periodically, as needed
+ */
+function injectFeaturesPeriodically() {
+    setInterval(() => {
+        injectWidgets();
+        injectCaptainVideo();
+        injectProcessFilter();
+        injectMyOrdersProductLinks();
+        injectAndApplyExtractionPercent();
     }, 1000);
 }
 

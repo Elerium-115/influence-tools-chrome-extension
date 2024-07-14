@@ -10,19 +10,13 @@ function getVisibleWidgetsButton() {
 }
 
 /**
- * Re-inject the widgets button periodically into the VISIBLE top-menu, if needed
+ * Inject the widgets button into the VISIBLE top-menu
  */
-function reInjectWidgetsPeriodically() {
-    // Inject a widgets button only when there is NO other VISIBLE widgets button
-    setInterval(() => {
-        const elVisibleWidgetsButton = getVisibleWidgetsButton();
-        if (!elVisibleWidgetsButton) {
-            injectWidgets();
-        }
-    }, 1000);
-}
-
 async function injectWidgets() {
+    if (getVisibleWidgetsButton()) {
+        // Another widgets button already VISIBLE => do NOT inject it again
+        return;
+    }
     // Ensure there is a VISIBLE top-menu
     const elTopMenuVisible = getVisibleTopMenu();
     if (!elTopMenuVisible) {
