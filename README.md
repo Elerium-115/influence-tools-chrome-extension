@@ -47,26 +47,27 @@ If you are a developer or content creator looking to integrate your website into
 
 **Features:**
 
-UPDATE: The feature described below is NOT currently functional, as of November 2023.
+When a community tool is shown in-game within an iframe, some game-state details may be added into the URL of that iframe, as query parameters:
+- `influence_asteroid` = the ID of the currently selected asteroid
+- `influence_crew` = the ID of the currently selected crew
+- `walletAddress` = the address of the currently connected wallet
 
-- The asteroid ID (and type) / crew ID that's currently selected in-game (if any), is automatically injected in the iframe URL as a search-parameter, named `influence_asteroid` (and `influence_asteroid_type`) / `influence_crew`. This allows developers to pre-select stuff in their tool, if relevant to that asteroid / spectral type / crew:
+These may be referenced and used within the tools displayed in that iframe. For example, a developer could customize what they show when their tool is loaded, if relevant to that asteroid / crew / wallet address.
+- Example:
     ```
     /**
     * Get asteroid ID injected from iframe parent, if any
     * e.g. game URL: https://game.influenceth.io/asteroids/104
-    * => iframe URL: https://adalia.stuff/tool.html?influence_asteroid=104&influence_asteroid_type=CMS
+    * => iframe URL: https://adalia.stuff/tool.html?influence_asteroid=104
     */
     const urlParams = new URLSearchParams(location.search);
     const influenceAsteroidId = urlParams.get('influence_asteroid');
-    const influenceAsteroidType = urlParams.get('influence_asteroid_type');
     if (influenceAsteroidId) {
         // Pre-select stuff for this asteroid ID ...
-    }
-    if (influenceAsteroidType) {
-        // Pre-select stuff for this asteroid type ...
     }
     ```
 
 ---
 
 Created by [@elerium115](https://twitter.com/elerium115) for the space strategy sandbox MMO [Influence](https://www.influenceth.io/).
+- This extension is not developed or audited by Unstoppable Games - the studio behind Influence.
