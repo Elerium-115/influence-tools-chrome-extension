@@ -108,7 +108,7 @@ function getElHudMenu() {
     // Select the VISIBLE hud-menu, if any
     const elHudMenu = [...document.querySelectorAll(selectorHudMenu)].find(el => el.offsetParent);
     if (!elHudMenu) {
-        console.log(`%c--- [getElHudMenu] ERROR: elHudMenu not found`, 'background: red');
+        // console.log(`%c--- [getElHudMenu] ERROR: elHudMenu not found`, 'background: red');
     }
     return elHudMenu;
 }
@@ -116,7 +116,7 @@ function getElHudMenu() {
 function getElHudMenuPanel() {
     const elHudMenuPanel = document.querySelector(selectorHudMenuPanel);
     if (!elHudMenuPanel) {
-        console.log(`%c--- [getElHudMenuPanel] ERROR: elHudMenuPanel not found`, 'background: red');
+        // console.log(`%c--- [getElHudMenuPanel] ERROR: elHudMenuPanel not found`, 'background: red');
     }
     return elHudMenuPanel;
 }
@@ -263,6 +263,21 @@ function createEl(nodeType, id = null, classes = null) {
         classes.forEach(className => el.classList.add(className));
     }
     return el;
+}
+
+function findElWithMatchingTextNode(elParent, descendantsSelector, text) {
+    // Parse all descendants of "elParent" matching "descendantsSelector"
+    const elsDescendants = elParent.querySelectorAll(descendantsSelector);
+    for (const elDescendant of elsDescendants) {
+        // Parse all nodes of "elDescendant"
+        for (const elNode of [...elDescendant.childNodes]) {
+            // Check if "elNode" is a text node with matching "text"
+            if (elNode.nodeName === '#text' && elNode.textContent.trim().toLowerCase() === text.toLowerCase()) {
+                return elDescendant;
+            }
+        }
+    }
+    return null;
 }
 
 function injectUrlParam(url, key, value) {
@@ -766,13 +781,13 @@ function injectProcessFilter() {
         // Filter already injected
         return;
     }
-    const elSelectProcessWindow = [...document.body.children].find(el => el.textContent.toLocaleLowerCase().includes('select process'));
+    const elSelectProcessWindow = [...document.body.children].find(el => el.textContent.toLowerCase().includes('select process'));
     if (!elSelectProcessWindow) {
         // Select Process window NOT open
         return;
     }
     elSelectProcessWindow.classList.add('e115-select-process-window');
-    const elSelectProcessTitle = [...elSelectProcessWindow.getElementsByTagName('div')].find(el => el.firstChild && el.firstChild.nodeName === '#text' && el.firstChild.textContent.trim().toLocaleLowerCase() === 'select process');
+    const elSelectProcessTitle = [...elSelectProcessWindow.getElementsByTagName('div')].find(el => el.firstChild && el.firstChild.nodeName === '#text' && el.firstChild.textContent.trim().toLowerCase() === 'select process');
     if (!elSelectProcessTitle) {
         // Maybe the game's DOM structure has changed?
         return;
@@ -985,6 +1000,46 @@ async function triggerExtractionAmountInput(elAmountTextWrapper) {
     await delay(100);
 }
 
+let isOpenPanelWithUsedDeposits = false;
+
+/**
+ * Auto-click the "Show Used Deposits" toggle, if it exists in the hud menu panel,
+ * and if the associated checkbox is enabled (i.e. if the "svg" contains a "path").
+ */
+function autoHideUsedDeposits() {
+    const elHudManuPanel = getElHudMenuPanel();
+    if (!elHudManuPanel) {
+        isOpenPanelWithUsedDeposits = false;
+        return;
+    }
+    const reactPropsHudManuPanel = getReactPropsForEl(elHudManuPanel);
+    if (!reactPropsHudManuPanel || !reactPropsHudManuPanel.open) {
+        // The hud menu panel is closed
+        isOpenPanelWithUsedDeposits = false;
+        return;
+    }
+    // The hud menu panel is open
+    const elShowUsedDeposits = findElWithMatchingTextNode(elHudManuPanel, '*', 'Show Used Deposits');
+    if (!elShowUsedDeposits) {
+        // The panel does NOT contain "Show Used Deposits"
+        isOpenPanelWithUsedDeposits = false;
+        return;
+    }
+    // The panel contains "Show Used Deposits"
+    if (isOpenPanelWithUsedDeposits) {
+        /**
+         * The panel containing "Show Used Deposits" was already open
+         * in the previous cycle => NOT running this logic again.
+         */
+        return;
+    }
+    isOpenPanelWithUsedDeposits = true;
+    if (elShowUsedDeposits.querySelector('path')) {
+        // The "Show Used Deposits" toggle is enabled => auto-click to disable it
+        elShowUsedDeposits.click();
+    }
+}
+
 /**
  * Inject various features into the DOM periodically, as needed
  */
@@ -995,6 +1050,7 @@ function injectFeaturesPeriodically() {
         injectProcessFilter();
         injectMyOrdersProductLinks();
         injectAndApplyExtractionPercent();
+        autoHideUsedDeposits();
     }, 1000);
 }
 
