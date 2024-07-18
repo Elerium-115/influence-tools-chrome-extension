@@ -29,6 +29,30 @@ const hudMenuItemLabelMarketplace = 'Asteroid Markets';
 
 const hudMenuItemLabelTools = 'Community Tools'; // to be injected
 
+const extensionSettingsDefault = {
+    autoHideUsedDeposits: true, // if true, used deposits will be auto-hidden, and "My Deposits" will also be auto-expanded
+    crewmateColorIntensity: 4, // brightness amount (from 1 to 5) for the class-specific background color of crewmates
+    extractionPercent: 100, // preferred extraction percentage
+    inventoryItemNames: true, // overlay names for inventory items
+};
+
+// Save default extension settings into local-storage, if needed
+if (!localStorage.getItem('e115Settings')) {
+    localStorage.setItem('e115Settings', JSON.stringify(extensionSettingsDefault));
+}
+
+const extensionSettings = JSON.parse(localStorage.getItem('e115Settings'));
+
+/**
+ * Use properties which may have been recently added to default settings,
+ * if they are not yet saved in local-storage. This also saves them into local-storage.
+ */
+for (const [settingKey, settingValue] of Object.entries(extensionSettingsDefault)) {
+    if (!extensionSettings[settingKey]) {
+        setExtensionSetting(settingKey, settingValue);
+    }
+}
+
 /**
  * This will be populated via API call to "crewmateVideosEndpoint"
  */
@@ -94,6 +118,14 @@ let isOpenPanelWithUsedDeposits = false;
 
 function delay(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+/**
+ * Add or update an extension setting, and save the new value into local-storage
+ */
+function setExtensionSetting(settingKey, settingValue) {
+    extensionSettings[settingKey] = settingValue;
+    localStorage.setItem('e115Settings', JSON.stringify(extensionSettings));
 }
 
 function getReactPropsForEl(el) {
@@ -501,18 +533,33 @@ function injectConfig() {
     const elConfigPanel = createEl('div', 'e115-config-panel-wrapper');
     elConfigPanel.innerHTML = /*html*/ `
         <div id="e115-config-panel">
-            <div id="e115-config-options">
-                <label>
-                    <input type="checkbox" name="inventory-item-names" checked><span>Overlay names for inventory items</span>
-                </label>
-            </div>
-            <div id="e115-config-title">Influence Tools extension</div>
+            <div id="e115-config-options"></div>
+            <div id="e115-config-title" onclick="onClickConfigTitle()">Influence Tools extension</div>
         </div>
     `;
     document.body.append(elConfigPanel);
+    // Inject config options
+    injectConfigOptionCheckbox('auto-hide-used-deposits', 'Automatically hide used deposits');
+    injectConfigOptionCheckbox('inventory-item-names', 'Overlay names for inventory items');
+    // Initialize config options, based on extension settings from local-storage
+    if (extensionSettings.autoHideUsedDeposits) {
+        elConfigPanel.querySelector('input[name="auto-hide-used-deposits"]').checked = true;
+    }
+    if (extensionSettings.inventoryItemNames) {
+        elConfigPanel.querySelector('input[name="inventory-item-names"]').checked = true;
+    }
+    // Initialize other data, based on extension settings from local-storage
+    document.body.dataset.inventoryItemNames = extensionSettings.inventoryItemNames;
+    document.querySelector(':root').style.setProperty('--crewmate-color-intensity', extensionSettings.crewmateColorIntensity);
+}
 
-    //// TO DO: save this value into local-storage => pre-load it
-    document.body.dataset.inventoryItemNames = 'true';
+function injectConfigOptionCheckbox(optionName, optionDescription) {
+    const elConfigOptions = document.getElementById('e115-config-options');
+    const elConfigOptionLabel = createEl('label');
+    elConfigOptionLabel.innerHTML = /*html*/ `
+        <input type="checkbox" name="${optionName}" onclick="onClickConfigOption(this)"><span>${optionDescription}</span>
+    `;
+    elConfigOptions.append(elConfigOptionLabel);
 }
 
 async function updateCrewmateVideosIfNotSet() {
@@ -961,8 +1008,8 @@ async function injectAndApplyExtractionPercent() {
  */
 async function applyExtractionPercent(elPercentWrapper, percentValue = null) {
     if (!percentValue) {
-        // NO value passed into this function => use the value from local-storage, or default to 100
-        percentValue = localStorage.e115ExtractionPercent ? Number(localStorage.e115ExtractionPercent) : 100;
+        // NO value passed into this function => use the value from local-storage
+        percentValue = extensionSettings.extractionPercent;
     }
     // Ensure "percentValue" is integer, MAX 100
     percentValue = Math.min(parseInt(`0${percentValue}`), 100);
@@ -973,7 +1020,7 @@ async function applyExtractionPercent(elPercentWrapper, percentValue = null) {
      */
     elPercentWrapper.querySelector('input').value = percentValue;
     // Save the value into local-storage
-    localStorage.e115ExtractionPercent = percentValue;
+    setExtensionSetting('extractionPercent', percentValue);
     // Apply the extraction-percent, via hover over "elAmountWrapper"
     const elAmountTextWrapper = elPercentWrapper.previousElementSibling;
     await triggerExtractionAmountInput(elAmountTextWrapper);
@@ -1023,6 +1070,9 @@ async function triggerExtractionAmountInput(elAmountTextWrapper) {
  * and if the associated checkbox is enabled (i.e. if the "svg" contains a "path").
  */
 function autoHideUsedDeposits() {
+    if (!extensionSettings.autoHideUsedDeposits) {
+        return;
+    }
     const elHudManuPanel = getElHudMenuPanel();
     if (!elHudManuPanel) {
         isOpenPanelWithUsedDeposits = false;
@@ -1106,10 +1156,14 @@ function onClickConfigTitle() {
     document.getElementById('e115-config-panel-wrapper').classList.toggle('active');
 }
 
-function onClickConfigOptions(el) {
+function onClickConfigOption(el) {
     switch (el.name) {
+        case 'auto-hide-used-deposits':
+            setExtensionSetting('autoHideUsedDeposits', el.checked);
+            break;
         case 'inventory-item-names':
-            document.body.dataset.inventoryItemNames = el.checked.toString();
+            setExtensionSetting('inventoryItemNames', el.checked);
+            document.body.dataset.inventoryItemNames = el.checked;
             break;
     }
 }

@@ -4,6 +4,7 @@
   --color-influence-faded-35: rgba(54, 167, 205, 0.35);
   --color-influence-faded-25: rgba(54, 167, 205, 0.25);
   --color-influence-faded-175: rgba(54, 167, 205, 0.175);
+  --crewmate-color-intensity: 1;
 }
 
 .e115-color-influence {
@@ -428,7 +429,7 @@
   position: absolute;
   left: 100px;
   padding: 0 calc(var(--e115-config-padding) * 2) var(--e115-config-padding) calc(var(--e115-config-padding) * 2);
-  width: 280px;
+  width: 320px;
   z-index: 9999;
 }
 #e115-config-panel-wrapper:hover #e115-config-panel #e115-config-title {
@@ -458,6 +459,11 @@
   align-items: center;
   display: flex;
   gap: 10px;
+  padding: 12px;
+}
+#e115-config-panel-wrapper #e115-config-panel #e115-config-options label:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
 }
 
 body[data-inventory-item-names=true] #hudMenuPanel :not(:hover) > [data-tooltip-id=hudMenuTooltip][data-tooltip-place=top][data-tooltip-content]::after {
@@ -545,13 +551,13 @@ body[data-inventory-item-names=true] #hudMenuPanel :not(:hover) > [data-tooltip-
 }
 
 .eUlTUS > img:not(:hover) {
-  -webkit-backdrop-filter: brightness(4);
-          backdrop-filter: brightness(4);
+  -webkit-backdrop-filter: brightness(var(--crewmate-color-intensity));
+          backdrop-filter: brightness(var(--crewmate-color-intensity));
 }
 
 #hudMenuPanel .eUlTUS > img {
-  -webkit-backdrop-filter: brightness(4);
-          backdrop-filter: brightness(4);
+  -webkit-backdrop-filter: brightness(var(--crewmate-color-intensity));
+          backdrop-filter: brightness(var(--crewmate-color-intensity));
 }
 
 div[src*=OwnedCrew] + div .eUlTUS > img {

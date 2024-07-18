@@ -32,16 +32,6 @@ on('click', `${selectorHudMenuPanel} [data-tooltip-id='hudMenuTooltip'][data-too
     setTimeout(() => onClickInventoryItem(el));
 });
 
-// Handle onclick events for extension-config title
-on('click', '#e115-config-title', el => {
-    onClickConfigTitle();
-});
-
-// Handle onclick events for extension-config options
-on('click', '#e115-config-options label input', el => {
-    onClickConfigOptions(el);
-});
-
 // Handle click events for injected elements
 on('click', '[data-on-click-function]', el => {
     const args = el.dataset.onClickArgs ? JSON.parse(el.dataset.onClickArgs) : [];
