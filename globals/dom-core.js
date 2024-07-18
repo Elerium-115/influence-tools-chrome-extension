@@ -85,6 +85,13 @@ let hudMenuItemUnselectedClassListValue = null;
  */
 let extractionAmountMax = 0;
 
+/**
+ * This will be set to TRUE the FIRST time that the panel containing "Show Used Deposits"
+ * becomes open during the periodical execution of "autoHideUsedDeposits". It will then be
+ * reset to FALSE when that panel is closed, or no longer contains "Show Used Deposits".
+ */
+let isOpenPanelWithUsedDeposits = false;
+
 function delay(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
@@ -96,6 +103,15 @@ function getReactPropsForEl(el) {
         return null;
     }
     return el[reactPropsKey];
+}
+
+function getReactFiberForEl(el) {
+    const reactFiberKey = Object.keys(el).find(key => key.includes('__reactFiber'));
+    if (!reactFiberKey) {
+        console.log(`%c--- [getReactFiberForEl] ERROR: reactFiberKey not found for el:`, 'background: red', el);
+        return null;
+    }
+    return el[reactFiberKey];
 }
 
 /**
@@ -263,6 +279,12 @@ function createEl(nodeType, id = null, classes = null) {
         classes.forEach(className => el.classList.add(className));
     }
     return el;
+}
+
+function addTooltip(el, tooltipContent, tooltipId='globalTooltip', tooltipPlace = 'top') {
+    el.dataset.tooltipId = tooltipId;
+    el.dataset.tooltipPlace = tooltipPlace;
+    el.dataset.tooltipContent = tooltipContent;
 }
 
 function findElWithMatchingTextNode(elParent, descendantsSelector, text) {
@@ -676,20 +698,16 @@ function onClickInventoryItem(elItem) {
         const elHudMenuMarketplace = getElHudMenuItemByLabel(hudMenuItemLabelMarketplace);
         if (elHudMenuMarketplace) {
             const elMarketplaceButton = createEl('div', null, ['e115-button', 'e115-button-inventory-footer']);
-            elMarketplaceButton.innerHTML = /*html*/ `
-                ${svgIconSearch}
-                <span>Marketplace</span>
-            `;
+            addTooltip(elMarketplaceButton, 'Search in Marketplace');
+            elMarketplaceButton.innerHTML = svgIconSearch;
             elMarketplaceButton.dataset.onClickFunction = 'searchMarketplace';
             elMarketplaceButton.dataset.onClickArgs = JSON.stringify([elItemSelectedName]);
             elInventoryFooter.append(elMarketplaceButton);
         }
         // -- Inject "Production Planner" button
         const elProductionButton = createEl('div', null, ['e115-button', 'e115-button-inventory-footer']);
-        elProductionButton.innerHTML = /*html*/ `
-            ${svgIconProductionChains}
-            <span>Production</span>
-        `;
+        addTooltip(elProductionButton, 'Production Planner');
+        elProductionButton.innerHTML = svgIconProductionChains;
         // ---- On click, open the item's production chain using the "Production Planner" tool
         const itemNameCompact = getCompactName(elItemSelectedName);
         const productionPlannerUrl = getToolUrlProductionPlanner() + '#' + itemNameCompact;
@@ -1000,8 +1018,6 @@ async function triggerExtractionAmountInput(elAmountTextWrapper) {
     await delay(100);
 }
 
-let isOpenPanelWithUsedDeposits = false;
-
 /**
  * Auto-click the "Show Used Deposits" toggle, if it exists in the hud menu panel,
  * and if the associated checkbox is enabled (i.e. if the "svg" contains a "path").
@@ -1037,6 +1053,22 @@ function autoHideUsedDeposits() {
     if (elShowUsedDeposits.querySelector('path')) {
         // The "Show Used Deposits" toggle is enabled => auto-click to disable it
         elShowUsedDeposits.click();
+    }
+    try {
+        /**
+         * Try to expand the "My Deposits" panel, if collapsed.
+         * Doing this here will NOT auto-expand it if there are NO unused deposits,
+         * but this avoids introducing another flag, in addition to "isOpenPanelWithUsedDeposits".
+         */
+        const elMyDeposits = elShowUsedDeposits.parentElement.previousElementSibling;
+        const reactFiberMyDeposits = getReactFiberForEl(elMyDeposits);
+        const isCollapsedMyDeposits = reactFiberMyDeposits.return.memoizedProps.collapsed;
+        if (isCollapsedMyDeposits) {
+            elMyDeposits.click();
+        }
+    } catch (error) {
+        // Swallow non-critical error
+        return;
     }
 }
 

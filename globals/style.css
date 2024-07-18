@@ -411,8 +411,13 @@
 .e115-button-inventory-footer {
   align-items: center;
   display: flex;
-  gap: 8px;
-  margin-left: 15px;
+  height: 60px;
+  margin-right: 8px;
+  width: 60px;
+}
+.e115-button-inventory-footer svg {
+  height: 100%;
+  width: 100%;
 }
 
 #e115-config-panel-wrapper {
