@@ -551,6 +551,7 @@ function injectConfig() {
     `;
     document.body.append(elConfigPanel);
     // Inject config options
+    injectConfigOptionCrewmateColorIntensity();
     injectConfigOptionCheckbox('auto-hide-used-deposits', 'Automatically hide used deposits');
     injectConfigOptionCheckbox('inventory-item-names', 'Overlay names for inventory items');
     // Initialize config options, based on extension settings from local-storage
@@ -562,7 +563,18 @@ function injectConfig() {
     }
     // Initialize other data, based on extension settings from local-storage
     document.body.dataset.inventoryItemNames = extensionSettings.inventoryItemNames;
-    document.querySelector(':root').style.setProperty('--crewmate-color-intensity', extensionSettings.crewmateColorIntensity);
+}
+
+function injectConfigOptionCrewmateColorIntensity() {
+    const elConfigOptions = document.getElementById('e115-config-options');
+    const elConfigOptionLabel = createEl('label');
+    // Pre-select value from local-storage
+    elConfigOptionLabel.innerHTML = /*html*/ `
+        <input type="range" min="1" max="5" step="1" value="${extensionSettings.crewmateColorIntensity}" oninput="onInputCrewmateColorIntensity(this)"><span>Crewmate color</span>
+    `;
+    elConfigOptions.append(elConfigOptionLabel);
+    // Apply the pre-selected value
+    onInputCrewmateColorIntensity(elConfigOptionLabel.querySelector('input'));
 }
 
 function injectConfigOptionCheckbox(optionName, optionDescription) {
@@ -1210,6 +1222,11 @@ function handleMessage(event) {
 function onClickConfigTitle() {
     // Show / hide the extension-config options
     document.getElementById('e115-config-panel-wrapper').classList.toggle('active');
+}
+
+function onInputCrewmateColorIntensity(el) {
+    setExtensionSetting('crewmateColorIntensity', parseInt(el.value));
+    document.querySelector(':root').style.setProperty('--crewmate-color-intensity', extensionSettings.crewmateColorIntensity);
 }
 
 function onClickConfigOption(el) {
