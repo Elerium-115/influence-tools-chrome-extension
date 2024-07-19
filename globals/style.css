@@ -409,16 +409,20 @@
   }
 }
 
-.e115-button-inventory-footer {
+.e115-button-inventory {
   align-items: center;
   display: flex;
   height: 60px;
   margin-right: 8px;
   width: 60px;
 }
-.e115-button-inventory-footer svg {
+.e115-button-inventory svg {
   height: 100%;
   width: 100%;
+}
+
+#e115-industry-builder-button {
+  margin-right: 28px;
 }
 
 #e115-config-panel-wrapper {

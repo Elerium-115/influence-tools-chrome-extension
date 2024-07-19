@@ -443,7 +443,7 @@
     }
 }
 
-.e115-button-inventory-footer {
+.e115-button-inventory {
     align-items: center;
     display: flex;
     height: 60px;
@@ -454,6 +454,10 @@
         height: 100%;
         width: 100%;
     }
+}
+
+#e115-industry-builder-button {
+    margin-right: 28px;
 }
 
 #e115-config-panel-wrapper {
