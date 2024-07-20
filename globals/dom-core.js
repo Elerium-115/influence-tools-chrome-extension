@@ -29,14 +29,17 @@ const selectorTopMenu = '#topMenu';
 const hudMenuItemLabelDefault = 'My Crews';
 
 const hudMenuItemLabelMarketplace = 'Asteroid Markets';
+const hudMenuItemLabelLotInventory = 'Lot Inventory';
+const hudMenuItemLabelShipInventory = 'Ship Inventory';
 
 const hudMenuItemLabelTools = 'Community Tools'; // to be injected
 
 const extensionSettingsDefault = {
     autoHideUsedDeposits: true, // if true, used deposits will be auto-hidden, and "My Deposits" will also be auto-expanded
+    autoOpenInventoryPanel: true, // if true, the "Lot Inventory" or "Ship Inventory" panel will be auto-open
     crewmateColorIntensity: 4, // brightness amount (from 1 to 5) for the class-specific background color of crewmates
     extractionPercent: 100, // preferred extraction percentage
-    industryBuilderButton: false,
+    industryBuilderButton: true, // if true, inject a button in inventories re: "What can I make with these items?"
     inventoryItemNames: true, // if true, overlay names for inventory items
 };
 
@@ -56,6 +59,10 @@ for (const [settingKey, settingValue] of Object.entries(extensionSettingsDefault
         setExtensionSetting(settingKey, settingValue);
     }
 }
+
+//// HARDCODING "industryBuilderButton" to warm-up local-storages (b/c this flag was initially deployed as FALSE)
+//// TO DO: remove this hardcoding, after "injectIndustryBuilderButton" is fully implemented.
+extensionSettings.industryBuilderButton = true;
 
 /**
  * This will be populated via API call to "crewmateVideosEndpoint"
@@ -120,8 +127,19 @@ let extractionAmountMax = 0;
  */
 let isOpenPanelWithUsedDeposits = false;
 
+let selectedLocationIdPrevious = null;
+let selectedLocationIdCurrent = null;
+
 function delay(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function isArray(arr) {
+    return Array.isArray(arr);
+}
+
+function isObject(obj) {
+    return obj?.constructor === Object;
 }
 
 /**
@@ -148,6 +166,43 @@ function getReactFiberForEl(el) {
         return null;
     }
     return el[reactFiberKey];
+}
+
+function getReactPropDataFromChildrenRecursive(propKey, reactChildren) {
+    let propData = {
+        foundOwnProperty: false,
+        propValue: null,
+    };
+    // If "reactChildren" contains a single child, it will be an object (NOT an array)
+    if (isObject(reactChildren)) {
+        reactChildren = [reactChildren];
+    }
+    // If "children" is a terminal text node, it will be a string (NOT an object or array)
+    if (!reactChildren || !isArray(reactChildren)) {
+        return propData;
+    }
+    for (const child of reactChildren) {
+        if (!child || !child.props) {
+            // This child is explicitly undefined, or has no props => SKIP to the next child
+            continue;
+        }
+        const props = child.props;
+        if (props.hasOwnProperty(propKey)) {
+            // Prop found in this child => STOP parsing remaining children
+            propData.foundOwnProperty = true;
+            propData.propValue = props[propKey];
+            return propData;
+        }
+        // Prop not found in this child => recurse into its children, if any
+        if (props.children) {
+            propData = getReactPropDataFromChildrenRecursive(propKey, props.children);
+        }
+        if (propData.foundOwnProperty) {
+            // Prop found among its children => STOP parsing remaining children
+            return propData;
+        }
+    }
+    return propData;
 }
 
 /**
@@ -205,6 +260,114 @@ function getElHudMenuItemSelected() {
         }
     }
     return null;
+}
+
+/**
+ * The selected location can be any of these:
+ * - lot @ surface-view (empty lot / building / construction site / landed Light Transport)
+ * - asteroid @ surface-view (if NO lot selected)
+ * - asteroid @ system-view  (if zoomed-out)
+ * - none @ system-view (if NO asteroid selected)
+ * - ship (regardless if in shipyard / orbit / transit, but EXCLUDING landed Light Transport)
+ * 
+ * This function looks for the first VISIBLE previous-sibling, relative to the parent of the hud menu, because:
+ * - when a ship is selected, the DOM contains an additional element BEFORE the left-side panels container
+ * - when an asteroid is selected @ system-view, the DOM contains 2 hidden elements AFTER the left-side panels container
+ */
+function getElSelectedLocationPanel() {
+    const elHudMenu = getElHudMenu();
+    if (!elHudMenu) {
+        return null;
+    }
+    let elPreviousSibling = elHudMenu.parentElement.previousElementSibling;
+    if (!elPreviousSibling) {
+        // This element does not exist on the initial page-load, before clicking "Play"
+        return null;
+    }
+    if (!elPreviousSibling.offsetParent) {
+        // Traverse up a limited number of previous siblings, until a visibile element is found
+        for (let i = 1; i <= 5; i++) {
+            elPreviousSibling = elPreviousSibling.previousElementSibling;
+            if (elPreviousSibling.offsetParent) {
+                break;
+            }
+        }
+    }
+    if (!elPreviousSibling.offsetParent) {
+        // NO visible element found among previous siblings
+        return null;
+    }
+    // At this point, "elPreviousSibling" should be the left-side panels container
+    const elSelectedLocationPanel = elPreviousSibling.lastElementChild;
+    return elSelectedLocationPanel;
+}
+
+function getSelectedBuildingOrShipValues() {
+    const elSelectedLocationPanel = getElSelectedLocationPanel();
+    if (!elSelectedLocationPanel) {
+        return null;
+    }
+    const reactFiberSelectedLocationPanel = getReactFiberForEl(elSelectedLocationPanel);
+    if (!reactFiberSelectedLocationPanel || !reactFiberSelectedLocationPanel.memoizedProps) {
+        return null;
+    }
+    const reactChildren = reactFiberSelectedLocationPanel.memoizedProps.children;
+    /**
+     * Prop "lot" values, if found:
+     * - object     = Warehouse / Extractor (incl. site) / Refinery / Factory / Bioreactor / Shipyard / Habitat / landed Light Transport @ surface-view / docked ship @ Spaceport
+     * - null       = construction site for [Refinery / Factory / Bioreactor / Shipyard] / Spaceport (incl. site) / Marketplace @ surface-view
+     * - undefined  = asteroid selected @ system-view
+     */
+    const lotData = getReactPropDataFromChildrenRecursive('lot', reactChildren);
+    /**
+     * Prop "ship" values, if found:
+     * - object     = landed Light Transport @ surface-view / docked ship @ Spaceport
+     * - null       = any other location selected (or NO asteroid selected @ system-view)
+     */
+    const shipData = getReactPropDataFromChildrenRecursive('ship', reactChildren);
+    //// TO DO: test "lotData" + "shipData" for ship in orbit / in transit
+    if (!lotData.foundOwnProperty && !shipData.foundOwnProperty) {
+        // Neither prop - "lot" / "ship" - found among any of "reactChildren"
+        return null;
+    }
+    return {
+        lotValue: lotData.propValue,
+        shipValue: shipData.propValue,
+    }
+}
+
+/**
+ * Return the ID for the currently selected location, formated as:
+ * - "B1234" = selected building with ID 1234
+ * - "S1234" = selected ship with ID 1234
+ * - null = none of the above, OR selected building with NO data in React prop "lot" (see "getSelectedBuildingOrShipValues")
+ * 
+ * NOTE: "buildingOrShipValues" must be formatted as the return value of "getSelectedBuildingOrShipValues"
+ */
+function getSelectedLocationId(buildingOrShipValues) {
+    if (!buildingOrShipValues) {
+        return null;
+    }
+    const {lotValue, shipValue} = {...buildingOrShipValues};
+    if (!lotValue && !shipValue) {
+        return null;
+    }
+    if (shipValue) {
+        // Landed Light Transport or docked ship @ Spaceport => location ID starts with "S"
+        return `S${shipValue.id}`;
+    }
+    if (!lotValue.building) {
+        /**
+         * Prop "lot" found with "building" value "undefined" - e.g. landed Light Transport @ surface-view.
+         * 
+         * NOTE: If landed Light Transport, the following are defined:
+         * - "lotValue.ships" (non-empty array)
+         * - "lotValue.surfaceShip" (object - same as the first element of "lotValue.ships"?)
+         */
+        return null;
+    }
+    // Building with valid data => location ID starts with "B"
+    return `B${lotValue.building.id}`;
 }
 
 function getCurrentAsteroidId() {
@@ -344,6 +507,10 @@ function isHudMenuPanelFor(panelTitle) {
         return false;
     }
     return Boolean(findElWithMatchingTextNode(elHudMenuPanel.firstElementChild.firstElementChild, '*', panelTitle));
+}
+
+function isHudMenuPanelForInventory() {
+    return isHudMenuPanelFor(hudMenuItemLabelLotInventory) || isHudMenuPanelFor(hudMenuItemLabelShipInventory);
 }
 
 function injectUrlParam(url, key, value) {
@@ -553,10 +720,14 @@ function injectConfig() {
     // Inject config options
     injectConfigOptionCrewmateColorIntensity();
     injectConfigOptionCheckbox('auto-hide-used-deposits', 'Automatically hide used deposits');
+    injectConfigOptionCheckbox('auto-open-inventory-panel', 'Automatically open inventories');
     injectConfigOptionCheckbox('inventory-item-names', 'Overlay names for inventory items');
     // Initialize config options, based on extension settings from local-storage
     if (extensionSettings.autoHideUsedDeposits) {
         elConfigPanel.querySelector('input[name="auto-hide-used-deposits"]').checked = true;
+    }
+    if (extensionSettings.autoOpenInventoryPanel) {
+        elConfigPanel.querySelector('input[name="auto-open-inventory-panel"]').checked = true;
     }
     if (extensionSettings.inventoryItemNames) {
         elConfigPanel.querySelector('input[name="inventory-item-names"]').checked = true;
@@ -707,6 +878,13 @@ function injectRealTime() {
     }, 1000);
 }
 
+function updateLocationId() {
+    selectedLocationIdPrevious = selectedLocationIdCurrent;
+    const selectedBuildingOrShipValues = getSelectedBuildingOrShipValues();
+    const selectedLocationId = getSelectedLocationId(selectedBuildingOrShipValues);
+    selectedLocationIdCurrent = selectedLocationId;
+}
+
 async function searchMarketplace(searchText) {
     const elHudMenuMarketplace = getElHudMenuItemByLabel(hudMenuItemLabelMarketplace);
     if (!elHudMenuMarketplace) {
@@ -745,9 +923,9 @@ async function searchMarketplace(searchText) {
  * - It does NOT work for ship-cargo and ship-propellant inventories.
  */
 function onClickInventoryItem(elItem) {
-    if (!isHudMenuPanelFor('Lot Inventory')) {
+    if (!isHudMenuPanelForInventory()) {
         /**
-         * The current hud menu panel is not for the "Lot Inventory" menu item.
+         * The current hud menu panel is not for an inventory menu item.
          * Do not continue, because this function is also triggered for items
          * in other panels (e.g. "Lot Info", "Asteroid Chat").
          */
@@ -1098,38 +1276,45 @@ async function triggerExtractionAmountInput(elAmountTextWrapper) {
 }
 
 function injectIndustryBuilderButton() {
+    return; //// DISABLED until fully implemented
     if (!extensionSettings.industryBuilderButton) {
         return;
     }
-    if (!isHudMenuPanelFor('Lot Inventory')) {
+    if (!isHudMenuPanelForInventory()) {
         /**
-         * The current hud menu panel is not for the "Lot Inventory" menu item.
+         * The current hud menu panel is not for an inventory menu item.
          * Do not continue, otherwise "elInventoryItem" would also match
          * in other panels (e.g. "Lot Info", "Asteroid Chat").
          */
         return;
     }
     const elInventoryItem = document.querySelector(`${selectorHudMenuPanel} [data-tooltip-id='hudMenuTooltip'][data-tooltip-content]`);
-    const elIndustryButtonPrevious = document.getElementById('e115-industry-builder-button');
+    let elIndustryButton = document.getElementById('e115-industry-builder-button');
     if (!elInventoryItem) {
         // Inventory not open, or no items in inventory
-        if (elIndustryButtonPrevious) {
+        if (elIndustryButton) {
             // Remove button injected for a previous inventory
-            elIndustryButtonPrevious.parentElement.removeChild(elIndustryButtonPrevious);
+            elIndustryButton.parentElement.removeChild(elIndustryButton);
         }
         return;
     }
-    if (elIndustryButtonPrevious) {
-        // Button already injected for a previous inventory
-        return;
+    if (!elIndustryButton) {
+        // Inject the button ABOVE the items-list container
+        elIndustryButton = createEl('div', 'e115-industry-builder-button', ['e115-button', 'e115-button-inventory']);
+        addTooltip(elIndustryButton, 'What can I make with these items?');
+        elIndustryButton.innerHTML = svgIconFactoryArrows;
+        const elInventoryItemWrapper = elInventoryItem.parentElement;
+        elInventoryItemWrapper.parentElement.previousElementSibling.append(elIndustryButton);
     }
-    const elIndustryButton = createEl('div', 'e115-industry-builder-button', ['e115-button', 'e115-button-inventory']);
-    addTooltip(elIndustryButton, 'What can I make with these items?');
-    elIndustryButton.innerHTML = svgIconFactoryArrows;
-    const elInventoryItemWrapper = elInventoryItem.parentElement;
-    // Inject the button ABOVE the items-list container
-    elInventoryItemWrapper.parentElement.previousElementSibling.append(elIndustryButton);
-    //// TO DO: implement onclick handler
+    /**
+     * Set the action-URL of "elIndustryButton" based on "selectedLocationIdCurrent".
+     * At this point, the button may be either newly injected with no action-URL,
+     * or previously injected with an obsolete action-URL.
+     */
+    //// TO DO: implement onclick handler w/ action-URL based on "selectedLocationIdCurrent"
+    //// -- THEN REMOVE hardcoded "extensionSettings.industryBuilderButton = true"
+    //// -- AND ENABLE the call to this function from "injectFeaturesPeriodically"
+    //// ...
 }
 
 /**
@@ -1190,10 +1375,57 @@ function autoHideUsedDeposits() {
 }
 
 /**
+ * Auto-open a "Lot Inventory" or "Ship Inventory", if that hud
+ * menu item exists, and if no hud menu panel is currently open.
+ */
+function autoOpenInventoryPanel() {
+    if (!extensionSettings.autoOpenInventoryPanel) {
+        return;
+    }
+    const elHudMenuPanel = getElHudMenuPanel();
+    if (elHudMenuPanel) {
+        const reactPropsHudMenuPanel = getReactPropsForEl(elHudMenuPanel);
+        if (reactPropsHudMenuPanel && reactPropsHudMenuPanel.open) {
+            // A hud menu panel is already open
+            return;
+        }
+    }
+    if (!selectedLocationIdCurrent) {
+        // NO valid location selected
+        return;
+    }
+    if (selectedLocationIdCurrent === selectedLocationIdPrevious) {
+        /**
+         * Abort if SAME location was already selected in the previous cycle.
+         * This ensures that, as long as this same location remains selected,
+         * the inventory panel will NOT be auto-opened multiple times,
+         * if the user manually closes it AFTER it was first auto-opened.
+         */
+        return;
+    }
+    /**
+     * NEW valid location selected => OPEN the "Lot Inventory" or "Ship Inventory"
+     * hud menu panel, via force-click on the respective hud menu item, if any.
+     */
+    const elHudMenuItemInventory = getElHudMenuItemByLabel(hudMenuItemLabelLotInventory) || getElHudMenuItemByLabel(hudMenuItemLabelShipInventory);
+    if (!elHudMenuItemInventory) {
+        return;
+    }
+    elHudMenuItemInventory.click();
+}
+
+/**
  * Inject various features into the DOM periodically, as needed
  */
 function injectFeaturesPeriodically() {
     setInterval(() => {
+        /**
+         * The location ID must be updated BEFORE calling other functions which
+         * rely on "selectedLocationIdCurrent" / "selectedLocationIdPrevious":
+         * - "injectIndustryBuilderButton"
+         * - "autoOpenInventoryPanel"
+         */
+        updateLocationId();
         injectWidgets();
         injectCaptainVideo();
         injectProcessFilter();
@@ -1201,6 +1433,7 @@ function injectFeaturesPeriodically() {
         injectAndApplyExtractionPercent();
         injectIndustryBuilderButton();
         autoHideUsedDeposits();
+        autoOpenInventoryPanel();
     }, 1000);
 }
 
@@ -1233,6 +1466,9 @@ function onClickConfigOption(el) {
     switch (el.name) {
         case 'auto-hide-used-deposits':
             setExtensionSetting('autoHideUsedDeposits', el.checked);
+            break;
+        case 'auto-open-inventory-panel':
+            setExtensionSetting('autoOpenInventoryPanel', el.checked);
             break;
         case 'inventory-item-names':
             setExtensionSetting('inventoryItemNames', el.checked);
