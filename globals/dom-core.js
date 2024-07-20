@@ -60,10 +60,6 @@ for (const [settingKey, settingValue] of Object.entries(extensionSettingsDefault
     }
 }
 
-//// HARDCODING "industryBuilderButton" to warm-up local-storages (b/c this flag was initially deployed as FALSE)
-//// TO DO: remove this hardcoding, after "injectIndustryBuilderButton" is fully implemented.
-extensionSettings.industryBuilderButton = true;
-
 /**
  * This will be populated via API call to "crewmateVideosEndpoint"
  */
@@ -423,8 +419,13 @@ function getCompactName(name) {
 }
 
 function getToolUrlProductionPlanner() {
-    // Hardcoding the URL from "tools" for {author: "Elerium115", title: "Production Planner"}
+    // Hardcoding the URL from "tools" for {title: "Production Planner", author: "Elerium115"}
     return 'https://influence.elerium.dev/production-planner.html';
+}
+
+function getToolUrlProcessFinder() {
+    // Hardcoding the URL from "tools" for {title: "Process Finder", author: "Denker"}
+    return 'https://www.adalia.info/tools/process-finder';
 }
 
 function getCloseButtonFromHudMenuPanel() {
@@ -521,7 +522,7 @@ function injectUrlParam(url, key, value) {
     return urlData.href;
 }
 
-function onClickCategoryItem(title, url) {
+function onClickToolCategoryItem(title, url, autoInjectUrlParams) {
     // Check if window already exists with the same "title"
     const elMatchingWindow = document.querySelector(`[data-e115-window-id="${title}"]`);
     if (elMatchingWindow) {
@@ -582,23 +583,25 @@ function onClickCategoryItem(title, url) {
     const elNewWindowIframe = createEl('iframe', null, ['e115-window-content']);
     let iframeUrl = url;
 
-    // Inject ID of selected asteroid (if any) into the iframe URL
-    const asteroidId = getCurrentAsteroidId();
-    if (asteroidId) {
-        iframeUrl = injectUrlParam(iframeUrl, 'influence_asteroid', asteroidId);
-    }
-
-    // Inject ID of selected crew (if any) into the iframe URL
-    const crewId = getCurrentCrewId();
-    if (crewId) {
-        iframeUrl = injectUrlParam(iframeUrl, 'influence_crew', crewId);
-    }
-
-    // Inject the player's wallet address (if any) into the iframe URL
-    const walletAddress = getCurrentWalletAddress();
-    if (walletAddress) {
-        // URL param name compatible with adalia.info tools, as of July 2024
-        iframeUrl = injectUrlParam(iframeUrl, 'walletAddress', walletAddress);
+    if (autoInjectUrlParams) {
+        // Inject ID of selected asteroid (if any) into the iframe URL
+        const asteroidId = getCurrentAsteroidId();
+        if (asteroidId) {
+            iframeUrl = injectUrlParam(iframeUrl, 'influence_asteroid', asteroidId);
+        }
+    
+        // Inject ID of selected crew (if any) into the iframe URL
+        const crewId = getCurrentCrewId();
+        if (crewId) {
+            iframeUrl = injectUrlParam(iframeUrl, 'influence_crew', crewId);
+        }
+    
+        // Inject the player's wallet address (if any) into the iframe URL
+        const walletAddress = getCurrentWalletAddress();
+        if (walletAddress) {
+            // URL param name compatible with adalia.info tools, as of July 2024
+            iframeUrl = injectUrlParam(iframeUrl, 'walletAddress', walletAddress);
+        }
     }
 
     elNewWindowIframe.src = iframeUrl;
@@ -629,7 +632,7 @@ function onClickNewWindowClose(title) {
     el.parentElement.removeChild(el);
 }
 
-function onClickCategoryTitle(category) {
+function onClickToolCategoryTitle(category) {
     const elListItem = document.querySelector(`[data-e115-list-item-category="${category}"]`);
     if (!elListItem) {
         return;
@@ -722,6 +725,7 @@ function injectConfig() {
     injectConfigOptionCheckbox('auto-hide-used-deposits', 'Automatically hide used deposits');
     injectConfigOptionCheckbox('auto-open-inventory-panel', 'Automatically open inventories');
     injectConfigOptionCheckbox('inventory-item-names', 'Overlay names for inventory items');
+    injectConfigOptionCheckbox('industry-builder-button', 'Process Finder button for warehouses');
     // Initialize config options, based on extension settings from local-storage
     if (extensionSettings.autoHideUsedDeposits) {
         elConfigPanel.querySelector('input[name="auto-hide-used-deposits"]').checked = true;
@@ -731,6 +735,9 @@ function injectConfig() {
     }
     if (extensionSettings.inventoryItemNames) {
         elConfigPanel.querySelector('input[name="inventory-item-names"]').checked = true;
+    }
+    if (extensionSettings.industryBuilderButton) {
+        elConfigPanel.querySelector('input[name="industry-builder-button"]').checked = true;
     }
     // Initialize other data, based on extension settings from local-storage
     document.body.dataset.inventoryItemNames = extensionSettings.inventoryItemNames;
@@ -971,8 +978,8 @@ function onClickInventoryItem(elItem) {
         if (!closeButtonClone) {
             closeButtonClone = getCloseButtonFromHudMenuPanel().cloneNode(true);
         }
-        elProductionButton.dataset.onClickFunction = 'onClickCategoryItem';
-        elProductionButton.dataset.onClickArgs = JSON.stringify(['Production Planner', productionPlannerUrl]);
+        elProductionButton.dataset.onClickFunction = 'onClickToolCategoryItem';
+        elProductionButton.dataset.onClickArgs = JSON.stringify(['Production Planner', productionPlannerUrl, true]);
         elInventoryFooter.append(elProductionButton);
     } else {
         // No item / multiple items selected => remove any injected buttons
@@ -1276,7 +1283,6 @@ async function triggerExtractionAmountInput(elAmountTextWrapper) {
 }
 
 function injectIndustryBuilderButton() {
-    return; //// DISABLED until fully implemented
     if (!extensionSettings.industryBuilderButton) {
         return;
     }
@@ -1290,8 +1296,8 @@ function injectIndustryBuilderButton() {
     }
     const elInventoryItem = document.querySelector(`${selectorHudMenuPanel} [data-tooltip-id='hudMenuTooltip'][data-tooltip-content]`);
     let elIndustryButton = document.getElementById('e115-industry-builder-button');
-    if (!elInventoryItem) {
-        // Inventory not open, or no items in inventory
+    if (!elInventoryItem || !selectedLocationIdCurrent.startsWith('B')) {
+        // Inventory not open, or no items in inventory, or not a Warehouse (i.e. a ship)
         if (elIndustryButton) {
             // Remove button injected for a previous inventory
             elIndustryButton.parentElement.removeChild(elIndustryButton);
@@ -1307,14 +1313,18 @@ function injectIndustryBuilderButton() {
         elInventoryItemWrapper.parentElement.previousElementSibling.append(elIndustryButton);
     }
     /**
-     * Set the action-URL of "elIndustryButton" based on "selectedLocationIdCurrent".
-     * At this point, the button may be either newly injected with no action-URL,
-     * or previously injected with an obsolete action-URL.
+     * Set the tool-URL of "elIndustryButton" based on "selectedLocationIdCurrent".
+     * At this point, the button may be either newly injected with no tool-URL,
+     * or previously injected with an obsolete tool-URL.
+     * 
+     * NOTE: Set "autoInjectUrlParams" to FALSE for "onClickToolCategoryItem", to avoid injecting
+     * the URL param "walletAddress". This ensures that the "Process Finder" tool only receives
+     * the URL param "warehouses", allowing it to also be used for Warehouses owned by other players.
      */
-    //// TO DO: implement onclick handler w/ action-URL based on "selectedLocationIdCurrent"
-    //// -- THEN REMOVE hardcoded "extensionSettings.industryBuilderButton = true"
-    //// -- AND ENABLE the call to this function from "injectFeaturesPeriodically"
-    //// ...
+    const warehouseId = selectedLocationIdCurrent.replace('B', '');
+    const processFinderUrl = getToolUrlProcessFinder() + '?warehouses=' + warehouseId;
+    elIndustryButton.dataset.onClickFunction = 'onClickToolCategoryItem';
+    elIndustryButton.dataset.onClickArgs = JSON.stringify(['Process Finder', processFinderUrl, false]);
 }
 
 /**
@@ -1473,6 +1483,9 @@ function onClickConfigOption(el) {
         case 'inventory-item-names':
             setExtensionSetting('inventoryItemNames', el.checked);
             document.body.dataset.inventoryItemNames = el.checked;
+            break;
+        case 'industry-builder-button':
+            setExtensionSetting('industryBuilderButton', el.checked);
             break;
     }
 }

@@ -38,8 +38,8 @@ on('click', '[data-on-click-function]', el => {
     switch (el.dataset.onClickFunction) {
         case 'onClickInjectedHudMenuItem': onClickInjectedHudMenuItem(args[0]); break;
         case 'onClickInjectedHudMenuPanelCloseButton': onClickInjectedHudMenuPanelCloseButton(args[0]); break;
-        case 'onClickCategoryTitle': onClickCategoryTitle(args[0]); break;
-        case 'onClickCategoryItem': onClickCategoryItem(args[0], args[1]); break;
+        case 'onClickToolCategoryTitle': onClickToolCategoryTitle(args[0]); break;
+        case 'onClickToolCategoryItem': onClickToolCategoryItem(args[0], args[1], args[2]); break;
         case 'onClickNewWindowClose': onClickNewWindowClose(args[0]); break;
         case 'searchMarketplace': searchMarketplace(args[0]); break;
     }

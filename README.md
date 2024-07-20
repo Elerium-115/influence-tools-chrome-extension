@@ -13,6 +13,7 @@ It also adds a "Tools" panel in the right-side menu, with links to community dev
 And it also adds other functionalities in-game, such as:
 - buttons for "Search in Marketplace" and "Production Chain", when you select an item from an inventory
 - links to market-search for products in the Marketplace window "My Open Limit Orders"
+- a button linking to the Process Finder tool, for the items in the currently selected warehouse
 - a filter to search among the processes of Refineries, Factories and Shipyards
 - an input for setting your preferred extraction percentage, to be used before you start each extraction
 - an AI-generated captain-video in the crew window

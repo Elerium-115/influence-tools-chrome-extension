@@ -195,7 +195,7 @@ function injectHudMenuItemAndPanel(label, list) {
         elListItem.dataset.e115ListItemCategory = listItemData.category; // data-e115-list-item-category
         elListItem.style.setProperty('--items-count', listItemData.items.length);
         const elCategoryTitle = elListItem.querySelector(".e115-category-title");
-        elCategoryTitle.dataset.onClickFunction = 'onClickCategoryTitle';
+        elCategoryTitle.dataset.onClickFunction = 'onClickToolCategoryTitle';
         elCategoryTitle.dataset.onClickArgs = JSON.stringify([listItemData.category]);
         const elCategoryItems = elListItem.querySelector(".e115-category-items");
         // Inject the sub-list of items for the current category
@@ -205,8 +205,8 @@ function injectHudMenuItemAndPanel(label, list) {
                 <div class="e115-category-item-title">${categoryItemData.title}</div>
                 <div class="e115-category-item-author">${categoryItemData.author}</div>
             `;
-            elCategoryItem.dataset.onClickFunction = 'onClickCategoryItem';
-            elCategoryItem.dataset.onClickArgs = JSON.stringify([categoryItemData.title, categoryItemData.url]);
+            elCategoryItem.dataset.onClickFunction = 'onClickToolCategoryItem';
+            elCategoryItem.dataset.onClickArgs = JSON.stringify([categoryItemData.title, categoryItemData.url, true]);
             elCategoryItems.append(elCategoryItem);
         });
         elList.append(elListItem);

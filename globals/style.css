@@ -433,7 +433,6 @@
   position: absolute;
   left: 100px;
   padding: 0 calc(var(--e115-config-padding) * 2) var(--e115-config-padding) calc(var(--e115-config-padding) * 2);
-  width: 320px;
   z-index: 9999;
 }
 #e115-config-panel-wrapper:hover #e115-config-panel #e115-config-title {
