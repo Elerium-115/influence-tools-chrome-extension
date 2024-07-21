@@ -468,6 +468,7 @@
     position: absolute;
     left: 100px;
     padding: 0 calc(var(--e115-config-padding) * 2) var(--e115-config-padding) calc(var(--e115-config-padding) * 2);
+    width: 350px;
     z-index: 9999;
 
     &:hover {
@@ -513,6 +514,10 @@
                 &:hover {
                     background: rgba(255, 255, 255, 0.10);
                     color: white;
+                }
+
+                &.e115-config-option-secondary {
+                    margin-left: 24px;
                 }
             }
         }

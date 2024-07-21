@@ -37,6 +37,7 @@ const hudMenuItemLabelTools = 'Community Tools'; // to be injected
 const extensionSettingsDefault = {
     autoHideUsedDeposits: true, // if true, used deposits will be auto-hidden, and "My Deposits" will also be auto-expanded
     autoOpenInventoryPanel: true, // if true, the "Lot Inventory" or "Ship Inventory" panel will be auto-open
+    autoOpenInventoryPanelBypassOtherPanels: false, // if true, and if "autoOpenInventoryPanel" also true, the inventory panel will be auto-open even if another panel is already open
     crewmateColorIntensity: 4, // brightness amount (from 1 to 5) for the class-specific background color of crewmates
     extractionPercent: 100, // preferred extraction percentage
     industryBuilderButton: true, // if true, inject a button in inventories re: "What can I make with these items?"
@@ -724,6 +725,7 @@ function injectConfig() {
     injectConfigOptionCrewmateColorIntensity();
     injectConfigOptionCheckbox('auto-hide-used-deposits', 'Automatically hide used deposits');
     injectConfigOptionCheckbox('auto-open-inventory-panel', 'Automatically open inventories');
+    injectConfigOptionCheckbox('auto-open-inventory-panel-bypass-other-panels', '... even if another menu item is open', true);
     injectConfigOptionCheckbox('inventory-item-names', 'Overlay names for inventory items');
     injectConfigOptionCheckbox('industry-builder-button', 'Process Finder button for warehouses');
     // Initialize config options, based on extension settings from local-storage
@@ -732,6 +734,9 @@ function injectConfig() {
     }
     if (extensionSettings.autoOpenInventoryPanel) {
         elConfigPanel.querySelector('input[name="auto-open-inventory-panel"]').checked = true;
+    }
+    if (extensionSettings.autoOpenInventoryPanelBypassOtherPanels) {
+        elConfigPanel.querySelector('input[name="auto-open-inventory-panel-bypass-other-panels"]').checked = true;
     }
     if (extensionSettings.inventoryItemNames) {
         elConfigPanel.querySelector('input[name="inventory-item-names"]').checked = true;
@@ -755,12 +760,15 @@ function injectConfigOptionCrewmateColorIntensity() {
     onInputCrewmateColorIntensity(elConfigOptionLabel.querySelector('input'));
 }
 
-function injectConfigOptionCheckbox(optionName, optionDescription) {
+function injectConfigOptionCheckbox(optionName, optionDescription, isSecondaryOption = false) {
     const elConfigOptions = document.getElementById('e115-config-options');
     const elConfigOptionLabel = createEl('label');
     elConfigOptionLabel.innerHTML = /*html*/ `
         <input type="checkbox" name="${optionName}" onclick="onClickConfigOption(this)"><span>${optionDescription}</span>
     `;
+    if (isSecondaryOption) {
+        elConfigOptionLabel.classList.add('e115-config-option-secondary')
+    }
     elConfigOptions.append(elConfigOptionLabel);
 }
 
@@ -1392,12 +1400,15 @@ function autoOpenInventoryPanel() {
     if (!extensionSettings.autoOpenInventoryPanel) {
         return;
     }
-    const elHudMenuPanel = getElHudMenuPanel();
-    if (elHudMenuPanel) {
-        const reactPropsHudMenuPanel = getReactPropsForEl(elHudMenuPanel);
-        if (reactPropsHudMenuPanel && reactPropsHudMenuPanel.open) {
-            // A hud menu panel is already open
-            return;
+    if (!extensionSettings.autoOpenInventoryPanelBypassOtherPanels) {
+        // Do NOT bypass auto-opening the inventory, even if a hud menu panel is already open
+        const elHudMenuPanel = getElHudMenuPanel();
+        if (elHudMenuPanel) {
+            const reactPropsHudMenuPanel = getReactPropsForEl(elHudMenuPanel);
+            if (reactPropsHudMenuPanel && reactPropsHudMenuPanel.open) {
+                // A hud menu panel is already open => do NOT auto-open the inventory
+                return;
+            }
         }
     }
     if (!selectedLocationIdCurrent) {
@@ -1479,6 +1490,9 @@ function onClickConfigOption(el) {
             break;
         case 'auto-open-inventory-panel':
             setExtensionSetting('autoOpenInventoryPanel', el.checked);
+            break;
+        case 'auto-open-inventory-panel-bypass-other-panels':
+            setExtensionSetting('autoOpenInventoryPanelBypassOtherPanels', el.checked);
             break;
         case 'inventory-item-names':
             setExtensionSetting('inventoryItemNames', el.checked);

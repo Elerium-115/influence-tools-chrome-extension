@@ -433,6 +433,7 @@
   position: absolute;
   left: 100px;
   padding: 0 calc(var(--e115-config-padding) * 2) var(--e115-config-padding) calc(var(--e115-config-padding) * 2);
+  width: 350px;
   z-index: 9999;
 }
 #e115-config-panel-wrapper:hover #e115-config-panel #e115-config-title {
@@ -467,6 +468,9 @@
 #e115-config-panel-wrapper #e115-config-panel #e115-config-options label:hover {
   background: rgba(255, 255, 255, 0.1);
   color: white;
+}
+#e115-config-panel-wrapper #e115-config-panel #e115-config-options label.e115-config-option-secondary {
+  margin-left: 24px;
 }
 
 body[data-inventory-item-names=true] #hudMenuPanel :not(:hover) > [data-tooltip-id=hudMenuTooltip][data-tooltip-place=top][data-tooltip-content]::after {
