@@ -31,6 +31,7 @@ const hudMenuItemLabelDefault = 'My Crews';
 const hudMenuItemLabelMarketplace = 'Asteroid Markets';
 const hudMenuItemLabelLotInventory = 'Lot Inventory';
 const hudMenuItemLabelShipInventory = 'Ship Inventory';
+const hudMenuItemLabelResources = 'Resources';
 
 const hudMenuItemLabelTools = 'Community Tools'; // to be injected
 
@@ -38,6 +39,8 @@ const extensionSettingsDefault = {
     autoHideUsedDeposits: true, // if true, used deposits will be auto-hidden, and "My Deposits" will also be auto-expanded
     autoOpenInventoryPanel: true, // if true, the "Lot Inventory" or "Ship Inventory" panel will be auto-open
     autoOpenInventoryPanelBypassOtherPanels: false, // if true, and if "autoOpenInventoryPanel" also true, the inventory panel will be auto-open even if another panel is already open
+    autoOpenResourcesPanel: true, // if true, the "Resources" panel will be auto-open for Extractors
+    autoOpenResourcesPanelBypassOtherPanels: false, // if true, and if "autoOpenResourcesPanel" also true, the "Resources" panel will be auto-open even if another panel is already open
     crewmateColorIntensity: 4, // brightness amount (from 1 to 5) for the class-specific background color of crewmates
     extractionPercent: 100, // preferred extraction percentage
     industryBuilderButton: true, // if true, inject a button in inventories re: "What can I make with these items?"
@@ -50,6 +53,20 @@ if (!localStorage.getItem('e115Settings')) {
 }
 
 const extensionSettings = JSON.parse(localStorage.getItem('e115Settings'));
+
+// Source: Influence SDK - "src/lib/building.js"
+const BUILDING_TYPE = {
+    EMPTY_LOT: 0,
+    WAREHOUSE: 1,
+    EXTRACTOR: 2,
+    REFINERY: 3,
+    BIOREACTOR: 4,
+    FACTORY: 5,
+    SHIPYARD: 6,
+    SPACEPORT: 7,
+    MARKETPLACE: 8,
+    HABITAT: 9
+};
 
 /**
  * Use properties which may have been recently added to default settings,
@@ -126,6 +143,7 @@ let isOpenPanelWithUsedDeposits = false;
 
 let selectedLocationIdPrevious = null;
 let selectedLocationIdCurrent = null;
+let selectedLocationBuildingType = null;
 
 function delay(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
@@ -449,6 +467,14 @@ function getCloseButtonFromHudMenuPanel() {
     return elCloseButton;
 }
 
+function isElHudMenuItemSelectedByLabel(label) {
+    const elHudMenuItemSelected = getElHudMenuItemSelected();
+    if (!elHudMenuItemSelected) {
+        return false;
+    }
+    return elHudMenuItemSelected.dataset.tooltipContent === label;
+}
+
 /**
  * Return TRUE if the "targetSelectedState" has been reached, or FALSE otherwise / on timeout
  */
@@ -723,9 +749,11 @@ function injectConfig() {
     document.body.append(elConfigPanel);
     // Inject config options
     injectConfigOptionCrewmateColorIntensity();
-    injectConfigOptionCheckbox('auto-hide-used-deposits', 'Automatically hide used deposits');
-    injectConfigOptionCheckbox('auto-open-inventory-panel', 'Automatically open inventories');
+    injectConfigOptionCheckbox('auto-hide-used-deposits', 'Auto-hide used deposits');
+    injectConfigOptionCheckbox('auto-open-inventory-panel', 'Auto-open inventories');
     injectConfigOptionCheckbox('auto-open-inventory-panel-bypass-other-panels', '... even if another menu item is open', true);
+    injectConfigOptionCheckbox('auto-open-resources-panel', 'Auto-open resources for Extractors');
+    injectConfigOptionCheckbox('auto-open-resources-panel-bypass-other-panels', '... even if another menu item is open', true);
     injectConfigOptionCheckbox('inventory-item-names', 'Overlay names for inventory items');
     injectConfigOptionCheckbox('industry-builder-button', 'Process Finder button for warehouses');
     // Initialize config options, based on extension settings from local-storage
@@ -737,6 +765,12 @@ function injectConfig() {
     }
     if (extensionSettings.autoOpenInventoryPanelBypassOtherPanels) {
         elConfigPanel.querySelector('input[name="auto-open-inventory-panel-bypass-other-panels"]').checked = true;
+    }
+    if (extensionSettings.autoOpenResourcesPanel) {
+        elConfigPanel.querySelector('input[name="auto-open-resources-panel"]').checked = true;
+    }
+    if (extensionSettings.autoOpenResourcesPanelBypassOtherPanels) {
+        elConfigPanel.querySelector('input[name="auto-open-resources-panel-bypass-other-panels"]').checked = true;
     }
     if (extensionSettings.inventoryItemNames) {
         elConfigPanel.querySelector('input[name="inventory-item-names"]').checked = true;
@@ -893,11 +927,16 @@ function injectRealTime() {
     }, 1000);
 }
 
-function updateLocationId() {
+function updateLocationData() {
     selectedLocationIdPrevious = selectedLocationIdCurrent;
     const selectedBuildingOrShipValues = getSelectedBuildingOrShipValues();
     const selectedLocationId = getSelectedLocationId(selectedBuildingOrShipValues);
     selectedLocationIdCurrent = selectedLocationId;
+    try {
+        selectedLocationBuildingType = selectedBuildingOrShipValues.lotValue.building.Building.buildingType;
+    } catch (error) {
+        selectedLocationBuildingType = null;
+    }
 }
 
 async function searchMarketplace(searchText) {
@@ -1393,8 +1432,8 @@ function autoHideUsedDeposits() {
 }
 
 /**
- * Auto-open a "Lot Inventory" or "Ship Inventory", if that hud
- * menu item exists, and if no hud menu panel is currently open.
+ * Auto-open the "Lot Inventory" panel, if a Warehouse is currently selected.
+ * Auto-open the "Ship Inventory" panel, if a ship is currently selected.
  */
 function autoOpenInventoryPanel() {
     if (!extensionSettings.autoOpenInventoryPanel) {
@@ -1424,6 +1463,10 @@ function autoOpenInventoryPanel() {
          */
         return;
     }
+    if (isElHudMenuItemSelectedByLabel(hudMenuItemLabelLotInventory) || isElHudMenuItemSelectedByLabel(hudMenuItemLabelShipInventory)) {
+        // The "Lot Inventory" or "Ship Inventory" hud menu item is already selected
+        return;
+    }
     /**
      * NEW valid location selected => OPEN the "Lot Inventory" or "Ship Inventory"
      * hud menu panel, via force-click on the respective hud menu item, if any.
@@ -1436,17 +1479,64 @@ function autoOpenInventoryPanel() {
 }
 
 /**
+ * Auto-open the "Resources" panel, if an Extractor is currently selected
+ */
+function autoOpenResourcesPanel() {
+    if (!extensionSettings.autoOpenResourcesPanel) {
+        return;
+    }
+    if (!extensionSettings.autoOpenResourcesPanelBypassOtherPanels) {
+        // Do NOT bypass auto-opening the Resources panel, even if a hud menu panel is already open
+        const elHudMenuPanel = getElHudMenuPanel();
+        if (elHudMenuPanel) {
+            const reactPropsHudMenuPanel = getReactPropsForEl(elHudMenuPanel);
+            if (reactPropsHudMenuPanel && reactPropsHudMenuPanel.open) {
+                // A hud menu panel is already open => do NOT auto-open the Resources panel
+                return;
+            }
+        }
+    }
+    if (selectedLocationBuildingType !== BUILDING_TYPE.EXTRACTOR) {
+        // NO extractor selected
+        return;
+    }
+    if (selectedLocationIdCurrent === selectedLocationIdPrevious) {
+        /**
+         * Abort if SAME location was already selected in the previous cycle.
+         * This ensures that, as long as this same location remains selected,
+         * the Resources panel will NOT be auto-opened multiple times,
+         * if the user manually closes it AFTER it was first auto-opened.
+         */
+        return;
+    }
+    if (isElHudMenuItemSelectedByLabel(hudMenuItemLabelResources)) {
+        // The "Resources" hud menu item is already selected
+        return;
+    }
+    /**
+     * NEW extractor selected => OPEN the "Resources" hud menu panel,
+     * via force-click on the respective hud menu item, if any.
+     */
+    const elHudMenuItemResources = getElHudMenuItemByLabel(hudMenuItemLabelResources);
+    if (!elHudMenuItemResources) {
+        return;
+    }
+    elHudMenuItemResources.click();
+}
+
+/**
  * Inject various features into the DOM periodically, as needed
  */
 function injectFeaturesPeriodically() {
     setInterval(() => {
         /**
-         * The location ID must be updated BEFORE calling other functions which
-         * rely on "selectedLocationIdCurrent" / "selectedLocationIdPrevious":
+         * The location data must be updated BEFORE calling other functions which
+         * rely on "selectedLocationIdCurrent" / "selectedLocationIdPrevious" / "selectedBuildingType":
          * - "injectIndustryBuilderButton"
          * - "autoOpenInventoryPanel"
+         * - "autoOpenResourcesPanel"
          */
-        updateLocationId();
+        updateLocationData();
         injectWidgets();
         injectCaptainVideo();
         injectProcessFilter();
@@ -1455,6 +1545,7 @@ function injectFeaturesPeriodically() {
         injectIndustryBuilderButton();
         autoHideUsedDeposits();
         autoOpenInventoryPanel();
+        autoOpenResourcesPanel();
     }, 1000);
 }
 
@@ -1493,6 +1584,12 @@ function onClickConfigOption(el) {
             break;
         case 'auto-open-inventory-panel-bypass-other-panels':
             setExtensionSetting('autoOpenInventoryPanelBypassOtherPanels', el.checked);
+            break;
+        case 'auto-open-resources-panel':
+            setExtensionSetting('autoOpenResourcesPanel', el.checked);
+            break;
+        case 'auto-open-resources-panel-bypass-other-panels':
+            setExtensionSetting('autoOpenResourcesPanelBypassOtherPanels', el.checked);
             break;
         case 'inventory-item-names':
             setExtensionSetting('inventoryItemNames', el.checked);

@@ -518,6 +518,10 @@
 
                 &.e115-config-option-secondary {
                     margin-left: 24px;
+
+                    span {
+                        opacity: 0.5;
+                    }
                 }
             }
         }

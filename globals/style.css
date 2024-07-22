@@ -472,6 +472,9 @@
 #e115-config-panel-wrapper #e115-config-panel #e115-config-options label.e115-config-option-secondary {
   margin-left: 24px;
 }
+#e115-config-panel-wrapper #e115-config-panel #e115-config-options label.e115-config-option-secondary span {
+  opacity: 0.5;
+}
 
 body[data-inventory-item-names=true] #hudMenuPanel :not(:hover) > [data-tooltip-id=hudMenuTooltip][data-tooltip-place=top][data-tooltip-content]::after {
   background-color: rgba(0, 0, 0, 0.33);
