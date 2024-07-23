@@ -90,7 +90,15 @@ async function injectTools() {
         await updateToolsIfNotSet();
     }
     // Inject the hud-menu item, now that the default hud-menu item is selected
-    injectHudMenuItemAndPanel(hudMenuItemLabelTools, tools);
+    const elToolsButton = getToolsButton();
+    if (!elToolsButton) {
+        /**
+         * Ensure the hud-menu item was NOT already injected - e.g. by another cycle from
+         * "reInjectToolsPeriodically", while this cycle was waiting for the "await" calls?
+         * (potential fix for randomly duplicated "Community Tools" hud-menu item)
+         */
+        injectHudMenuItemAndPanel(hudMenuItemLabelTools, tools);
+    }
     // De-select the default hud-menu item, in order to extract the class-list for "hudMenuClosedClassListValue"
     elHudMenuItemDefault.click();
     const targetSelectedStateReached = await waitForHudMenuItemSelectedState(elHudMenuItemDefault, false, checkIntervalMs);

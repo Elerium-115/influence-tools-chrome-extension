@@ -1000,6 +1000,14 @@ function onClickInventoryItem(elItem) {
             countSelected++;
         }
     });
+    /**
+     * ALWAYS remove any injected buttons, to avoid duplicating them in this scenario:
+     * - open inventory #1, select product #A => 1st set of inventory-buttons injected
+     * - open inventory #2, select product #B => 2nd set of inventory-buttons injected
+     */
+    elInventoryFooter.querySelectorAll('.e115-button-inventory').forEach(elButton => {
+        elButton.parentElement.removeChild(elButton);
+    });
     if (countSelected === 1) {
         // Single item selected => inject relevant buttons
         const elItemSelectedName = elItemSelected.querySelector('[data-tooltip-content]').dataset.tooltipContent;
@@ -1028,11 +1036,6 @@ function onClickInventoryItem(elItem) {
         elProductionButton.dataset.onClickFunction = 'onClickToolCategoryItem';
         elProductionButton.dataset.onClickArgs = JSON.stringify(['Production Planner', productionPlannerUrl, true]);
         elInventoryFooter.append(elProductionButton);
-    } else {
-        // No item / multiple items selected => remove any injected buttons
-        elInventoryFooter.querySelectorAll('.e115-button-inventory').forEach(elButton => {
-            elButton.parentElement.removeChild(elButton);
-        });
     }
 }
 
