@@ -73,7 +73,7 @@ const BUILDING_TYPE = {
  * if they are not yet saved in local-storage. This also saves them into local-storage.
  */
 for (const [settingKey, settingValue] of Object.entries(extensionSettingsDefault)) {
-    if (!extensionSettings[settingKey]) {
+    if (typeof extensionSettings[settingKey] === 'undefined') {
         setExtensionSetting(settingKey, settingValue);
     }
 }
