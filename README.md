@@ -32,9 +32,16 @@ As of April 2024, this Chrome Extension works with the following versions of the
 Simply install the extension from the Chrome Web Store, and enjoy automatic updates:
 - https://chromewebstore.google.com/detail/influence-tools/kopdkjlnbfiegpdjiebogkakjfppfglj
 
-**Method 2 - for developers and power users:**
+**Method 2 - for users worried about automated updates:**
 
-This method allows you to change the extension's source code, but you will need to manually load it in your browser, every time you make changes, or when this respository is updated:
+If you are worried about the safety of automatic updates you can install the extension manually. For full manual steps, check method 3. Otherwise you can use the scipt provided to automate the download part:
+- Download *manual_installation.ps1* from the files list above and save it on your computer.
+- Execute the script (right click > run with PowerShell) and follow the instuctions (you can also refer to https://developer.chrome.com/docs/extensions/mv3/getstarted/development-basics/#load-unpacked after the download completes).
+- When you want to update, simply the script again and reload the extension.
+
+**Method 3 - for developers and power users:**
+
+Similar to menthod two but without scripted download. This method allows you to change the extension's source code, but you will need to manually load it in your browser, every time you make changes, or when this respository is updated:
 - Download this repository and unpack it (if downloaded as ZIP) into a dedicated folder on your computer. This will be your unpacked extension.
 - Follow these instructions for loading an unpacked extension in your Chromium-based browser (Chrome, Brave etc.)
     - https://developer.chrome.com/docs/extensions/mv3/getstarted/development-basics/#load-unpacked
