@@ -1602,7 +1602,7 @@ function highlightCrewsRationing() {
             }
         });
         elsCrews.forEach(elCrew => {
-            const elCrewContainer = elCrew.parentElement.parentElement.parentElement.parentElement;
+            const elCrewContainer = elCrew.parentElement.parentElement.parentElement;
             const reactFiberCrew = getReactFiberForEl(elCrewContainer);
             if (!reactFiberCrew || !reactFiberCrew.memoizedProps) {
                 return null;
