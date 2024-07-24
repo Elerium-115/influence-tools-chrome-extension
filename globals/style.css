@@ -588,6 +588,23 @@ body[data-inventory-item-names=true] #hudMenuPanel :not(:hover) > [data-tooltip-
   }
 }
 
+[data-e115-crew-food-ratio]::after {
+  --size-icon: 20px;
+  --size-padding: 4px;
+  background-color: rgba(0, 0, 0, 0.75);
+  background-image: url("data:image/svg+xml;utf8,<svg fill='white' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'><path d='M.84,9.26c0-2,4.1-3.62,9.16-3.62,.02,0,.03,0,.05,0l-1.14,1.11c-3.21,.15-5.38,.95-6.37,1.68-.4,.3-.62,.59-.62,.83,0,.86,2.85,2.54,8.08,2.54,5.23,0,8.08-1.68,8.08-2.54,0-.23-.21-.52-.62-.83-.54-.41-1.44-.83-2.68-1.15l.91-.85c2.11,.66,3.47,1.68,3.47,2.83,0,.03,0,.06-.01,.09,0,.02,.01,.04,.01,.06,0,5.06-4.1,9.16-9.16,9.16-5.06,0-9.16-4.1-9.16-9.16,0-.02,.01-.04,.01-.06,0-.03-.01-.06-.01-.09Z'></path><path d='M10.01,9.44c.14,0,.28-.05,.38-.16L17.72,1.95c.21-.21,.21-.55,0-.76s-.55-.21-.76,0l-7.33,7.33c-.21,.21-.21,.55,0,.76,.11,.11,.24,.16,.38,.16Z'></path></svg>");
+  background-position: calc(100% - var(--size-padding)) calc(100% - var(--size-padding));
+  background-repeat: no-repeat;
+  background-size: var(--size-icon);
+  bottom: 20px;
+  color: white;
+  content: attr(data-e115-crew-food-ratio);
+  font-size: 80%;
+  padding: var(--size-padding) calc(5px + var(--size-icon) + var(--size-padding)) var(--size-padding) var(--size-padding);
+  position: absolute;
+  right: 8px;
+}
+
 .eUlTUS > img:not(:hover) {
   -webkit-backdrop-filter: brightness(var(--crewmate-color-intensity));
           backdrop-filter: brightness(var(--crewmate-color-intensity));

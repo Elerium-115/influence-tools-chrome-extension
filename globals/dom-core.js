@@ -70,6 +70,8 @@ const BUILDING_TYPE = {
     HABITAT: 9
 };
 
+const YEAR_IN_SECONDS = 31536000; // 60 * 60 * 24 * 365
+
 /**
  * Use properties which may have been recently added to default settings,
  * if they are not yet saved in local-storage. This also saves them into local-storage.
@@ -481,6 +483,23 @@ function getToolUrlProcessFinder() {
     // Hardcoding the URL from "tools" for {title: "Process Finder", author: "Denker"}
     return 'https://www.adalia.info/tools/process-finder';
 }
+
+/**
+ * Source: Influence SDK - "src/lib/crew.js"
+ * @param timeSinceFed In-game seconds since the crew was last fully fed
+ */
+const getCurrentFoodRatio = (timeSinceFed = 0, consumption = 1) => {
+    const timeSinceFedInYears = timeSinceFed / YEAR_IN_SECONDS;
+    const adjustedTimeSince = timeSinceFedInYears / consumption; // Simulates slower consumption
+    return Math.min(
+        Math.max(
+            0,
+            1 - adjustedTimeSince, // (not fasting)
+            0.75 - 0.5 * adjustedTimeSince // (fasting)
+        ),
+        1
+    );
+};
 
 function getCloseButtonFromHudMenuPanel() {
     let elCloseButton = null;
@@ -1596,14 +1615,13 @@ function highlightCrewsRationing() {
         const elHudMenuPanel = getElHudMenuPanel();
         const elsCrewmateImages = elHudMenuPanel.querySelectorAll('img[src*="/crewmates/"]');
         elsCrewmateImages.forEach(elCrewmateImage => {
-            const elCrew = elCrewmateImage.closest('[data-tooltip-id]').parentElement;
+            const elCrew = elCrewmateImage.closest('[data-tooltip-id]').parentElement.parentElement.parentElement.parentElement;
             if (!elsCrews.includes(elCrew)) {
                 elsCrews.push(elCrew);
             }
         });
         elsCrews.forEach(elCrew => {
-            const elCrewContainer = elCrew.parentElement.parentElement.parentElement;
-            const reactFiberCrew = getReactFiberForEl(elCrewContainer);
+            const reactFiberCrew = getReactFiberForEl(elCrew);
             if (!reactFiberCrew || !reactFiberCrew.memoizedProps) {
                 return null;
             }
@@ -1613,8 +1631,13 @@ function highlightCrewsRationing() {
                 const crewRationing = crewData.propValue._foodBonuses.rationing;
                 if (crewRationing < 1) {
                     const shouldHighlight = crewRationing < 1 && isEnabledHighlight;
-                    elCrewContainer.classList.toggle('e115-my-crew-rationing', shouldHighlight);
+                    elCrew.classList.toggle('e115-my-crew-rationing', shouldHighlight);
                 }
+                const crewConsumption = crewData.propValue._foodBonuses.consumption;
+                const crewLastFed = crewData.propValue.Crew.lastFed;
+                const crewTimeSinceFed = ((new Date().getTime()) / 1000 - crewLastFed) * 24;
+                const crewFoodRatio = Math.round(getCurrentFoodRatio(parseInt(crewTimeSinceFed), crewConsumption) * 100);
+                elCrew.dataset.e115CrewFoodRatio = `${crewFoodRatio}%`;
             } catch (error) {
                 // Swallow this error
             }
