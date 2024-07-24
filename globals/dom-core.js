@@ -29,9 +29,10 @@ const selectorTopMenu = '#topMenu';
 const hudMenuItemLabelDefault = 'My Crews';
 
 const hudMenuItemLabelMarketplace = 'Asteroid Markets';
+const hudMenuItemLabelMyCrews = 'My Crews';
 const hudMenuItemLabelLotInventory = 'Lot Inventory';
-const hudMenuItemLabelShipInventory = 'Ship Inventory';
 const hudMenuItemLabelResources = 'Resources';
+const hudMenuItemLabelShipInventory = 'Ship Inventory';
 
 const hudMenuItemLabelTools = 'Community Tools'; // to be injected
 
@@ -43,6 +44,7 @@ const extensionSettingsDefault = {
     autoOpenResourcesPanelBypassOtherPanels: false, // if true, and if "autoOpenResourcesPanel" also true, the "Resources" panel will be auto-open even if another panel is already open
     crewmateColorIntensity: 4, // brightness amount (from 1 to 5) for the class-specific background color of crewmates
     extractionPercent: 100, // preferred extraction percentage
+    highlightCrewsRationing: false, // if true, highlight the selected crew if rationing
     industryBuilderButton: true, // if true, inject a button in inventories re: "What can I make with these items?"
     inventoryItemNames: true, // if true, overlay names for inventory items
 };
@@ -141,6 +143,7 @@ let extractionAmountMax = 0;
  */
 let isOpenPanelWithUsedDeposits = false;
 
+let selectedCrewRationing = null;
 let selectedLocationIdPrevious = null;
 let selectedLocationIdCurrent = null;
 let selectedLocationBuildingType = null;
@@ -278,18 +281,11 @@ function getElHudMenuItemSelected() {
 }
 
 /**
- * The selected location can be any of these:
- * - lot @ surface-view (empty lot / building / construction site / landed Light Transport)
- * - asteroid @ surface-view (if NO lot selected)
- * - asteroid @ system-view  (if zoomed-out)
- * - none @ system-view (if NO asteroid selected)
- * - ship (regardless if in shipyard / orbit / transit, but EXCLUDING landed Light Transport)
- * 
  * This function looks for the first VISIBLE previous-sibling, relative to the parent of the hud menu, because:
  * - when a ship is selected, the DOM contains an additional element BEFORE the left-side panels container
  * - when an asteroid is selected @ system-view, the DOM contains 2 hidden elements AFTER the left-side panels container
  */
-function getElSelectedLocationPanel() {
+function getElLeftSidePanelsContainer() {
     const elHudMenu = getElHudMenu();
     if (!elHudMenu) {
         return null;
@@ -313,11 +309,50 @@ function getElSelectedLocationPanel() {
         return null;
     }
     // At this point, "elPreviousSibling" should be the left-side panels container
-    const elSelectedLocationPanel = elPreviousSibling.lastElementChild;
-    return elSelectedLocationPanel;
+    return elPreviousSibling;
 }
 
-function getSelectedBuildingOrShipValues() {
+function getElSelectedCrewPanel() {
+    const elLeftSidePanelsContainer = getElLeftSidePanelsContainer();
+    if (!elLeftSidePanelsContainer) {
+        return null;
+    }
+    return elLeftSidePanelsContainer.firstElementChild;
+}
+
+/**
+ * The selected location can be any of these:
+ * - lot @ surface-view (empty lot / building / construction site / landed Light Transport)
+ * - asteroid @ surface-view (if NO lot selected)
+ * - asteroid @ system-view  (if zoomed-out)
+ * - none @ system-view (if NO asteroid selected)
+ * - ship (regardless if in shipyard / orbit / transit, but EXCLUDING landed Light Transport)
+ */
+function getElSelectedLocationPanel() {
+    const elLeftSidePanelsContainer = getElLeftSidePanelsContainer();
+    if (!elLeftSidePanelsContainer) {
+        return null;
+    }
+    return elLeftSidePanelsContainer.lastElementChild;
+}
+
+function getSelectedCrewValues() {
+    const elSelectedCrewPanel = getElSelectedCrewPanel();
+    if (!elSelectedCrewPanel) {
+        return null;
+    }
+    const reactFiberSelectedCrewPanel = getReactFiberForEl(elSelectedCrewPanel);
+    if (!reactFiberSelectedCrewPanel || !reactFiberSelectedCrewPanel.memoizedProps) {
+        return null;
+    }
+    const reactChildren = reactFiberSelectedCrewPanel.memoizedProps.children;
+    const crewData = getReactPropDataFromChildrenRecursive('crew', reactChildren);
+    return {
+        crewValue: crewData.propValue,
+    }
+}
+
+function getSelectedLocationValues() {
     const elSelectedLocationPanel = getElSelectedLocationPanel();
     if (!elSelectedLocationPanel) {
         return null;
@@ -355,15 +390,15 @@ function getSelectedBuildingOrShipValues() {
  * Return the ID for the currently selected location, formated as:
  * - "B1234" = selected building with ID 1234
  * - "S1234" = selected ship with ID 1234
- * - null = none of the above, OR selected building with NO data in React prop "lot" (see "getSelectedBuildingOrShipValues")
+ * - null = none of the above, OR selected building with NO data in React prop "lot" (see "getSelectedLocationValues")
  * 
- * NOTE: "buildingOrShipValues" must be formatted as the return value of "getSelectedBuildingOrShipValues"
+ * NOTE: "locationValues" must be formatted as the return value of "getSelectedLocationValues"
  */
-function getSelectedLocationId(buildingOrShipValues) {
-    if (!buildingOrShipValues) {
+function getSelectedLocationId(locationValues) {
+    if (!locationValues) {
         return null;
     }
-    const {lotValue, shipValue} = {...buildingOrShipValues};
+    const {lotValue, shipValue} = {...locationValues};
     if (!lotValue && !shipValue) {
         return null;
     }
@@ -754,6 +789,7 @@ function injectConfig() {
     injectConfigOptionCheckbox('auto-open-inventory-panel-bypass-other-panels', '... even if another menu item is open', true);
     injectConfigOptionCheckbox('auto-open-resources-panel', 'Auto-open resources for Extractors');
     injectConfigOptionCheckbox('auto-open-resources-panel-bypass-other-panels', '... even if another menu item is open', true);
+    injectConfigOptionCheckbox('highlight-crews-rationing', 'Highlight crews which are rationing');
     injectConfigOptionCheckbox('inventory-item-names', 'Overlay names for inventory items');
     injectConfigOptionCheckbox('industry-builder-button', 'Process Finder button for warehouses');
     // Initialize config options, based on extension settings from local-storage
@@ -771,6 +807,9 @@ function injectConfig() {
     }
     if (extensionSettings.autoOpenResourcesPanelBypassOtherPanels) {
         elConfigPanel.querySelector('input[name="auto-open-resources-panel-bypass-other-panels"]').checked = true;
+    }
+    if (extensionSettings.highlightCrewsRationing) {
+        elConfigPanel.querySelector('input[name="highlight-crews-rationing"]').checked = true;
     }
     if (extensionSettings.inventoryItemNames) {
         elConfigPanel.querySelector('input[name="inventory-item-names"]').checked = true;
@@ -927,13 +966,22 @@ function injectRealTime() {
     }, 1000);
 }
 
+function updateCrewData() {
+    const selectedCrewValues = getSelectedCrewValues();
+    try {
+        selectedCrewRationing = selectedCrewValues.crewValue._foodBonuses.rationing;
+    } catch (error) {
+        selectedCrewRationing = null;
+    }
+}
+
 function updateLocationData() {
     selectedLocationIdPrevious = selectedLocationIdCurrent;
-    const selectedBuildingOrShipValues = getSelectedBuildingOrShipValues();
-    const selectedLocationId = getSelectedLocationId(selectedBuildingOrShipValues);
+    const selectedLocationValues = getSelectedLocationValues();
+    const selectedLocationId = getSelectedLocationId(selectedLocationValues);
     selectedLocationIdCurrent = selectedLocationId;
     try {
-        selectedLocationBuildingType = selectedBuildingOrShipValues.lotValue.building.Building.buildingType;
+        selectedLocationBuildingType = selectedLocationValues.lotValue.building.Building.buildingType;
     } catch (error) {
         selectedLocationBuildingType = null;
     }
@@ -1528,10 +1576,62 @@ function autoOpenResourcesPanel() {
 }
 
 /**
+ * Highlight crews which are rationing, from among:
+ * - selected crew (top-left)
+ * - "My Crews" hud menu panel
+ */
+function highlightCrewsRationing() {
+    const isEnabledHighlight = extensionSettings.highlightCrewsRationing;
+    // Highlight selected crew if rationing
+    if (selectedCrewRationing !== null) {
+        const elSelectedCrewPanel = getElSelectedCrewPanel();
+        if (elSelectedCrewPanel) {
+            const shouldHighlight = selectedCrewRationing < 1 && isEnabledHighlight;
+            elSelectedCrewPanel.classList.toggle('e115-crew-rationing', shouldHighlight);
+        }
+    }
+    // Highlight "My Crews" which are rationing
+    if (isHudMenuPanelFor(hudMenuItemLabelMyCrews)) {
+        const elsCrews = [];
+        const elHudMenuPanel = getElHudMenuPanel();
+        const elsCrewmateImages = elHudMenuPanel.querySelectorAll('img[src*="/crewmates/"]');
+        elsCrewmateImages.forEach(elCrewmateImage => {
+            const elCrew = elCrewmateImage.closest('[data-tooltip-id]').parentElement;
+            if (!elsCrews.includes(elCrew)) {
+                elsCrews.push(elCrew);
+            }
+        });
+        elsCrews.forEach(elCrew => {
+            const elCrewContainer = elCrew.parentElement.parentElement.parentElement.parentElement;
+            const reactFiberCrew = getReactFiberForEl(elCrewContainer);
+            if (!reactFiberCrew || !reactFiberCrew.memoizedProps) {
+                return null;
+            }
+            const reactChildren = reactFiberCrew.memoizedProps.children;
+            const crewData = getReactPropDataFromChildrenRecursive('crew', reactChildren);
+            try {
+                const crewRationing = crewData.propValue._foodBonuses.rationing;
+                if (crewRationing < 1) {
+                    const shouldHighlight = crewRationing < 1 && isEnabledHighlight;
+                    elCrewContainer.classList.toggle('e115-my-crew-rationing', shouldHighlight);
+                }
+            } catch (error) {
+                // Swallow this error
+            }
+        });
+    }
+}
+
+/**
  * Inject various features into the DOM periodically, as needed
  */
 function injectFeaturesPeriodically() {
     setInterval(() => {
+        /**
+         * The crew data must be updated BEFORE calling other functions which rely on "selectedCrewRationing":
+         * - "highlightCrewsRationing"
+         */
+        updateCrewData();
         /**
          * The location data must be updated BEFORE calling other functions which
          * rely on "selectedLocationIdCurrent" / "selectedLocationIdPrevious" / "selectedBuildingType":
@@ -1549,6 +1649,7 @@ function injectFeaturesPeriodically() {
         autoHideUsedDeposits();
         autoOpenInventoryPanel();
         autoOpenResourcesPanel();
+        highlightCrewsRationing();
     }, 1000);
 }
 
@@ -1593,6 +1694,9 @@ function onClickConfigOption(el) {
             break;
         case 'auto-open-resources-panel-bypass-other-panels':
             setExtensionSetting('autoOpenResourcesPanelBypassOtherPanels', el.checked);
+            break;
+        case 'highlight-crews-rationing':
+            setExtensionSetting('highlightCrewsRationing', el.checked);
             break;
         case 'inventory-item-names':
             setExtensionSetting('inventoryItemNames', el.checked);

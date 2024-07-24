@@ -630,6 +630,28 @@ body[data-inventory-item-names='true'] #hudMenuPanel :not(:hover) > [data-toolti
     }
 }
 
+.e115-crew-rationing {
+    --color-crew-rationing: rgba(255, 0, 0, 0.6);
+    animation: flash-crew-rationing 1500ms infinite;
+    filter: drop-shadow(0 0 10px var(--color-crew-rationing));
+
+    @keyframes flash-crew-rationing {
+        33% { filter: drop-shadow(0 0 20px var(--color-crew-rationing)); }
+        66% { filter: drop-shadow(0 0 10px var(--color-crew-rationing)); }
+    }
+}
+
+.e115-my-crew-rationing {
+    --color-my-crew-rationing: red;
+    animation: flash-my-crew-rationing 1500ms infinite;
+    filter: drop-shadow(0 0 0 var(--color-my-crew-rationing));
+
+    @keyframes flash-my-crew-rationing {
+        33% { filter: drop-shadow(0 0 10px var(--color-my-crew-rationing)); }
+        66% { filter: drop-shadow(0 0 0 var(--color-my-crew-rationing)); }
+    }
+}
+
 // Volatile changes for dynamic class names
 
 .eUlTUS > img:not(:hover) {
