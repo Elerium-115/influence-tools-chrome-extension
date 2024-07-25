@@ -669,6 +669,12 @@ body[data-inventory-item-names='true'] #hudMenuPanel :not(:hover) > [data-toolti
         position: absolute;
         right: 8px;
     }
+
+    &.e115-my-crew-rationing {
+        &::after {
+            background-color: var(--color-crew-rationing);
+        }
+    }
 }
 
 // Volatile changes for dynamic class names

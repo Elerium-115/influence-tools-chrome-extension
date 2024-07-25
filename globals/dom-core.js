@@ -37,6 +37,7 @@ const hudMenuItemLabelShipInventory = 'Ship Inventory';
 const hudMenuItemLabelTools = 'Community Tools'; // to be injected
 
 const extensionSettingsDefault = {
+    autoHideMarketsWithoutPrice: true, // if true, product-specific markets without any supply / demand will be auto-hidden
     autoHideUsedDeposits: true, // if true, used deposits will be auto-hidden, and "My Deposits" will also be auto-expanded
     autoOpenInventoryPanel: true, // if true, the "Lot Inventory" or "Ship Inventory" panel will be auto-open
     autoOpenInventoryPanelBypassOtherPanels: false, // if true, and if "autoOpenInventoryPanel" also true, the inventory panel will be auto-open even if another panel is already open
@@ -803,6 +804,7 @@ function injectConfig() {
     document.body.append(elConfigPanel);
     // Inject config options
     injectConfigOptionCrewmateColorIntensity();
+    injectConfigOptionCheckbox('auto-hide-markets-without-price', 'Auto-hide markets with no prices');
     injectConfigOptionCheckbox('auto-hide-used-deposits', 'Auto-hide used deposits');
     injectConfigOptionCheckbox('auto-open-inventory-panel', 'Auto-open inventories');
     injectConfigOptionCheckbox('auto-open-inventory-panel-bypass-other-panels', '... even if another menu item is open', true);
@@ -812,6 +814,9 @@ function injectConfig() {
     injectConfigOptionCheckbox('inventory-item-names', 'Overlay names for inventory items');
     injectConfigOptionCheckbox('industry-builder-button', 'Process Finder button for warehouses');
     // Initialize config options, based on extension settings from local-storage
+    if (extensionSettings.autoHideMarketsWithoutPrice) {
+        elConfigPanel.querySelector('input[name="auto-hide-markets-without-price"]').checked = true;
+    }
     if (extensionSettings.autoHideUsedDeposits) {
         elConfigPanel.querySelector('input[name="auto-hide-used-deposits"]').checked = true;
     }
@@ -1444,6 +1449,35 @@ function injectIndustryBuilderButton() {
     elIndustryButton.dataset.onClickArgs = JSON.stringify(['Process Finder', processFinderUrl, false]);
 }
 
+function autoHideMarketsWithoutPrice() {
+    if (!extensionSettings.autoHideMarketsWithoutPrice) {
+        return;
+    }
+    if (!location.pathname.match(/^\/marketplace\/(\d+)\/all\/(\d+)/)) {
+        // Product-specific markets window NOT open
+        return;
+    }
+    const elsTable = document.querySelectorAll("table");
+    if (elsTable.length !== 1) {
+        // Maybe the game's DOM structure has changed?
+        return;
+    }
+    const elMarketsTable = elsTable[0];
+    elMarketsTable.querySelectorAll('tbody tr').forEach(elRow => {
+        /**
+         * Markets without any supply / demand have "—" for each of the
+         * values below, leading to their textContent containing "————"
+         * - Supply
+         * - Selling Price
+         * - Demand
+         * - Buying Price
+         */
+        if (elRow.textContent.replace(/\s/g, '').includes('————')) {
+            elRow.classList.add('e115-hidden');
+        }
+    });
+}
+
 /**
  * Auto-click the "Show Used Deposits" toggle, if it exists in the hud menu panel,
  * and if the associated checkbox is enabled (i.e. if the "svg" contains a "path").
@@ -1669,6 +1703,7 @@ function injectFeaturesPeriodically() {
         injectMyOrdersProductLinks();
         injectAndApplyExtractionPercent();
         injectIndustryBuilderButton();
+        autoHideMarketsWithoutPrice();
         autoHideUsedDeposits();
         autoOpenInventoryPanel();
         autoOpenResourcesPanel();
@@ -1703,6 +1738,9 @@ function onInputCrewmateColorIntensity(el) {
 
 function onClickConfigOption(el) {
     switch (el.name) {
+        case 'auto-hide-markets-without-price':
+            setExtensionSetting('autoHideMarketsWithoutPrice', el.checked);
+            break;
         case 'auto-hide-used-deposits':
             setExtensionSetting('autoHideUsedDeposits', el.checked);
             break;

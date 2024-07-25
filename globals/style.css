@@ -604,6 +604,9 @@ body[data-inventory-item-names=true] #hudMenuPanel :not(:hover) > [data-tooltip-
   position: absolute;
   right: 8px;
 }
+[data-e115-crew-food-ratio].e115-my-crew-rationing::after {
+  background-color: var(--color-crew-rationing);
+}
 
 .eUlTUS > img:not(:hover) {
   -webkit-backdrop-filter: brightness(var(--crewmate-color-intensity));
