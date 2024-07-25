@@ -842,6 +842,7 @@ function injectConfig() {
         elConfigPanel.querySelector('input[name="industry-builder-button"]').checked = true;
     }
     // Initialize other data, based on extension settings from local-storage
+    // -- set "data-inventory-item-names" on "body"
     document.body.dataset.inventoryItemNames = extensionSettings.inventoryItemNames;
 }
 

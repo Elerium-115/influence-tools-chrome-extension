@@ -529,24 +529,28 @@
     }
 }
 
-// Inventory items in the hud-menu panel, with their wrapper NOT hovered.
+// Inventory items with their wrapper NOT hovered.
 // Apply only for "[data-tooltip-place='top']", to avoid matching (some) non-inventory panels.
-body[data-inventory-item-names='true'] #hudMenuPanel :not(:hover) > [data-tooltip-id='hudMenuTooltip'][data-tooltip-place='top'][data-tooltip-content] {
-    // Overlay item names
-    &::after {
-        background-color: rgba(0, 0, 0, 0.33);
-        color: white;
-        content: attr(data-tooltip-content);
-        display: block;
-        filter: drop-shadow(1px 1px 0 black);
-        font-size: 80%;
-        left: 0;
-        line-height: 1em;
-        max-height: calc(3em - 1px);
-        overflow: hidden;
-        padding: 3px;
-        position: absolute;
-        right: 9px;
+body[data-inventory-item-names='true'] {
+    #hudMenuPanel :not(:hover) > [data-tooltip-id='hudMenuTooltip'][data-tooltip-place='top'][data-tooltip-content], // items in hud-menu panel inventory
+    [data-tooltip-id='selectionDialogTooltip'][data-tooltip-place='top'][data-tooltip-content]:not(:hover), // items in transfer-source inventory
+    [data-tooltip-id='actionDialogTooltip'][data-tooltip-place='top'][data-tooltip-content]:not(:hover) { // items in transfer-overview inventory
+        // Overlay item names
+        &::after {
+            background-color: rgba(0, 0, 0, 0.33);
+            color: white;
+            content: attr(data-tooltip-content);
+            display: block;
+            filter: drop-shadow(1px 1px 0 black);
+            font-size: 80%;
+            left: 0;
+            line-height: 1em;
+            max-height: calc(3em - 1px);
+            overflow: hidden;
+            padding: 3px;
+            position: absolute;
+            right: 9px;
+        }
     }
 }
 

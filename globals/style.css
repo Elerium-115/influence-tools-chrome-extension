@@ -477,7 +477,9 @@
   opacity: 0.5;
 }
 
-body[data-inventory-item-names=true] #hudMenuPanel :not(:hover) > [data-tooltip-id=hudMenuTooltip][data-tooltip-place=top][data-tooltip-content]::after {
+body[data-inventory-item-names=true] #hudMenuPanel :not(:hover) > [data-tooltip-id=hudMenuTooltip][data-tooltip-place=top][data-tooltip-content]::after,
+body[data-inventory-item-names=true] [data-tooltip-id=selectionDialogTooltip][data-tooltip-place=top][data-tooltip-content]:not(:hover)::after,
+body[data-inventory-item-names=true] [data-tooltip-id=actionDialogTooltip][data-tooltip-place=top][data-tooltip-content]:not(:hover)::after {
   background-color: rgba(0, 0, 0, 0.33);
   color: white;
   content: attr(data-tooltip-content);
