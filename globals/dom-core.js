@@ -12,6 +12,7 @@ const svgIconFactoryArrows = `<svg fill="currentColor" stroke-width="0" viewBox=
 const eleriumApiUrl = 'https://elerium-influence-api.vercel.app';
 
 const crewmateVideosEndpoint = `${eleriumApiUrl}/data/crewmate-videos`;
+const pricesEndpoint = `${eleriumApiUrl}/data/prices`;
 const toolsEndpoint = `${eleriumApiUrl}/data/tools`;
 const widgetsEndpoint = `${eleriumApiUrl}/data/widgets`;
 
@@ -72,6 +73,7 @@ const BUILDING_TYPE = {
 };
 
 const YEAR_IN_SECONDS = 31536000; // 60 * 60 * 24 * 365
+const HOUR_IN_MILLISECONDS = 3600000; // 60 * 60 * 1000
 
 /**
  * Use properties which may have been recently added to default settings,
@@ -87,6 +89,11 @@ for (const [settingKey, settingValue] of Object.entries(extensionSettingsDefault
  * This will be populated via API call to "crewmateVideosEndpoint"
  */
 let crewmateVideos = null;
+
+/**
+ * This will be populated via API call to "pricesEndpoint"
+ */
+let prices = null;
 
 /**
  * This will be populated via API call to "toolsEndpoint"
@@ -882,6 +889,15 @@ async function updateCrewmateVideosIfNotSet() {
     }
 }
 
+async function updatePrices() {
+    try {
+        const pricesResponse = await fetch(pricesEndpoint);
+        prices = await pricesResponse.json();
+    } catch (error) {
+        // Swallow this error
+    }
+}
+
 async function updateToolsIfNotSet() {
     if (tools) {
         return;
@@ -1042,8 +1058,47 @@ async function searchMarketplace(searchText) {
     }
 }
 
+function getMarketValueOfSelectedItems(elItemsList) {
+    let marketValue = 0;
+    [...elItemsList.children].forEach(elParsedItemWrapper => {
+        const reactProps = getReactPropsForEl(elParsedItemWrapper);
+        if (!reactProps || !reactProps.selected) {
+            return;
+        }
+        const selectedQty = reactProps.selected;
+        const productName = elParsedItemWrapper.querySelector('[data-tooltip-content]').dataset.tooltipContent;
+        if (!productName || !prices[productName]) {
+            return;
+        }
+        const productPrice = prices[productName] * selectedQty;
+        marketValue += productPrice;
+    });
+    return marketValue;
+}
+
+/**
+ * Update the market value of the selected inventory items, using their current quantities.
+ * The quantity may be changed by the player, without triggering "onClickInventoryItem".
+ * But this function requires "elSelectedProductsInfo" to already be marked
+ * with "data-e115-market-value", during "onClickInventoryItem".
+ */
+function updateMarketValueOfSelectedItems() {
+    const elSelectedProductsInfo = document.querySelector('[data-e115-market-value');
+    if (!elSelectedProductsInfo) {
+        return;
+    }
+    const elItemsList = elSelectedProductsInfo.parentElement.previousElementSibling;
+    if (!elItemsList) {
+        return;
+    }
+    const marketValue = getMarketValueOfSelectedItems(elItemsList);
+    const marketValueFormatted = Intl.NumberFormat().format(parseInt(marketValue));
+    elSelectedProductsInfo.dataset.e115MarketValue = `Market value: ${marketValueFormatted} SWAY`;
+}
+
 /**
  * Inject relevant buttons in the inventory-footer, if a single inventory item is selected.
+ * Also inject market value of selected items in the inventory-footer.
  * 
  * NOTE re: injecting the "Search in Marketplace" button
  * - This only works for inventories where the "Marketplace" button exists in the hud-menu (Warehouse / contruction site).
@@ -1109,6 +1164,13 @@ function onClickInventoryItem(elItem) {
         elProductionButton.dataset.onClickFunction = 'onClickToolCategoryItem';
         elProductionButton.dataset.onClickArgs = JSON.stringify(['Production Planner', productionPlannerUrl, true]);
         elInventoryFooter.append(elProductionButton);
+    }
+    // Inject market value of selected items
+    const elSelectedProductsInfo = elInventoryFooter.querySelector('div[content*="Product"]');
+    if (elSelectedProductsInfo) {
+        const marketValue = getMarketValueOfSelectedItems(elItemsList);
+        const marketValueFormatted = Intl.NumberFormat().format(parseInt(marketValue));
+        elSelectedProductsInfo.dataset.e115MarketValue = `Market value: ${marketValueFormatted} SWAY`;
     }
 }
 
@@ -1709,7 +1771,16 @@ function injectFeaturesPeriodically() {
         autoOpenInventoryPanel();
         autoOpenResourcesPanel();
         highlightCrewsRationing();
+        updateMarketValueOfSelectedItems();
     }, 1000);
+}
+
+/**
+ * Periodically update prices via API call
+ */
+function updatePricesPeriodically() {
+    updatePrices()
+    setInterval(updatePrices, HOUR_IN_MILLISECONDS);
 }
 
 /**
