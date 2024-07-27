@@ -49,6 +49,7 @@ const extensionSettingsDefault = {
     highlightCrewsRationing: false, // if true, highlight the selected crew if rationing
     industryBuilderButton: true, // if true, inject a button in inventories re: "What can I make with these items?"
     inventoryItemNames: true, // if true, overlay names for inventory items
+    locationController: true, // if true, inject details about the controller of the selected location (lot, building, landed ship, asteroid)
 };
 
 // Save default extension settings into local-storage, if needed
@@ -57,6 +58,16 @@ if (!localStorage.getItem('e115Settings')) {
 }
 
 const extensionSettings = JSON.parse(localStorage.getItem('e115Settings'));
+
+const selectedCrewData = {
+    rationing: null,
+};
+
+const selectedLocationData = {
+    buildingType: null,
+    idCurrent: null,
+    idPrevious: null,
+};
 
 // Source: Influence SDK - "src/lib/building.js"
 const BUILDING_TYPE = {
@@ -73,7 +84,7 @@ const BUILDING_TYPE = {
 };
 
 const YEAR_IN_SECONDS = 31536000; // 60 * 60 * 24 * 365
-const HOUR_IN_MILLISECONDS = 3600000; // 60 * 60 * 1000
+const MINUTE_IN_MILLISECONDS = 60000; // 60 * 1000
 
 /**
  * Use properties which may have been recently added to default settings,
@@ -152,11 +163,6 @@ let extractionAmountMax = 0;
  * reset to FALSE when that panel is closed, or no longer contains "Show Used Deposits".
  */
 let isOpenPanelWithUsedDeposits = false;
-
-let selectedCrewRationing = null;
-let selectedLocationIdPrevious = null;
-let selectedLocationIdCurrent = null;
-let selectedLocationBuildingType = null;
 
 function delay(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
@@ -818,8 +824,9 @@ function injectConfig() {
     injectConfigOptionCheckbox('auto-open-resources-panel', 'Auto-open resources for Extractors');
     injectConfigOptionCheckbox('auto-open-resources-panel-bypass-other-panels', '... even if another menu item is open', true);
     injectConfigOptionCheckbox('highlight-crews-rationing', 'Highlight crews which are rationing');
-    injectConfigOptionCheckbox('inventory-item-names', 'Overlay names for inventory items');
     injectConfigOptionCheckbox('industry-builder-button', 'Process Finder button for warehouses');
+    injectConfigOptionCheckbox('inventory-item-names', 'Overlay names for inventory items');
+    injectConfigOptionCheckbox('location-controller', 'Identify the controller of the selected location');
     // Initialize config options, based on extension settings from local-storage
     if (extensionSettings.autoHideMarketsWithoutPrice) {
         elConfigPanel.querySelector('input[name="auto-hide-markets-without-price"]').checked = true;
@@ -842,11 +849,14 @@ function injectConfig() {
     if (extensionSettings.highlightCrewsRationing) {
         elConfigPanel.querySelector('input[name="highlight-crews-rationing"]').checked = true;
     }
+    if (extensionSettings.industryBuilderButton) {
+        elConfigPanel.querySelector('input[name="industry-builder-button"]').checked = true;
+    }
     if (extensionSettings.inventoryItemNames) {
         elConfigPanel.querySelector('input[name="inventory-item-names"]').checked = true;
     }
-    if (extensionSettings.industryBuilderButton) {
-        elConfigPanel.querySelector('input[name="industry-builder-button"]').checked = true;
+    if (extensionSettings.locationController) {
+        elConfigPanel.querySelector('input[name="location-controller"]').checked = true;
     }
     // Initialize other data, based on extension settings from local-storage
     // -- set "data-inventory-item-names" on "body"
@@ -1010,21 +1020,21 @@ function injectRealTime() {
 function updateCrewData() {
     const selectedCrewValues = getSelectedCrewValues();
     try {
-        selectedCrewRationing = selectedCrewValues.crewValue._foodBonuses.rationing;
+        selectedCrewData.rationing = selectedCrewValues.crewValue._foodBonuses.rationing;
     } catch (error) {
-        selectedCrewRationing = null;
+        selectedCrewData.rationing = null;
     }
 }
 
 function updateLocationData() {
-    selectedLocationIdPrevious = selectedLocationIdCurrent;
+    selectedLocationData.idPrevious = selectedLocationData.idCurrent;
     const selectedLocationValues = getSelectedLocationValues();
     const selectedLocationId = getSelectedLocationId(selectedLocationValues);
-    selectedLocationIdCurrent = selectedLocationId;
+    selectedLocationData.idCurrent = selectedLocationId;
     try {
-        selectedLocationBuildingType = selectedLocationValues.lotValue.building.Building.buildingType;
+        selectedLocationData.buildingType = selectedLocationValues.lotValue.building.Building.buildingType;
     } catch (error) {
-        selectedLocationBuildingType = null;
+        selectedLocationData.buildingType = null;
     }
 }
 
@@ -1481,7 +1491,7 @@ function injectIndustryBuilderButton() {
     }
     const elInventoryItem = document.querySelector(`${selectorHudMenuPanel} [data-tooltip-id='hudMenuTooltip'][data-tooltip-content]`);
     let elIndustryButton = document.getElementById('e115-industry-builder-button');
-    if (!elInventoryItem || !selectedLocationIdCurrent.startsWith('B')) {
+    if (!elInventoryItem || !selectedLocationData.idCurrent.startsWith('B')) {
         // Inventory not open, or no items in inventory, or not a Warehouse (i.e. a ship)
         if (elIndustryButton) {
             // Remove button injected for a previous inventory
@@ -1498,7 +1508,7 @@ function injectIndustryBuilderButton() {
         elInventoryItemWrapper.parentElement.previousElementSibling.append(elIndustryButton);
     }
     /**
-     * Set the tool-URL of "elIndustryButton" based on "selectedLocationIdCurrent".
+     * Set the tool-URL of "elIndustryButton" based on "selectedLocationData.idCurrent".
      * At this point, the button may be either newly injected with no tool-URL,
      * or previously injected with an obsolete tool-URL.
      * 
@@ -1506,10 +1516,17 @@ function injectIndustryBuilderButton() {
      * the URL param "walletAddress". This ensures that the "Process Finder" tool only receives
      * the URL param "warehouses", allowing it to also be used for Warehouses owned by other players.
      */
-    const warehouseId = selectedLocationIdCurrent.replace('B', '');
+    const warehouseId = selectedLocationData.idCurrent.replace('B', '');
     const processFinderUrl = getToolUrlProcessFinder() + '?warehouses=' + warehouseId;
     elIndustryButton.dataset.onClickFunction = 'onClickToolCategoryItem';
     elIndustryButton.dataset.onClickArgs = JSON.stringify(['Process Finder', processFinderUrl, false]);
+}
+
+function injectLocationController() {
+    if (!extensionSettings.locationController) {
+        return;
+    }
+    //// ...
 }
 
 function autoHideMarketsWithoutPrice() {
@@ -1617,11 +1634,11 @@ function autoOpenInventoryPanel() {
             }
         }
     }
-    if (!selectedLocationIdCurrent) {
+    if (!selectedLocationData.idCurrent) {
         // NO valid location selected
         return;
     }
-    if (selectedLocationIdCurrent === selectedLocationIdPrevious) {
+    if (selectedLocationData.idCurrent === selectedLocationData.idPrevious) {
         /**
          * Abort if SAME location was already selected in the previous cycle.
          * This ensures that, as long as this same location remains selected,
@@ -1663,11 +1680,11 @@ function autoOpenResourcesPanel() {
             }
         }
     }
-    if (selectedLocationBuildingType !== BUILDING_TYPE.EXTRACTOR) {
+    if (selectedLocationData.buildingType !== BUILDING_TYPE.EXTRACTOR) {
         // NO extractor selected
         return;
     }
-    if (selectedLocationIdCurrent === selectedLocationIdPrevious) {
+    if (selectedLocationData.idCurrent === selectedLocationData.idPrevious) {
         /**
          * Abort if SAME location was already selected in the previous cycle.
          * This ensures that, as long as this same location remains selected,
@@ -1699,10 +1716,10 @@ function autoOpenResourcesPanel() {
 function highlightCrewsRationing() {
     const isEnabledHighlight = extensionSettings.highlightCrewsRationing;
     // Highlight selected crew if rationing
-    if (selectedCrewRationing !== null) {
+    if (selectedCrewData.rationing !== null) {
         const elSelectedCrewPanel = getElSelectedCrewPanel();
         if (elSelectedCrewPanel) {
-            const shouldHighlight = selectedCrewRationing < 1 && isEnabledHighlight;
+            const shouldHighlight = selectedCrewData.rationing < 1 && isEnabledHighlight;
             elSelectedCrewPanel.classList.toggle('e115-crew-rationing', shouldHighlight);
         }
     }
@@ -1748,14 +1765,14 @@ function highlightCrewsRationing() {
 function injectFeaturesPeriodically() {
     setInterval(() => {
         /**
-         * The crew data must be updated BEFORE calling other functions which rely on "selectedCrewRationing":
+         * The crew data must be updated BEFORE calling other functions which rely on "selectedCrewData":
          * - "highlightCrewsRationing"
          */
         updateCrewData();
         /**
-         * The location data must be updated BEFORE calling other functions which
-         * rely on "selectedLocationIdCurrent" / "selectedLocationIdPrevious" / "selectedBuildingType":
+         * The location data must be updated BEFORE calling other functions which rely on "selectedLocationData":
          * - "injectIndustryBuilderButton"
+         * - "injectLocationController"
          * - "autoOpenInventoryPanel"
          * - "autoOpenResourcesPanel"
          */
@@ -1766,6 +1783,7 @@ function injectFeaturesPeriodically() {
         injectMyOrdersProductLinks();
         injectAndApplyExtractionPercent();
         injectIndustryBuilderButton();
+        injectLocationController();
         autoHideMarketsWithoutPrice();
         autoHideUsedDeposits();
         autoOpenInventoryPanel();
@@ -1780,7 +1798,7 @@ function injectFeaturesPeriodically() {
  */
 function updatePricesPeriodically() {
     updatePrices()
-    setInterval(updatePrices, HOUR_IN_MILLISECONDS);
+    setInterval(updatePrices, 10 * MINUTE_IN_MILLISECONDS);
 }
 
 /**
@@ -1831,12 +1849,15 @@ function onClickConfigOption(el) {
         case 'highlight-crews-rationing':
             setExtensionSetting('highlightCrewsRationing', el.checked);
             break;
+        case 'industry-builder-button':
+            setExtensionSetting('industryBuilderButton', el.checked);
+            break;
         case 'inventory-item-names':
             setExtensionSetting('inventoryItemNames', el.checked);
             document.body.dataset.inventoryItemNames = el.checked;
             break;
-        case 'industry-builder-button':
-            setExtensionSetting('industryBuilderButton', el.checked);
+        case 'location-controller':
+            setExtensionSetting('locationController', el.checked);
             break;
     }
 }
