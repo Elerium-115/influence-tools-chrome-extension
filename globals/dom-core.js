@@ -11,6 +11,7 @@ const svgIconFactoryArrows = `<svg fill="currentColor" stroke-width="0" viewBox=
 
 const eleriumApiUrl = 'https://elerium-influence-api.vercel.app';
 
+const crewDataEndpoint = `${eleriumApiUrl}/crew-data`;
 const crewmateVideosEndpoint = `${eleriumApiUrl}/data/crewmate-videos`;
 const pricesEndpoint = `${eleriumApiUrl}/data/prices`;
 const toolsEndpoint = `${eleriumApiUrl}/data/tools`;
@@ -65,8 +66,10 @@ const selectedCrewData = {
 
 const selectedLocationData = {
     buildingType: null,
+    controllerData: null,
     idCurrent: null,
     idPrevious: null,
+    isSystemView: false,
 };
 
 // Source: Influence SDK - "src/lib/building.js"
@@ -95,6 +98,11 @@ for (const [settingKey, settingValue] of Object.entries(extensionSettingsDefault
         setExtensionSetting(settingKey, settingValue);
     }
 }
+
+/**
+ * This will be populated via API call to "crewDataEndpoint"
+ */
+let crewDataByCrewId = {};
 
 /**
  * This will be populated via API call to "crewmateVideosEndpoint"
@@ -163,6 +171,9 @@ let extractionAmountMax = 0;
  * reset to FALSE when that panel is closed, or no longer contains "Show Used Deposits".
  */
 let isOpenPanelWithUsedDeposits = false;
+
+let elLocationControllerWrapper = null;
+let elLocationController = null;
 
 function delay(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
@@ -391,12 +402,21 @@ function getSelectedLocationValues() {
      * - null       = any other location selected (or NO asteroid selected @ system-view)
      */
     const shipData = getReactPropDataFromChildrenRecursive('ship', reactChildren);
+    /**
+     * Prop "asteroid" relevant only in system-view
+     */
+    const asteroidData = getReactPropDataFromChildrenRecursive('asteroid', reactChildren);
+    /**
+     * Prop "crewId" used when "lot" and "ship" are both null / undefined (e.g. Marketplace etc.)
+     */
+    const crewIdData = getReactPropDataFromChildrenRecursive('crewId', reactChildren);
     //// TO DO: test "lotData" + "shipData" for ship in orbit / in transit
-    if (!lotData.foundOwnProperty && !shipData.foundOwnProperty) {
-        // Neither prop - "lot" / "ship" - found among any of "reactChildren"
+    if (!lotData.foundOwnProperty && !shipData.foundOwnProperty && !asteroidData.foundOwnProperty && !crewIdData.foundOwnProperty) {
         return null;
     }
     return {
+        asteroidValue: asteroidData.propValue,
+        crewIdValue: crewIdData.propValue,
         lotValue: lotData.propValue,
         shipValue: shipData.propValue,
     }
@@ -486,6 +506,13 @@ function getCurrentWalletAddress() {
  */
 function getCompactName(name) {
     return name.replace(/\s+/g, '');
+}
+
+function getCompactAddress(address) {
+    if (!address) {
+        return null;
+    }
+    return address.replace(/^(.{6}).+(.{4})$/, '$1...$2');
 }
 
 function getToolUrlProductionPlanner() {
@@ -826,7 +853,7 @@ function injectConfig() {
     injectConfigOptionCheckbox('highlight-crews-rationing', 'Highlight crews which are rationing');
     injectConfigOptionCheckbox('industry-builder-button', 'Process Finder button for warehouses');
     injectConfigOptionCheckbox('inventory-item-names', 'Overlay names for inventory items');
-    injectConfigOptionCheckbox('location-controller', 'Identify the controller of the selected location');
+    injectConfigOptionCheckbox('location-controller', 'Controller(s) for the selected location');
     // Initialize config options, based on extension settings from local-storage
     if (extensionSettings.autoHideMarketsWithoutPrice) {
         elConfigPanel.querySelector('input[name="auto-hide-markets-without-price"]').checked = true;
@@ -885,6 +912,19 @@ function injectConfigOptionCheckbox(optionName, optionDescription, isSecondaryOp
         elConfigOptionLabel.classList.add('e115-config-option-secondary')
     }
     elConfigOptions.append(elConfigOptionLabel);
+}
+
+async function updateCrewDataByCrewIdIfNotSet(crewId) {
+    if (!crewId || crewDataByCrewId[crewId]) {
+        return;
+    }
+    try {
+        const crewDataResponse = await fetch(`${crewDataEndpoint}/${crewId}`);
+        const crewData = await crewDataResponse.json();
+        crewDataByCrewId[crewId] = crewData;
+    } catch (error) {
+        // Swallow this error
+    }
 }
 
 async function updateCrewmateVideosIfNotSet() {
@@ -1036,6 +1076,57 @@ function updateLocationData() {
     } catch (error) {
         selectedLocationData.buildingType = null;
     }
+    // System-view if "lotValue" undefined (NOT if "null")
+    selectedLocationData.isSystemView = selectedLocationValues && typeof selectedLocationValues.lotValue === 'undefined';
+    let buildingCrewId = null;
+    let shipCrewId = null;
+    let asteroidCrewId = null;
+    let lotCrewId = null;
+    // Try each of these separately, in case any of them is undefined
+    // -- building
+    try {
+        buildingCrewId = selectedLocationValues.lotValue.building.Control.controller.id;
+    } catch (error) {
+        // Swallow this error (i.e. leave "buildingCrewId" as "null")
+    }
+    // -- ship
+    try {
+        shipCrewId = selectedLocationValues.shipValue.Control.controller.id;
+    } catch (error) {
+        // Swallow this error (i.e. leave "shipCrewId" as "null")
+    }
+    // -- asteroid @ system-view
+    try {
+        asteroidCrewId = selectedLocationValues.asteroidValue.Control.controller.id;
+    } catch (error) {
+        // Swallow this error (i.e. leave "asteroidCrewId" as "null")
+    }
+    // -- lot
+    try {
+        lotCrewId = selectedLocationValues.lotValue.Control.controller.id;
+    } catch (error) {
+        // Swallow this error (i.e. leave "lotCrewId" as "null")
+    }
+    if (!lotCrewId) {
+        // Fallback to "crewIdValue" when "lot" is null / undefined (e.g. Marketplace etc.)
+        try {
+            lotCrewId = selectedLocationValues.crewIdValue;
+        } catch (error) {
+            // Swallow this error (i.e. leave "lotCrewId" as "null")
+        }
+    }
+    selectedLocationData.controllerData = {
+        asteroidCrewId,
+        buildingCrewId,
+        lotCrewId,
+        shipCrewId,
+    };
+    // Update crew data via API, for each UNIQUE crew ID
+    const crewIds = Object.values(selectedLocationData.controllerData);
+    const crewIdsUnique = [...new Set(crewIds)];
+    crewIdsUnique.forEach(crewId => {
+        updateCrewDataByCrewIdIfNotSet(crewId);
+    });
 }
 
 async function searchMarketplace(searchText) {
@@ -1526,7 +1617,123 @@ function injectLocationController() {
     if (!extensionSettings.locationController) {
         return;
     }
-    //// ...
+    if (!elLocationController) {
+        elLocationControllerWrapper = createEl('div', 'e115-location-controller-wrapper');
+        elLocationController = createEl('div', 'e115-location-controller');
+        elLocationController.innerHTML = /*html*/ `
+            <div class="controller controller-building"></div>
+            <div class="controller controller-ship"></div>
+            <div class="controller controller-asteroid"></div>
+            <div class="controller controller-lot"></div>
+        `;
+        elLocationControllerWrapper.append(elLocationController);
+        document.body.append(elLocationControllerWrapper);
+    }
+    if (!selectedLocationData.controllerData) {
+        resetElLocationController();
+        return;
+    }
+    // NOT using "ownerAddress" / "ownerName" from "crewDataByCrewId"
+    const locationControllerInfo = {
+        asteroid: {
+            delegatedToAddress: null,
+            delegatedToName: null,
+        },
+        building: {
+            delegatedToAddress: null,
+            delegatedToName: null,
+        },
+        lot: {
+            delegatedToAddress: null,
+            delegatedToName: null,
+        },
+        ship: {
+            delegatedToAddress: null,
+            delegatedToName: null,
+        },
+    };
+    try {
+        /**
+         * NOTE: "crewDataByCrewId" may not yet contain any data for the crew IDs below, until the API response arrives.
+         * In this case, "resetElLocationController" is triggered via "catch", until the crew data becomes available.
+         */
+        const buildingCrewId = selectedLocationData.controllerData.buildingCrewId;
+        if (buildingCrewId) {
+            locationControllerInfo.building.delegatedToAddress = crewDataByCrewId[buildingCrewId].delegatedToAddress;
+            locationControllerInfo.building.delegatedToName = crewDataByCrewId[buildingCrewId].delegatedToName;
+        }
+        const shipCrewId = selectedLocationData.controllerData.shipCrewId;
+        if (shipCrewId) {
+            locationControllerInfo.ship.delegatedToAddress = crewDataByCrewId[shipCrewId].delegatedToAddress;
+            locationControllerInfo.ship.delegatedToName = crewDataByCrewId[shipCrewId].delegatedToName;
+        }
+        const asteroidCrewId = selectedLocationData.controllerData.asteroidCrewId;
+        if (asteroidCrewId) {
+            locationControllerInfo.asteroid.delegatedToAddress = crewDataByCrewId[asteroidCrewId].delegatedToAddress;
+            locationControllerInfo.asteroid.delegatedToName = crewDataByCrewId[asteroidCrewId].delegatedToName;
+        }
+        const lotCrewId = selectedLocationData.controllerData.lotCrewId;
+        if (lotCrewId) {
+            locationControllerInfo.lot.delegatedToAddress = crewDataByCrewId[lotCrewId].delegatedToAddress;
+            locationControllerInfo.lot.delegatedToName = crewDataByCrewId[lotCrewId].delegatedToName;
+        }
+        const elControllerBuilding = elLocationController.querySelector('.controller-building');
+        const elControllerShip = elLocationController.querySelector('.controller-ship');
+        const elControllerAsteroid = elLocationController.querySelector('.controller-asteroid');
+        const elControllerLot = elLocationController.querySelector('.controller-lot');
+        let buildingControllerText = locationControllerInfo.building.delegatedToName;
+        let shipControllerText = locationControllerInfo.ship.delegatedToName;
+        let asteroidControllerText = locationControllerInfo.asteroid.delegatedToName;
+        let lotControllerText = locationControllerInfo.lot.delegatedToName;
+        if (buildingControllerText) {
+            elControllerBuilding.classList.remove('is-address');
+        } else {
+            buildingControllerText = getCompactAddress(locationControllerInfo.building.delegatedToAddress);
+            elControllerBuilding.classList.add('is-address');
+        }
+        if (shipControllerText) {
+            elControllerShip.classList.remove('is-address');
+        } else {
+            shipControllerText = getCompactAddress(locationControllerInfo.ship.delegatedToAddress);
+            elControllerShip.classList.add('is-address');
+        }
+        if (asteroidControllerText) {
+            elControllerAsteroid.classList.remove('is-address');
+        } else {
+            asteroidControllerText = getCompactAddress(locationControllerInfo.asteroid.delegatedToAddress);
+            elControllerAsteroid.classList.add('is-address');
+        }
+        if (lotControllerText) {
+            elControllerLot.classList.remove('is-address');
+        } else {
+            lotControllerText = getCompactAddress(locationControllerInfo.lot.delegatedToAddress);
+            elControllerLot.classList.add('is-address');
+        }
+        elControllerBuilding.textContent = buildingControllerText; // empty "textContent" if this is null
+        elControllerShip.textContent = shipControllerText; // empty "textContent" if this is null
+        elControllerAsteroid.textContent = asteroidControllerText; // empty "textContent" if this is null
+        elControllerLot.textContent = lotControllerText; // empty "textContent" if this is null
+        elLocationController.classList.remove('e115-hidden');
+        // If both the building controller and ship controller are set => ship docked at spaceport
+        elLocationControllerWrapper.classList.toggle('ship-view', buildingCrewId && shipCrewId);
+        // If in system-view, only the asteroid controller will be shown
+        elLocationControllerWrapper.classList.toggle('system-view', selectedLocationData.isSystemView);
+    } catch (error) {
+        resetElLocationController();
+    }
+}
+
+function resetElLocationController() {
+    if (!elLocationController) {
+        return;
+    }
+    elLocationController.classList.add('e115-hidden');
+    const elControllerBuilding = elLocationController.querySelector('.controller-building');
+    const elControllerShip = elLocationController.querySelector('.controller-ship');
+    const elControllerLot = elLocationController.querySelector('.controller-lot');
+    elControllerBuilding.textContent = '';
+    elControllerShip.textContent = '';
+    elControllerLot.textContent = '';
 }
 
 function autoHideMarketsWithoutPrice() {

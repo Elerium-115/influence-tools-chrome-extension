@@ -1,4 +1,5 @@
 :root {
+    --color-bg-dark: rgba(15, 15, 15, 0.9);
     --color-crew-rationing: rgba(255, 0, 0, 0.6);
     --color-influence: rgb(54, 167, 205);
     --color-influence-faded-35: rgba(54, 167, 205, 0.35);
@@ -284,9 +285,8 @@
     }
 
     .e115-widgets-content {
-        --bg-widgets-content: rgba(15, 15, 15, 0.9);
         backdrop-filter: blur(4px);
-        background: var(--bg-widgets-content);
+        background: var(--color-bg-dark);
         border: 1px solid var(--color-influence);
         box-shadow: 0 10px 20px black;
         display: flex;
@@ -351,7 +351,7 @@
                 position: relative;
 
                 ul {
-                    background: var(--bg-widgets-content);
+                    background: var(--color-bg-dark);
                     height: var(--widgets-content-unit);
                     left: 0;
                     list-style-type: none;
@@ -479,9 +479,9 @@
     background-color: black;
     bottom: 0;
     font-size: 80%;
-    position: absolute;
     left: 100px;
     padding: 0 calc(var(--e115-config-padding) * 2) var(--e115-config-padding) calc(var(--e115-config-padding) * 2);
+    position: absolute;
     width: 350px;
     z-index: 9999;
 
@@ -513,7 +513,7 @@
         gap: 24px;
 
         #e115-config-title {
-            text-align: center;
+            padding-left: 12px;
         }
 
         #e115-config-options {
@@ -698,6 +698,73 @@ body[data-inventory-item-names='true'] {
         &::after {
             background-color: var(--color-crew-rationing);
         }
+    }
+}
+
+#e115-location-controller-wrapper {
+    bottom: 205px;
+    font-size: 80%;
+    left: 297px;
+    position: absolute;
+
+    #e115-location-controller {
+        background: var(--color-bg-dark);
+        color: white;
+        display: flex;
+        flex-direction: column;
+        position: absolute;
+        white-space: nowrap;
+
+        .controller {
+            display: flex;
+            gap: 10px;
+            justify-content: space-between;
+            padding: 10px;
+
+            &.is-address {
+                color: rgba(255, 255, 255, 0.5);
+            }
+
+            &:not(:last-child) {
+                padding-bottom: 0;
+            }
+
+            &:empty {
+                display: none;
+            }
+
+            &::before {
+                color: rgba(255, 255, 255, 0.5);
+            }
+
+            &.controller-building::before { content: 'Building controller:'; }
+            &.controller-ship::before { content: 'Ship controller:'; }
+            &.controller-asteroid::before { content: 'Asteroid controller:'; }
+            &.controller-lot::before { content: 'Lot controller:'; }
+        }
+    }
+
+    &.ship-view {
+        bottom: 310px;
+        left: 50px;
+        z-index: 9999;
+    }
+
+    &.system-view {
+        bottom: 340px;
+        left: 50px;
+        z-index: 9999;
+
+        // Force padding b/c this is NOT the ":last-child"
+        .controller-asteroid { padding-bottom: 10px !important; }
+
+        // Hide lot controller if in system-view
+        .controller-lot { display: none !important; }
+    }
+
+    &:not(.system-view) {
+        // Hide asteroid controller if not in system-view
+        .controller-asteroid { display: none !important; }
     }
 }
 
