@@ -627,13 +627,14 @@ body[data-inventory-item-names=true] table [data-tooltip-id=selectionDialogToolt
 }
 
 #e115-location-controller-wrapper {
-  bottom: 205px;
+  bottom: 340px;
   font-size: 80%;
-  left: 297px;
+  left: 50px;
   position: absolute;
 }
 #e115-location-controller-wrapper #e115-location-controller {
   background: var(--color-bg-dark);
+  bottom: 0;
   color: white;
   display: flex;
   flex-direction: column;
@@ -644,13 +645,21 @@ body[data-inventory-item-names=true] table [data-tooltip-id=selectionDialogToolt
   display: flex;
   gap: 10px;
   justify-content: space-between;
-  padding: 10px;
+  padding: 5px 10px;
 }
 #e115-location-controller-wrapper #e115-location-controller .controller.is-address {
   color: rgba(255, 255, 255, 0.5);
 }
-#e115-location-controller-wrapper #e115-location-controller .controller:not(:last-child) {
-  padding-bottom: 0;
+#e115-location-controller-wrapper #e115-location-controller .controller:hover {
+  color: var(--color-influence);
+}
+#e115-location-controller-wrapper #e115-location-controller .controller:hover::after {
+  background: var(--color-bg-dark);
+  content: "❏";
+  left: 100%;
+  margin-top: -5px;
+  padding: 5px 10px 5px 0;
+  position: absolute;
 }
 #e115-location-controller-wrapper #e115-location-controller .controller:empty {
   display: none;
@@ -664,29 +673,25 @@ body[data-inventory-item-names=true] table [data-tooltip-id=selectionDialogToolt
 #e115-location-controller-wrapper #e115-location-controller .controller.controller-ship::before {
   content: "Ship controller:";
 }
-#e115-location-controller-wrapper #e115-location-controller .controller.controller-asteroid::before {
-  content: "Asteroid controller:";
-}
 #e115-location-controller-wrapper #e115-location-controller .controller.controller-lot::before {
   content: "Lot controller:";
 }
+#e115-location-controller-wrapper #e115-location-controller .controller.controller-asteroid::before {
+  content: "Asteroid controller:";
+}
+#e115-location-controller-wrapper #e115-location-controller .controller.flash-copy {
+  animation: flash-copy 200ms infinite;
+  transition: color 200ms;
+}
+@keyframes flash-copy {
+  50% {
+    color: white;
+  }
+}
 #e115-location-controller-wrapper.ship-view {
-  bottom: 310px;
-  left: 50px;
-  z-index: 9999;
+  z-index: 2000;
 }
-#e115-location-controller-wrapper.system-view {
-  bottom: 340px;
-  left: 50px;
-  z-index: 9999;
-}
-#e115-location-controller-wrapper.system-view .controller-asteroid {
-  padding-bottom: 10px !important;
-}
-#e115-location-controller-wrapper.system-view .controller-lot {
-  display: none !important;
-}
-#e115-location-controller-wrapper:not(.system-view) .controller-asteroid {
+#e115-location-controller-wrapper.system-view .controller:not(.controller-asteroid) {
   display: none !important;
 }
 

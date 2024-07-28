@@ -1615,16 +1615,21 @@ function injectIndustryBuilderButton() {
 
 function injectLocationController() {
     if (!extensionSettings.locationController) {
+        /**
+         * Ensure the location controller is hidden, if the player
+         * disables this feature from the extension-settings.
+         */
+        resetElLocationController();
         return;
     }
     if (!elLocationController) {
-        elLocationControllerWrapper = createEl('div', 'e115-location-controller-wrapper');
-        elLocationController = createEl('div', 'e115-location-controller');
+        elLocationControllerWrapper = createEl('div', 'e115-location-controller-wrapper', ['e115-hidden']);
+        elLocationController = createEl('div', 'e115-location-controller', ['e115-cursor-full']);
         elLocationController.innerHTML = /*html*/ `
             <div class="controller controller-building"></div>
             <div class="controller controller-ship"></div>
-            <div class="controller controller-asteroid"></div>
             <div class="controller controller-lot"></div>
+            <div class="controller controller-asteroid"></div>
         `;
         elLocationControllerWrapper.append(elLocationController);
         document.body.append(elLocationControllerWrapper);
@@ -1667,53 +1672,45 @@ function injectLocationController() {
             locationControllerInfo.ship.delegatedToAddress = crewDataByCrewId[shipCrewId].delegatedToAddress;
             locationControllerInfo.ship.delegatedToName = crewDataByCrewId[shipCrewId].delegatedToName;
         }
-        const asteroidCrewId = selectedLocationData.controllerData.asteroidCrewId;
-        if (asteroidCrewId) {
-            locationControllerInfo.asteroid.delegatedToAddress = crewDataByCrewId[asteroidCrewId].delegatedToAddress;
-            locationControllerInfo.asteroid.delegatedToName = crewDataByCrewId[asteroidCrewId].delegatedToName;
-        }
         const lotCrewId = selectedLocationData.controllerData.lotCrewId;
         if (lotCrewId) {
             locationControllerInfo.lot.delegatedToAddress = crewDataByCrewId[lotCrewId].delegatedToAddress;
             locationControllerInfo.lot.delegatedToName = crewDataByCrewId[lotCrewId].delegatedToName;
         }
-        const elControllerBuilding = elLocationController.querySelector('.controller-building');
-        const elControllerShip = elLocationController.querySelector('.controller-ship');
-        const elControllerAsteroid = elLocationController.querySelector('.controller-asteroid');
-        const elControllerLot = elLocationController.querySelector('.controller-lot');
+        const asteroidCrewId = selectedLocationData.controllerData.asteroidCrewId;
+        if (asteroidCrewId) {
+            locationControllerInfo.asteroid.delegatedToAddress = crewDataByCrewId[asteroidCrewId].delegatedToAddress;
+            locationControllerInfo.asteroid.delegatedToName = crewDataByCrewId[asteroidCrewId].delegatedToName;
+        }
         let buildingControllerText = locationControllerInfo.building.delegatedToName;
+        let buildingControllerTextIsAddress = false;
         let shipControllerText = locationControllerInfo.ship.delegatedToName;
-        let asteroidControllerText = locationControllerInfo.asteroid.delegatedToName;
+        let shipControllerTextIsAddress = false;
         let lotControllerText = locationControllerInfo.lot.delegatedToName;
-        if (buildingControllerText) {
-            elControllerBuilding.classList.remove('is-address');
-        } else {
-            buildingControllerText = getCompactAddress(locationControllerInfo.building.delegatedToAddress);
-            elControllerBuilding.classList.add('is-address');
+        let lotControllerTextIsAddress = false;
+        let asteroidControllerText = locationControllerInfo.asteroid.delegatedToName;
+        let asteroidControllerTextIsAddress = false;
+        if (!buildingControllerText) {
+            buildingControllerText = locationControllerInfo.building.delegatedToAddress;
+            buildingControllerTextIsAddress = true;
         }
-        if (shipControllerText) {
-            elControllerShip.classList.remove('is-address');
-        } else {
-            shipControllerText = getCompactAddress(locationControllerInfo.ship.delegatedToAddress);
-            elControllerShip.classList.add('is-address');
+        if (!shipControllerText) {
+            shipControllerText = locationControllerInfo.ship.delegatedToAddress;
+            shipControllerTextIsAddress = true;
         }
-        if (asteroidControllerText) {
-            elControllerAsteroid.classList.remove('is-address');
-        } else {
-            asteroidControllerText = getCompactAddress(locationControllerInfo.asteroid.delegatedToAddress);
-            elControllerAsteroid.classList.add('is-address');
+        if (!lotControllerText) {
+            lotControllerText = locationControllerInfo.lot.delegatedToAddress;
+            lotControllerTextIsAddress = true;
         }
-        if (lotControllerText) {
-            elControllerLot.classList.remove('is-address');
-        } else {
-            lotControllerText = getCompactAddress(locationControllerInfo.lot.delegatedToAddress);
-            elControllerLot.classList.add('is-address');
+        if (!asteroidControllerText) {
+            asteroidControllerText = locationControllerInfo.asteroid.delegatedToAddress;
+            asteroidControllerTextIsAddress = true;
         }
-        elControllerBuilding.textContent = buildingControllerText; // empty "textContent" if this is null
-        elControllerShip.textContent = shipControllerText; // empty "textContent" if this is null
-        elControllerAsteroid.textContent = asteroidControllerText; // empty "textContent" if this is null
-        elControllerLot.textContent = lotControllerText; // empty "textContent" if this is null
-        elLocationController.classList.remove('e115-hidden');
+        setupElControllerItem('building', buildingControllerText, buildingControllerTextIsAddress);
+        setupElControllerItem('ship', shipControllerText, shipControllerTextIsAddress);
+        setupElControllerItem('lot', lotControllerText, lotControllerTextIsAddress);
+        setupElControllerItem('asteroid', asteroidControllerText, asteroidControllerTextIsAddress);
+        elLocationControllerWrapper.classList.remove('e115-hidden');
         // If both the building controller and ship controller are set => ship docked at spaceport
         elLocationControllerWrapper.classList.toggle('ship-view', buildingCrewId && shipCrewId);
         // If in system-view, only the asteroid controller will be shown
@@ -1723,17 +1720,59 @@ function injectLocationController() {
     }
 }
 
+/**
+ * Supported values for "controllerType":
+ * - "building"
+ * - "ship"
+ * - "lot"
+ * - "asteroid"
+ */
+function setupElControllerItem(controllerType, controllerText, controllerTextIsAddress) {
+    const elControllerItem = elLocationController.querySelector(`.controller-${controllerType}`);
+    /**
+     * If "controllerText" is an address, make it compact before displaying.
+     * If "controllerText" is a name, display it as-is.
+     * The flag "controllerTextIsAddress" is required instead of checking if "controllerText"
+     * starts with "0x", becuase "controllerText" may be a name (not address) that starts with "0x".
+     */
+    const controllerTextCompact = controllerTextIsAddress ? getCompactAddress(controllerText) : controllerText;
+    elControllerItem.textContent = controllerTextCompact; // empty "textContent" if this is null
+    elControllerItem.dataset.controllerText = controllerText;
+    elControllerItem.classList.toggle('is-address', controllerTextIsAddress);
+    /**
+     * Click on controller name or address => copy to clipboard + flash.
+     * Using a dedicated handler "onClickElControllerItem", instead of using
+     * an anonymous function, to avoid adding a new event listener during each cycle.
+     */
+    elControllerItem.addEventListener('click', onClickElControllerItem);
+}
+
+function onClickElControllerItem(event) {
+    const elControllerItem = event.target;
+    const controllerText = elControllerItem.dataset.controllerText;
+    navigator.clipboard.writeText(controllerText);
+    elControllerItem.classList.add('flash-copy');
+    // Stop flashing after 3 flashes (based on animation-duration of ".flash-copy" in SCSS)
+    setTimeout(() => elControllerItem.classList.remove('flash-copy'), 600);
+}
+
 function resetElLocationController() {
-    if (!elLocationController) {
+    if (!elLocationController || !elLocationControllerWrapper || elLocationControllerWrapper.classList.contains('e115-hidden')) {
         return;
     }
-    elLocationController.classList.add('e115-hidden');
+    elLocationControllerWrapper.classList.add('e115-hidden');
     const elControllerBuilding = elLocationController.querySelector('.controller-building');
     const elControllerShip = elLocationController.querySelector('.controller-ship');
+    const elControllerAsteroid = elLocationController.querySelector('.controller-asteroid');
     const elControllerLot = elLocationController.querySelector('.controller-lot');
     elControllerBuilding.textContent = '';
     elControllerShip.textContent = '';
+    elControllerAsteroid.textContent = '';
     elControllerLot.textContent = '';
+    elControllerBuilding.dataset.controllerText = '';
+    elControllerShip.dataset.controllerText = '';
+    elControllerAsteroid.dataset.controllerText = '';
+    elControllerLot.dataset.controllerText = '';
 }
 
 function autoHideMarketsWithoutPrice() {
