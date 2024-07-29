@@ -5,6 +5,7 @@
     --color-influence-faded-35: rgba(54, 167, 205, 0.35);
     --color-influence-faded-25: rgba(54, 167, 205, 0.25);
     --color-influence-faded-175: rgba(54, 167, 205, 0.175);
+    --color-influence-green: rgb(136, 230, 117);
     --crewmate-color-intensity: 1;
 }
 
@@ -722,6 +723,10 @@ body[data-inventory-item-names='true'] {
             justify-content: space-between;
             padding: 5px 10px;
 
+            &.is-custom {
+                color: var(--color-influence-green);
+            }
+
             &.is-address {
                 color: rgba(255, 255, 255, 0.5);
             }
@@ -759,6 +764,11 @@ body[data-inventory-item-names='true'] {
                 @keyframes flash-copy { 50% { color: white; } }
             }
         }
+    }
+
+    &:hover {
+        // Show the controller panel above the actions list, in case it is partially covered
+        z-index: 2000; // higher than 1000 = z-index of actions list
     }
 
     &.ship-view {

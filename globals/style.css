@@ -6,6 +6,7 @@
   --color-influence-faded-35: rgba(54, 167, 205, 0.35);
   --color-influence-faded-25: rgba(54, 167, 205, 0.25);
   --color-influence-faded-175: rgba(54, 167, 205, 0.175);
+  --color-influence-green: rgb(136, 230, 117);
   --crewmate-color-intensity: 1;
 }
 
@@ -647,6 +648,9 @@ body[data-inventory-item-names=true] table [data-tooltip-id=selectionDialogToolt
   justify-content: space-between;
   padding: 5px 10px;
 }
+#e115-location-controller-wrapper #e115-location-controller .controller.is-custom {
+  color: var(--color-influence-green);
+}
 #e115-location-controller-wrapper #e115-location-controller .controller.is-address {
   color: rgba(255, 255, 255, 0.5);
 }
@@ -687,6 +691,9 @@ body[data-inventory-item-names=true] table [data-tooltip-id=selectionDialogToolt
   50% {
     color: white;
   }
+}
+#e115-location-controller-wrapper:hover {
+  z-index: 2000;
 }
 #e115-location-controller-wrapper.ship-view {
   z-index: 2000;

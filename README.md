@@ -18,8 +18,8 @@ And it also adds other functionalities in-game, such as:
 - a filter to search among the processes of Refineries, Factories and Shipyards
 - an input for setting your preferred extraction percentage, to be used before you start each extraction
 - an AI-generated captain-video in the crew window
-- the real-world time, based on the in-game time that's being previewed while using the time-controls
 - details about the controller(s) for the selected location: building, ship, lot, asteroid
+- the real-world time, based on the in-game time that's being previewed while using the time-controls
 
 <img src="./README.png" width="100%">
 

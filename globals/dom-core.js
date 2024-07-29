@@ -60,6 +60,13 @@ if (!localStorage.getItem('e115Settings')) {
 
 const extensionSettings = JSON.parse(localStorage.getItem('e115Settings'));
 
+// Save default list of custom name by address into local-storage, if needed
+if (!localStorage.getItem('e115CustomNameByAddress')) {
+    localStorage.setItem('e115CustomNameByAddress', JSON.stringify({}));
+}
+
+const customNameByAddress = JSON.parse(localStorage.getItem('e115CustomNameByAddress'));
+
 const selectedCrewData = {
     rationing: null,
 };
@@ -1683,33 +1690,61 @@ function injectLocationController() {
             locationControllerInfo.asteroid.delegatedToName = crewDataByCrewId[asteroidCrewId].delegatedToName;
         }
         let buildingControllerText = locationControllerInfo.building.delegatedToName;
+        let buildingControllerTextIsCustom = false;
         let buildingControllerTextIsAddress = false;
         let shipControllerText = locationControllerInfo.ship.delegatedToName;
+        let shipControllerTextIsCustom = false;
         let shipControllerTextIsAddress = false;
         let lotControllerText = locationControllerInfo.lot.delegatedToName;
+        let lotControllerTextIsCustom = false;
         let lotControllerTextIsAddress = false;
         let asteroidControllerText = locationControllerInfo.asteroid.delegatedToName;
+        let asteroidControllerTextIsCustom = false;
         let asteroidControllerTextIsAddress = false;
         if (!buildingControllerText) {
-            buildingControllerText = locationControllerInfo.building.delegatedToAddress;
-            buildingControllerTextIsAddress = true;
+            const buildingControllerAddress = locationControllerInfo.building.delegatedToAddress;
+            if (customNameByAddress[buildingControllerAddress]) {
+                buildingControllerText = customNameByAddress[buildingControllerAddress];
+                buildingControllerTextIsCustom = true;
+            } else {
+                buildingControllerText = locationControllerInfo.building.delegatedToAddress;
+                buildingControllerTextIsAddress = true;
+            }
         }
         if (!shipControllerText) {
-            shipControllerText = locationControllerInfo.ship.delegatedToAddress;
-            shipControllerTextIsAddress = true;
+            const shipControllerAddress = locationControllerInfo.ship.delegatedToAddress;
+            if (customNameByAddress[shipControllerAddress]) {
+                shipControllerText = customNameByAddress[shipControllerAddress];
+                shipControllerTextIsCustom = true;
+            } else {
+                shipControllerText = shipControllerAddress;
+                shipControllerTextIsAddress = true;
+            }
         }
         if (!lotControllerText) {
-            lotControllerText = locationControllerInfo.lot.delegatedToAddress;
-            lotControllerTextIsAddress = true;
+            const lotControllerAddress = locationControllerInfo.lot.delegatedToAddress;
+            if (customNameByAddress[lotControllerAddress]) {
+                lotControllerText = customNameByAddress[lotControllerAddress];
+                lotControllerTextIsCustom = true;
+            } else {
+                lotControllerText = lotControllerAddress;
+                lotControllerTextIsAddress = true;
+            }
         }
         if (!asteroidControllerText) {
-            asteroidControllerText = locationControllerInfo.asteroid.delegatedToAddress;
-            asteroidControllerTextIsAddress = true;
+            const asteroidControllerAddress = locationControllerInfo.asteroid.delegatedToAddress;
+            if (customNameByAddress[asteroidControllerAddress]) {
+                asteroidControllerText = customNameByAddress[asteroidControllerAddress];
+                asteroidControllerTextIsCustom = true;
+            } else {
+                asteroidControllerText = locationControllerInfo.asteroid.delegatedToAddress;
+                asteroidControllerTextIsAddress = true;
+            }
         }
-        setupElControllerItem('building', buildingControllerText, buildingControllerTextIsAddress);
-        setupElControllerItem('ship', shipControllerText, shipControllerTextIsAddress);
-        setupElControllerItem('lot', lotControllerText, lotControllerTextIsAddress);
-        setupElControllerItem('asteroid', asteroidControllerText, asteroidControllerTextIsAddress);
+        setupElControllerItem('building', buildingControllerText, buildingControllerTextIsCustom, buildingControllerTextIsAddress);
+        setupElControllerItem('ship', shipControllerText, shipControllerTextIsCustom, shipControllerTextIsAddress);
+        setupElControllerItem('lot', lotControllerText, lotControllerTextIsCustom, lotControllerTextIsAddress);
+        setupElControllerItem('asteroid', asteroidControllerText, asteroidControllerTextIsCustom, asteroidControllerTextIsAddress);
         elLocationControllerWrapper.classList.remove('e115-hidden');
         // If both the building controller and ship controller are set => ship docked at spaceport
         elLocationControllerWrapper.classList.toggle('ship-view', buildingCrewId && shipCrewId);
@@ -1727,7 +1762,7 @@ function injectLocationController() {
  * - "lot"
  * - "asteroid"
  */
-function setupElControllerItem(controllerType, controllerText, controllerTextIsAddress) {
+function setupElControllerItem(controllerType, controllerText, controllerTextIsCustom, controllerTextIsAddress) {
     const elControllerItem = elLocationController.querySelector(`.controller-${controllerType}`);
     /**
      * If "controllerText" is an address, make it compact before displaying.
@@ -1738,6 +1773,7 @@ function setupElControllerItem(controllerType, controllerText, controllerTextIsA
     const controllerTextCompact = controllerTextIsAddress ? getCompactAddress(controllerText) : controllerText;
     elControllerItem.textContent = controllerTextCompact; // empty "textContent" if this is null
     elControllerItem.dataset.controllerText = controllerText;
+    elControllerItem.classList.toggle('is-custom', controllerTextIsCustom);
     elControllerItem.classList.toggle('is-address', controllerTextIsAddress);
     /**
      * Click on controller name or address => copy to clipboard + flash.
