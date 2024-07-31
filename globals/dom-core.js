@@ -60,12 +60,12 @@ if (!localStorage.getItem('e115Settings')) {
 
 const extensionSettings = JSON.parse(localStorage.getItem('e115Settings'));
 
+const customNameByAddressDefault = {};
+
 // Save default list of custom name by address into local-storage, if needed
 if (!localStorage.getItem('e115CustomNameByAddress')) {
-    localStorage.setItem('e115CustomNameByAddress', JSON.stringify({}));
+    localStorage.setItem('e115CustomNameByAddress', JSON.stringify(customNameByAddressDefault));
 }
-
-const customNameByAddress = JSON.parse(localStorage.getItem('e115CustomNameByAddress'));
 
 const selectedCrewData = {
     rationing: null,
@@ -105,6 +105,8 @@ for (const [settingKey, settingValue] of Object.entries(extensionSettingsDefault
         setExtensionSetting(settingKey, settingValue);
     }
 }
+
+let customNameByAddress = JSON.parse(localStorage.getItem('e115CustomNameByAddress'));
 
 /**
  * This will be populated via API call to "crewDataEndpoint"
@@ -2094,6 +2096,11 @@ function handleMessage(event) {
     switch (event.data.widgetEventKey) {
         case 'SHOPPING_LIST_CLICKED_PRODUCT_NAME':
             searchMarketplace(event.data.widgetEventValue);
+            break;
+        case 'PRIVATE_LABELS_UPDATED':
+            // Save private labels from widget, into local-storage
+            customNameByAddress = JSON.parse(event.data.widgetEventValue);
+            localStorage.setItem('e115CustomNameByAddress', JSON.stringify(customNameByAddress));
             break;
     }
 }

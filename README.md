@@ -6,7 +6,7 @@
 
 This Chrome extension makes community-developed tools and widgets available inside the Influence game client.
 
-It adds a "Widgets" button in the top-right, giving you an in-game "Shopping List" and "Marketplace Prices" (more widgets to follow).
+It adds a "Widgets" button in the top-right, giving you an in-game "Shopping List", "Marketplace Prices" and "Private Labels" (more widgets to follow).
 
 It also adds a "Tools" panel in the right-side menu, with links to community developed tools and content, grouped into several categories: Mining, Production, Asteroids, Crew, Flight, Information, Lore, Games.
 
