@@ -40,7 +40,7 @@ async function injectWidgets() {
         </div>
     `;
     const elWidgetsHeader = elWidgetsWrapper.querySelector('.e115-widgets-header');
-    elWidgetsHeader.setAttribute('onclick', 'toggleWidgets()');
+    elWidgetsHeader.addEventListener('click', () => toggleWidgets());
     // Adjust widgets icon styling
     const elWidgetsIcon = elWidgetsWrapper.querySelector('.e115-icon-community-tools');
     elWidgetsIcon.classList.add('icon');
@@ -56,7 +56,7 @@ async function injectWidgets() {
             const elListItem = createEl('li');
             elListItem.textContent = widget.title;
             elListItem.dataset.title = widget.title;
-            elListItem.setAttribute('onclick', `selectWidget('${widget.title}')`);
+            elListItem.addEventListener('click', () => selectWidget(widget.title));
             if (widget.default) {
                 // Preselect default widget
                 elListItem.classList.add('active');
@@ -86,17 +86,21 @@ function loadWidgetIframe(url) {
     elWidgetIframe.src = url;
 }
 
-function toggleWidgets() {
+function toggleWidgets(forceOpen = false) {
     const elWidgetsWrapper = getVisibleWidgetsButton();
     if (!elWidgetsWrapper) {
         return;
     }
-    elWidgetsWrapper.classList.toggle('active');
+    if (forceOpen) {
+        elWidgetsWrapper.classList.toggle('active', true);
+    } else {
+        elWidgetsWrapper.classList.toggle('active');
+    }
     // Pin widgets above other game-windows (e.g. marketplace) if active
     elWidgetsWrapper.parentElement.classList.toggle('e115-widgets-pinned', elWidgetsWrapper.classList.contains('active'));
 }
 
-function selectWidget(title) {
+function selectWidget(title, urlParams = {}) {
     const elWidgetsWrapper = getVisibleWidgetsButton();
     if (!elWidgetsWrapper) {
         return;
@@ -109,7 +113,11 @@ function selectWidget(title) {
     }
     const widget = widgets.find(widget => widget.title === title);
     if (widget) {
-        loadWidgetIframe(widget.url);
+        let widgetUrl = widget.url;
+        for (const [key, value] of Object.entries(urlParams)) {
+            widgetUrl = injectUrlParam(widgetUrl, key, value);
+        }
+        loadWidgetIframe(widgetUrl);
     }
 }
 

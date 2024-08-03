@@ -736,7 +736,7 @@ body[data-inventory-item-names='true'] {
 
                 &::after {
                     background: var(--color-bg-dark);
-                    content: '❏'; // copy-to-clipboard symbol
+                    content: '❐'; // copy-to-clipboard symbol
                     left: 100%;
                     margin-top: -5px;
                     padding: 5px 10px 5px 0;

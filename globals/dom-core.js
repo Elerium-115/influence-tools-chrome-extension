@@ -618,6 +618,12 @@ function addTooltip(el, tooltipContent, tooltipId='globalTooltip', tooltipPlace 
     el.dataset.tooltipContent = tooltipContent;
 }
 
+function removeTooltip(el) {
+    delete el.dataset.tooltipId;
+    delete el.dataset.tooltipPlace;
+    delete el.dataset.tooltipContent;
+}
+
 function findElWithMatchingTextNode(elParent, descendantsSelector, text) {
     // Parse all descendants of "elParent" matching "descendantsSelector"
     const elsDescendants = elParent.querySelectorAll(descendantsSelector);
@@ -683,8 +689,8 @@ function onClickToolCategoryItem(title, url, autoInjectUrlParams) {
     // Prepare new standard window > header > buttons-wrapper > "Safety Tips"
     const elNewWindowHeaderWarning = createEl('div', null, ['e115-button', 'e115-cursor-full']);
     elNewWindowHeaderWarning.textContent = 'Safety Tips';
-    elNewWindowHeaderWarning.setAttribute('onmouseenter', 'toggleSafetyTips(true)');
-    elNewWindowHeaderWarning.setAttribute('onmouseleave', 'toggleSafetyTips(false)');
+    elNewWindowHeaderWarning.addEventListener('mouseenter', () => toggleSafetyTips(true));
+    elNewWindowHeaderWarning.addEventListener('mouseleave', () => toggleSafetyTips(false));
     elNewWindowHeaderButtons.append(elNewWindowHeaderWarning);
     // Prepare new standard window > header > buttons-wrapper > "Open in new window"
     const elNewWindowHeaderButton = createEl('a', null, ['e115-button', 'e115-cursor-full']);
@@ -1777,21 +1783,30 @@ function setupElControllerItem(controllerType, controllerText, controllerTextIsC
     elControllerItem.dataset.controllerText = controllerText;
     elControllerItem.classList.toggle('is-custom', controllerTextIsCustom);
     elControllerItem.classList.toggle('is-address', controllerTextIsAddress);
+    if (controllerTextIsAddress) {
+        addTooltip(elControllerItem, 'Click to add a label for this address in the "Private Labels" widget');
+    } else {
+        removeTooltip(elControllerItem);
+    }
     /**
      * Click on controller name or address => copy to clipboard + flash.
      * Using a dedicated handler "onClickElControllerItem", instead of using
      * an anonymous function, to avoid adding a new event listener during each cycle.
      */
-    elControllerItem.addEventListener('click', onClickElControllerItem);
+    elControllerItem.addEventListener('click', () => onClickElControllerItem(elControllerItem, controllerTextIsAddress));
 }
 
-function onClickElControllerItem(event) {
-    const elControllerItem = event.target;
+function onClickElControllerItem(elControllerItem, controllerTextIsAddress) {
     const controllerText = elControllerItem.dataset.controllerText;
     navigator.clipboard.writeText(controllerText);
     elControllerItem.classList.add('flash-copy');
     // Stop flashing after 3 flashes (based on animation-duration of ".flash-copy" in SCSS)
     setTimeout(() => elControllerItem.classList.remove('flash-copy'), 600);
+    if (controllerTextIsAddress) {
+        // Address without label => add it into the "Private Labels" widget
+        toggleWidgets(true);
+        selectWidget('Private Labels', {'add_address': controllerText});
+    }
 }
 
 function resetElLocationController() {
