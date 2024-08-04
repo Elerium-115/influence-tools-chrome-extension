@@ -316,6 +316,14 @@ function getElHudMenuItemSelected() {
     return null;
 }
 
+function getElCrewWindow() {
+    const elCrewWindowBg = document.querySelector('div[src*="OwnedCrew"]');
+    if (!elCrewWindowBg) {
+        return null;
+    }
+    return elCrewWindowBg.parentElement;
+}
+
 /**
  * This function looks for the first VISIBLE previous-sibling, relative to the parent of the hud menu, because:
  * - when a ship is selected, the DOM contains an additional element BEFORE the left-side panels container
@@ -1324,11 +1332,11 @@ async function injectCaptainVideo() {
         // Captain video already injected
         return;
     }
-    const elOwnedCrewBg = document.querySelector('div[src*="OwnedCrew"]');
-    if (!elOwnedCrewBg) {
+    const elCrewWindow = getElCrewWindow();
+    if (!elCrewWindow) {
         return;
     }
-    const elCaptainImg = elOwnedCrewBg.parentElement.querySelector('img[src*="/crewmates/"]');
+    const elCaptainImg = elCrewWindow.querySelector('img[src*="/crewmates/"]');
     if (!elCaptainImg) {
         return;
     }
@@ -1353,6 +1361,54 @@ async function injectCaptainVideo() {
         elCaptainVideoPlayIcon.addEventListener('mouseenter', onMouseoverCaptainVideoPlay);
         elCaptainVideoWrapper.append(elCaptainVideoPlayIcon);
         elCaptainImg.parentElement.prepend(elCaptainVideoWrapper);
+    }
+}
+
+function injectCrewController() {
+    const crewIdMatches = location.pathname.match(/^\/crew\/(\d+)/);
+    if (!crewIdMatches) {
+        // Crew window NOT open
+        return;
+    }
+    const elCrewWindow = getElCrewWindow();
+    if (!elCrewWindow) {
+        return;
+    }
+    const elCrewId = elCrewWindow.querySelector('[label="Crew ID"]');
+    if (!elCrewId) {
+        return;
+    }
+    let elCrewController = document.getElementById('e115-crew-controller');
+    if (!elCrewController) {
+        // Crew controller not yet injected
+        elCrewController = createEl('div', 'e115-crew-controller');
+        elCrewController.className = elCrewId.className; // mimic styling of crew ID label
+        elCrewController.classList.add('e115-cursor-full');
+        // Inject the crew controller label, right after the crew ID label
+        elCrewId.parentElement.insertBefore(elCrewController, elCrewId.nextSibling);
+    }
+    // Update the crew controller label
+    const crewId = crewIdMatches[1];
+    updateCrewDataByCrewIdIfNotSet(crewId);
+    try {
+        const delegatedToAddress = crewDataByCrewId[crewId].delegatedToAddress;
+        const delegatedToName = crewDataByCrewId[crewId].delegatedToName;
+        let crewControllerText = delegatedToName;
+        let crewControllerTextIsCustom = false;
+        let crewControllerTextIsAddress = false;
+        if (!crewControllerText) {
+            const crewControllerAddress = delegatedToAddress;
+            if (customNameByAddress[crewControllerAddress]) {
+                crewControllerText = customNameByAddress[crewControllerAddress];
+                crewControllerTextIsCustom = true;
+            } else {
+                crewControllerText = delegatedToAddress;
+                crewControllerTextIsAddress = true;
+            }
+        }
+        setupElControllerItem('crew', crewControllerText, crewControllerTextIsCustom, crewControllerTextIsAddress, elCrewController);
+    } catch (error) {
+        // Swallow this error
     }
 }
 
@@ -1769,9 +1825,16 @@ function injectLocationController() {
  * - "ship"
  * - "lot"
  * - "asteroid"
+ * - "crew"
  */
-function setupElControllerItem(controllerType, controllerText, controllerTextIsCustom, controllerTextIsAddress) {
-    const elControllerItem = elLocationController.querySelector(`.controller-${controllerType}`);
+function setupElControllerItem(controllerType, controllerText, controllerTextIsCustom, controllerTextIsAddress, elControllerItem = null) {
+    if (!elControllerItem && elLocationController) {
+        // This function is being called for a location controller
+        elControllerItem = elLocationController.querySelector(`.controller-${controllerType}`);
+    }
+    if (!elControllerItem) {
+        return;
+    }
     /**
      * If "controllerText" is an address, make it compact before displaying.
      * If "controllerText" is a name, display it as-is.
@@ -1793,16 +1856,17 @@ function setupElControllerItem(controllerType, controllerText, controllerTextIsC
      * Using a dedicated handler "onClickElControllerItem", instead of using
      * an anonymous function, to avoid adding a new event listener during each cycle.
      */
-    elControllerItem.addEventListener('click', () => onClickElControllerItem(elControllerItem, controllerTextIsAddress));
+    elControllerItem.addEventListener('click', onClickElControllerItem);
 }
 
-function onClickElControllerItem(elControllerItem, controllerTextIsAddress) {
+function onClickElControllerItem(event) {
+    const elControllerItem = event.target;
     const controllerText = elControllerItem.dataset.controllerText;
     navigator.clipboard.writeText(controllerText);
-    elControllerItem.classList.add('flash-copy');
-    // Stop flashing after 3 flashes (based on animation-duration of ".flash-copy" in SCSS)
-    setTimeout(() => elControllerItem.classList.remove('flash-copy'), 600);
-    if (controllerTextIsAddress) {
+    elControllerItem.classList.add('e115-flash-copy');
+    // Stop flashing after 3 flashes (based on animation-duration of ".e115-flash-copy" in SCSS)
+    setTimeout(() => elControllerItem.classList.remove('e115-flash-copy'), 600);
+    if (elControllerItem.classList.contains('is-address')) {
         // Address without label => add it into the "Private Labels" widget
         toggleWidgets(true);
         selectWidget('Private Labels', {'add_address': controllerText});
@@ -2078,6 +2142,7 @@ function injectFeaturesPeriodically() {
         updateLocationData();
         injectWidgets();
         injectCaptainVideo();
+        injectCrewController();
         injectProcessFilter();
         injectMyOrdersProductLinks();
         injectAndApplyExtractionPercent();

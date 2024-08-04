@@ -9,6 +9,20 @@
     --crewmate-color-intensity: 1;
 }
 
+@mixin copy-icon-on-hover {
+    &:hover {
+        color: var(--color-influence);
+
+        &::after {
+            content: '❐'; // copy-to-clipboard symbol
+            left: 100%;
+            margin-top: -5px;
+            padding: 5px 10px 5px 0;
+            position: absolute;
+        }
+    }
+}
+
 .e115-color-influence {
     color: var(--color-influence) !important;
 }
@@ -68,6 +82,13 @@
         right: -1px;
         width: var(--corner-size);
     }
+}
+
+.e115-flash-copy {
+    animation: flash-copy 200ms infinite;
+    transition: color 200ms;
+
+    @keyframes flash-copy { 50% { color: white; } }
 }
 
 .e115-hud-menu-list {
@@ -627,6 +648,29 @@ body[data-inventory-item-names='true'] {
     }
 }
 
+#e115-crew-controller {
+    @include copy-icon-on-hover;
+    display: inline-block;
+    padding-right: 10px;
+    position: relative;
+
+    &.is-custom {
+        color: var(--color-influence-green);
+    }
+
+    &.is-address {
+        color: rgba(255, 255, 255, 0.5);
+    }
+
+    &:empty {
+        display: none;
+    }
+
+    &::before {
+        content: 'Crew controller:';
+    }
+}
+
 #e115-filter-select-process {
     border: none;
     font-size: unset;
@@ -718,6 +762,7 @@ body[data-inventory-item-names='true'] {
         white-space: nowrap;
 
         .controller {
+            @include copy-icon-on-hover;
             display: flex;
             gap: 10px;
             justify-content: space-between;
@@ -732,15 +777,8 @@ body[data-inventory-item-names='true'] {
             }
 
             &:hover {
-                color: var(--color-influence);
-
                 &::after {
                     background: var(--color-bg-dark);
-                    content: '❐'; // copy-to-clipboard symbol
-                    left: 100%;
-                    margin-top: -5px;
-                    padding: 5px 10px 5px 0;
-                    position: absolute;
                 }
             }
 
@@ -756,13 +794,6 @@ body[data-inventory-item-names='true'] {
             &.controller-ship::before { content: 'Ship controller:'; }
             &.controller-lot::before { content: 'Lot controller:'; }
             &.controller-asteroid::before { content: 'Asteroid controller:'; }
-
-            &.flash-copy {
-                animation: flash-copy 200ms infinite;
-                transition: color 200ms;
-
-                @keyframes flash-copy { 50% { color: white; } }
-            }
         }
     }
 
