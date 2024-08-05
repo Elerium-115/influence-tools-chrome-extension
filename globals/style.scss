@@ -722,6 +722,7 @@ body[data-inventory-item-names='true'] {
 }
 
 [data-e115-crew-food-ratio] {
+    // NOTE: "::before" reserved for "[data-e115-ship-loaded-propellant-percent]"
     &::after {
         --size-icon: 20px;
         --size-padding: 4px;
@@ -743,6 +744,22 @@ body[data-inventory-item-names='true'] {
         &::after {
             background-color: var(--color-crew-rationing);
         }
+    }
+}
+
+[data-e115-ship-loaded-propellant-percent] {
+    // NOTE: "::after" reserved for "[data-e115-crew-food-ratio]"
+    &::before {
+        --propellant-percent: attr(data-e115-ship-loaded-propellant-percent);
+        background-color: rgba(0, 0, 0, 0.75);
+        bottom: 20px;
+        color: white;
+        content: "Ship propellant: " var(--propellant-percent);
+        font-size: 80%;
+        left: 8px;
+        padding: 4px;
+        position: absolute;
+        z-index: 1;
     }
 }
 

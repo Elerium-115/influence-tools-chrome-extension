@@ -14,6 +14,7 @@ const eleriumApiUrl = 'https://elerium-influence-api.vercel.app';
 const crewDataEndpoint = `${eleriumApiUrl}/crew-data`;
 const crewmateVideosEndpoint = `${eleriumApiUrl}/data/crewmate-videos`;
 const pricesEndpoint = `${eleriumApiUrl}/data/prices`;
+const shipDataEndpoint = `${eleriumApiUrl}/ship-data`;
 const toolsEndpoint = `${eleriumApiUrl}/data/tools`;
 const widgetsEndpoint = `${eleriumApiUrl}/data/widgets`;
 
@@ -51,6 +52,7 @@ const extensionSettingsDefault = {
     industryBuilderButton: true, // if true, inject a button in inventories re: "What can I make with these items?"
     inventoryItemNames: true, // if true, overlay names for inventory items
     locationController: true, // if true, inject details about the controller of the selected location (lot, building, landed ship, asteroid)
+    showShipStatsForMyCrews: true, // if true, show the loaded propellant percent in the "My Crews" list, for crews stationed on a ship
 };
 
 // Save default extension settings into local-storage, if needed
@@ -93,6 +95,19 @@ const BUILDING_TYPE = {
     HABITAT: 9
 };
 
+// Source: Influence SDK - "src/lib/entity.js"
+const ENTITY_IDS = {
+    CREW: 1,
+    CREWMATE: 2,
+    ASTEROID: 3,
+    LOT: 4,
+    BUILDING: 5,
+    SHIP: 6,
+    DEPOSIT: 7,
+    DELIVERY: 9,
+    SPACE: 10
+};
+
 const YEAR_IN_SECONDS = 31536000; // 60 * 60 * 24 * 365
 const MINUTE_IN_MILLISECONDS = 60000; // 60 * 1000
 
@@ -122,6 +137,11 @@ let crewmateVideos = null;
  * This will be populated via API call to "pricesEndpoint"
  */
 let prices = null;
+
+/**
+ * This will be populated via API call to "shipDataEndpoint"
+ */
+let shipDataByShipId = {};
 
 /**
  * This will be populated via API call to "toolsEndpoint"
@@ -559,6 +579,26 @@ const getCurrentFoodRatio = (timeSinceFed = 0, consumption = 1) => {
     );
 };
 
+/**
+ * Get the DOM elements for each crew in the "My Crews" list,
+ * if the "My Crews" panel is currently selected.
+ */
+function getElsMyCrews() {
+    if (!isHudMenuPanelFor(hudMenuItemLabelMyCrews)) {
+        return [];
+    }
+    const elsCrews = [];
+    const elHudMenuPanel = getElHudMenuPanel();
+    const elsCrewmateImages = elHudMenuPanel.querySelectorAll('img[src*="/crewmates/"]');
+    elsCrewmateImages.forEach(elCrewmateImage => {
+        const elCrew = elCrewmateImage.closest('[data-tooltip-id]').parentElement.parentElement.parentElement.parentElement;
+        if (!elsCrews.includes(elCrew)) {
+            elsCrews.push(elCrew);
+        }
+    });
+    return elsCrews;
+}
+
 function getCloseButtonFromHudMenuPanel() {
     let elCloseButton = null;
     const elHudMenuPanel = getElHudMenuPanel();
@@ -810,7 +850,7 @@ async function toggleInjectedMenuItemByLabel(label, shouldBeSelected) {
     const elInjectedHudMenuItem = getElHudMenuItemByLabel(label);
     if (!elInjectedHudMenuItem) {
         //// TO DO: investigate how this may happen (observed once during local dev)
-        return null;
+        return;
     }
     const elHudMenu = getElHudMenu();
     if (shouldBeSelected) {
@@ -877,6 +917,7 @@ function injectConfig() {
     injectConfigOptionCheckbox('industry-builder-button', 'Process Finder button for warehouses');
     injectConfigOptionCheckbox('inventory-item-names', 'Overlay names for inventory items');
     injectConfigOptionCheckbox('location-controller', 'Controller(s) for the selected location');
+    injectConfigOptionCheckbox('show-ship-stats-for-my-crews', 'Ship propellant percent for "My Crews"');
     // Initialize config options, based on extension settings from local-storage
     if (extensionSettings.autoHideMarketsWithoutPrice) {
         elConfigPanel.querySelector('input[name="auto-hide-markets-without-price"]').checked = true;
@@ -907,6 +948,9 @@ function injectConfig() {
     }
     if (extensionSettings.locationController) {
         elConfigPanel.querySelector('input[name="location-controller"]').checked = true;
+    }
+    if (extensionSettings.showShipStatsForMyCrews) {
+        elConfigPanel.querySelector('input[name="show-ship-stats-for-my-crews"]').checked = true;
     }
     // Initialize other data, based on extension settings from local-storage
     // -- set "data-inventory-item-names" on "body"
@@ -966,6 +1010,19 @@ async function updatePrices() {
     try {
         const pricesResponse = await fetch(pricesEndpoint);
         prices = await pricesResponse.json();
+    } catch (error) {
+        // Swallow this error
+    }
+}
+
+async function updateShipDataByShipIdIfNotSet(shipId) {
+    if (!shipId || shipDataByShipId[shipId]) {
+        return;
+    }
+    try {
+        const shipDataResponse = await fetch(`${shipDataEndpoint}/${shipId}`);
+        const shipData = await shipDataResponse.json();
+        shipDataByShipId[shipId] = shipData;
     } catch (error) {
         // Swallow this error
     }
@@ -2087,39 +2144,61 @@ function highlightCrewsRationing() {
         }
     }
     // Highlight "My Crews" which are rationing
-    if (isHudMenuPanelFor(hudMenuItemLabelMyCrews)) {
-        const elsCrews = [];
-        const elHudMenuPanel = getElHudMenuPanel();
-        const elsCrewmateImages = elHudMenuPanel.querySelectorAll('img[src*="/crewmates/"]');
-        elsCrewmateImages.forEach(elCrewmateImage => {
-            const elCrew = elCrewmateImage.closest('[data-tooltip-id]').parentElement.parentElement.parentElement.parentElement;
-            if (!elsCrews.includes(elCrew)) {
-                elsCrews.push(elCrew);
+    const elsCrews = getElsMyCrews();
+    elsCrews.forEach(elCrew => {
+        const reactFiberCrew = getReactFiberForEl(elCrew);
+        if (!reactFiberCrew || !reactFiberCrew.memoizedProps) {
+            return;
+        }
+        const reactChildren = reactFiberCrew.memoizedProps.children;
+        const crewData = getReactPropDataFromChildrenRecursive('crew', reactChildren);
+        try {
+            const crewRationing = crewData.propValue._foodBonuses.rationing;
+            if (crewRationing < 1) {
+                const shouldHighlight = crewRationing < 1 && isEnabledHighlight;
+                elCrew.classList.toggle('e115-my-crew-rationing', shouldHighlight);
             }
-        });
-        elsCrews.forEach(elCrew => {
-            const reactFiberCrew = getReactFiberForEl(elCrew);
-            if (!reactFiberCrew || !reactFiberCrew.memoizedProps) {
-                return null;
+            const crewConsumption = crewData.propValue._foodBonuses.consumption;
+            const crewLastFed = crewData.propValue.Crew.lastFed;
+            const crewTimeSinceFed = ((new Date().getTime()) / 1000 - crewLastFed) * 24;
+            const crewFoodRatio = Math.round(getCurrentFoodRatio(parseInt(crewTimeSinceFed), crewConsumption) * 100);
+            elCrew.dataset.e115CrewFoodRatio = `${crewFoodRatio}%`;
+        } catch (error) {
+            // Swallow this error
+        }
+    });
+}
+
+function showShipStatsForMyCrews() {
+    const elsCrews = getElsMyCrews();
+    elsCrews.forEach(elCrew => {
+        if (!extensionSettings.showShipStatsForMyCrews) {
+            delete elCrew.dataset.e115ShipLoadedPropellantPercent;
+            return;
+        }
+        const reactFiberCrew = getReactFiberForEl(elCrew);
+        if (!reactFiberCrew || !reactFiberCrew.memoizedProps) {
+            return;
+        }
+        const reactChildren = reactFiberCrew.memoizedProps.children;
+        const crewData = getReactPropDataFromChildrenRecursive('crew', reactChildren);
+        try {
+            const crewLocationData = crewData.propValue.Location.location;
+            if (crewLocationData.label !== ENTITY_IDS.SHIP) {
+                // Crew NOT in a ship
+                return;
             }
-            const reactChildren = reactFiberCrew.memoizedProps.children;
-            const crewData = getReactPropDataFromChildrenRecursive('crew', reactChildren);
-            try {
-                const crewRationing = crewData.propValue._foodBonuses.rationing;
-                if (crewRationing < 1) {
-                    const shouldHighlight = crewRationing < 1 && isEnabledHighlight;
-                    elCrew.classList.toggle('e115-my-crew-rationing', shouldHighlight);
-                }
-                const crewConsumption = crewData.propValue._foodBonuses.consumption;
-                const crewLastFed = crewData.propValue.Crew.lastFed;
-                const crewTimeSinceFed = ((new Date().getTime()) / 1000 - crewLastFed) * 24;
-                const crewFoodRatio = Math.round(getCurrentFoodRatio(parseInt(crewTimeSinceFed), crewConsumption) * 100);
-                elCrew.dataset.e115CrewFoodRatio = `${crewFoodRatio}%`;
-            } catch (error) {
-                // Swallow this error
+            const shipId = crewLocationData.id;
+            updateShipDataByShipIdIfNotSet(shipId);
+            const shipData = shipDataByShipId[shipId];
+            if (!shipData) {
+                return;
             }
-        });
-    }
+            elCrew.dataset.e115ShipLoadedPropellantPercent = `${Math.round(shipData.shipLoadedPropellantPercent)}%`;
+        } catch (error) {
+            // Swallow this error
+        }
+    });
 }
 
 /**
@@ -2153,6 +2232,7 @@ function injectFeaturesPeriodically() {
         autoOpenInventoryPanel();
         autoOpenResourcesPanel();
         highlightCrewsRationing();
+        showShipStatsForMyCrews();
         updateMarketValueOfSelectedItems();
     }, 1000);
 }
@@ -2227,6 +2307,9 @@ function onClickConfigOption(el) {
             break;
         case 'location-controller':
             setExtensionSetting('locationController', el.checked);
+            break;
+        case 'show-ship-stats-for-my-crews':
+            setExtensionSetting('showShipStatsForMyCrews', el.checked);
             break;
     }
 }

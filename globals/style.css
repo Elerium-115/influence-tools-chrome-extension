@@ -665,6 +665,19 @@ body[data-inventory-item-names=true] table [data-tooltip-id=selectionDialogToolt
   background-color: var(--color-crew-rationing);
 }
 
+[data-e115-ship-loaded-propellant-percent]::before {
+  --propellant-percent: attr(data-e115-ship-loaded-propellant-percent);
+  background-color: rgba(0, 0, 0, 0.75);
+  bottom: 20px;
+  color: white;
+  content: "Ship propellant: " var(--propellant-percent);
+  font-size: 80%;
+  left: 8px;
+  padding: 4px;
+  position: absolute;
+  z-index: 1;
+}
+
 #e115-location-controller-wrapper {
   bottom: 340px;
   font-size: 80%;
