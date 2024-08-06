@@ -2260,6 +2260,14 @@ function handleMessage(event) {
         case 'PRIVATE_LABELS_UPDATED':
             // Save private labels from widget, into local-storage
             customNameByAddress = JSON.parse(event.data.widgetEventValue);
+            // Handle new JSON format
+            Object.keys(customNameByAddress).forEach(address => {
+                const addressData = customNameByAddress[address];
+                if (typeof addressData !== 'string') {
+                    // New "addressData" format
+                    customNameByAddress[address] = addressData.label;
+                }
+            });
             localStorage.setItem('e115CustomNameByAddress', JSON.stringify(customNameByAddress));
             break;
     }
