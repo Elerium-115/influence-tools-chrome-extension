@@ -13,6 +13,7 @@ const eleriumApiUrl = 'https://elerium-influence-api.vercel.app';
 
 const crewDataEndpoint = `${eleriumApiUrl}/crew-data`;
 const crewmateVideosEndpoint = `${eleriumApiUrl}/data/crewmate-videos`;
+const inventoriesDataEndpoint = `${eleriumApiUrl}/inventories-data`;
 const pricesEndpoint = `${eleriumApiUrl}/data/prices`;
 const shipDataEndpoint = `${eleriumApiUrl}/ship-data`;
 const toolsEndpoint = `${eleriumApiUrl}/data/tools`;
@@ -48,6 +49,7 @@ const extensionSettingsDefault = {
     autoOpenResourcesPanelBypassOtherPanels: false, // if true, and if "autoOpenResourcesPanel" also true, the "Resources" panel will be auto-open even if another panel is already open
     crewmateColorIntensity: 4, // brightness amount (from 1 to 5) for the class-specific background color of crewmates
     extractionPercent: 100, // preferred extraction percentage
+    highlightBlocklistedInventories: true, // if true, highlight inventories controlled by a blocklisted address, when selecting a target inventory
     highlightCrewsRationing: false, // if true, highlight the selected crew if rationing
     industryBuilderButton: true, // if true, inject a button in inventories re: "What can I make with these items?"
     inventoryItemNames: true, // if true, overlay names for inventory items
@@ -62,7 +64,13 @@ if (!localStorage.getItem('e115Settings')) {
 
 const extensionSettings = JSON.parse(localStorage.getItem('e115Settings'));
 
+const customBlacklistByAddressDefault = {};
 const customNameByAddressDefault = {};
+
+// Save default list of custom blacklist by address into local-storage, if needed
+if (!localStorage.getItem('e115CustomBlacklistByAddress')) {
+    localStorage.setItem('e115CustomBlacklistByAddress', JSON.stringify(customBlacklistByAddressDefault));
+}
 
 // Save default list of custom name by address into local-storage, if needed
 if (!localStorage.getItem('e115CustomNameByAddress')) {
@@ -121,6 +129,7 @@ for (const [settingKey, settingValue] of Object.entries(extensionSettingsDefault
     }
 }
 
+let customBlacklistByAddress = JSON.parse(localStorage.getItem('e115CustomBlacklistByAddress'));
 let customNameByAddress = JSON.parse(localStorage.getItem('e115CustomNameByAddress'));
 
 /**
@@ -132,6 +141,14 @@ let crewDataByCrewId = {};
  * This will be populated via API call to "crewmateVideosEndpoint"
  */
 let crewmateVideos = null;
+
+/**
+ * This will be populated via API call to "inventoriesDataEndpoint"
+ */
+let inventoriesDataByLabelAndId = {
+    5: {}, // buildings
+    6: {}, // ships
+};
 
 /**
  * This will be populated via API call to "pricesEndpoint"
@@ -203,6 +220,8 @@ let isOpenPanelWithUsedDeposits = false;
 
 let elLocationControllerWrapper = null;
 let elLocationController = null;
+
+let isUpdatingInventories = false;
 
 function delay(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
@@ -913,6 +932,7 @@ function injectConfig() {
     injectConfigOptionCheckbox('auto-open-inventory-panel-bypass-other-panels', '... even if another menu item is open', true);
     injectConfigOptionCheckbox('auto-open-resources-panel', 'Auto-open resources for Extractors');
     injectConfigOptionCheckbox('auto-open-resources-panel-bypass-other-panels', '... even if another menu item is open', true);
+    injectConfigOptionCheckbox('highlight-blocklisted-inventories', 'Highlight blocklisted inventories');
     injectConfigOptionCheckbox('highlight-crews-rationing', 'Highlight crews which are rationing');
     injectConfigOptionCheckbox('industry-builder-button', 'Process Finder button for warehouses');
     injectConfigOptionCheckbox('inventory-item-names', 'Overlay names for inventory items');
@@ -936,6 +956,9 @@ function injectConfig() {
     }
     if (extensionSettings.autoOpenResourcesPanelBypassOtherPanels) {
         elConfigPanel.querySelector('input[name="auto-open-resources-panel-bypass-other-panels"]').checked = true;
+    }
+    if (extensionSettings.highlightBlocklistedInventories) {
+        elConfigPanel.querySelector('input[name="highlight-blocklisted-inventories"]').checked = true;
     }
     if (extensionSettings.highlightCrewsRationing) {
         elConfigPanel.querySelector('input[name="highlight-crews-rationing"]').checked = true;
@@ -1004,6 +1027,31 @@ async function updateCrewmateVideosIfNotSet() {
     } catch (error) {
         // Swallow this error
     }
+}
+
+async function updateInventoriesDataByLabelAndIdsIfNotSet(inventoriesLabel, inventoriesIds) {
+    if (isUpdatingInventories) {
+        // Wait for pending API calls for inventories data
+        return;
+    }
+    isUpdatingInventories = true;
+    try {
+        // Fetch data only for NON-cached IDs associated w/ this label
+        const cachedData = inventoriesDataByLabelAndId[inventoriesLabel];
+        const cachedIds = Object.keys(cachedData);
+        const nonCachedIds = inventoriesIds.filter(id => !cachedIds.includes(id));
+        if (nonCachedIds.length) {
+            const nonCachedIdsList = nonCachedIds.join(',');
+            const inventoriesDataResponse = await fetch(`${inventoriesDataEndpoint}/${inventoriesLabel}/${nonCachedIdsList}`);
+            const inventoriesData = await inventoriesDataResponse.json();
+            nonCachedIds.forEach(inventoryId => {
+                inventoriesDataByLabelAndId[inventoriesLabel][inventoryId] = inventoriesData[inventoryId];
+            });
+        }
+    } catch (error) {
+        // Swallow this error
+    }
+    isUpdatingInventories = false;
 }
 
 async function updatePrices() {
@@ -1470,7 +1518,10 @@ function injectCrewController() {
 }
 
 /**
- * Inject a filter into the "Select Process" window, if any
+ * Inject a filter into the "Select Process" window, if any.
+ * 
+ * NOTE: Even though native filters for processes are now available,
+ * this injected filter remains more useful for some searches.
  */
 function injectProcessFilter() {
     if (document.getElementById('e115-filter-select-process')) {
@@ -2128,6 +2179,100 @@ function autoOpenResourcesPanel() {
     elHudMenuItemResources.click();
 }
 
+async function highlightBlocklistedInventories() {
+    if (!extensionSettings.highlightBlocklistedInventories) {
+        return;
+    }
+    if (!Object.values(customBlacklistByAddress).some(isBlacklisted => isBlacklisted)) {
+        // NO blacklisted address flagged by the player via "Private Labels" widget
+        return;
+    }
+    const elAvailableInventoriesTitle = findElWithMatchingTextNode(document.body, '*', 'Available Inventories');
+    if (!elAvailableInventoriesTitle) {
+        return;
+    }
+    const elAvailableInventoriesTable = elAvailableInventoriesTitle.parentElement.parentElement.querySelector('table');
+    if (!elAvailableInventoriesTable) {
+        return;
+    }
+    const reactFiberInventories = getReactFiberForEl(elAvailableInventoriesTable);
+    if (!reactFiberInventories || !reactFiberInventories.memoizedProps) {
+        return;
+    }
+    let buildingIds = [];
+    let shipIds = [];
+    let inventoryReactDataByName = {};
+    try {
+        const reactChildrenInventories = reactFiberInventories.memoizedProps.children[1].props.children;
+        reactChildrenInventories.forEach(reactChildInventory => {
+            const keyData = JSON.parse(reactChildInventory.key);
+            const inventoryId = keyData.id.toString();
+            const inventoryName = reactChildInventory.props.row.name;
+            const inventoryLabel = keyData.label;
+            inventoryReactDataByName[inventoryName] = {
+                inventoryId,
+                inventoryLabel,
+            };
+            switch (inventoryLabel) {
+                case ENTITY_IDS.BUILDING:
+                    if (!buildingIds.includes(inventoryId)) {
+                        // Ensure UNIQUE building IDs
+                        buildingIds.push(inventoryId);
+                    }
+                    break;
+                case ENTITY_IDS.SHIP:
+                    if (!shipIds.includes(inventoryId)) {
+                        // Ensure UNIQUE ship IDs
+                        shipIds.push(inventoryId);
+                    }
+                    break;
+            }
+        });
+    } catch (error) {
+        // Swallow this error
+    }
+    // Prepare inventories in the DOM
+    const elAvailableInventoriesRows = elAvailableInventoriesTable.querySelectorAll('tbody tr');
+    elAvailableInventoriesRows.forEach(elRow => {
+        // This is a ONE-TIME operation per row
+        if (elRow.classList.contains('e115-prepared')) {
+            return;
+        }
+        elRow.classList.add('e115-prepared');
+        const elRowCells = elRow.querySelectorAll('td');
+        const inventoryName = elRowCells[1].textContent.trim();
+        const inventoryReactData = inventoryReactDataByName[inventoryName];
+        /**
+         * NOTE: Each ship name appears twice in "elAvailableInventoriesRows"
+         * (cargo + propellant), but they have the same inventory ID.
+         */
+        elRow.dataset.e115InventoryId = inventoryReactData.inventoryId;
+        elRow.dataset.e115InventoryLabel = inventoryReactData.inventoryLabel;
+        // Self inventory if the first cell contains an SVG ("star" icon)
+        // elRow.dataset.e115InventorySelf = Boolean(elRowCells[0].querySelector('svg')); // NOT used yet
+    });
+    await updateInventoriesDataByLabelAndIdsIfNotSet(ENTITY_IDS.BUILDING, buildingIds);
+    await updateInventoriesDataByLabelAndIdsIfNotSet(ENTITY_IDS.SHIP, shipIds);
+    /**
+     * At this point, the data for all inventories should be cached,
+     * except when waiting for the initial API calls to inventories-data.
+     */
+    elAvailableInventoriesRows.forEach(elRow => {
+        const inventoryId = elRow.dataset.e115InventoryId;
+        const inventoryLabel = elRow.dataset.e115InventoryLabel;
+        const inventoryData = inventoriesDataByLabelAndId[inventoryLabel][inventoryId];
+        if (!inventoryData) {
+            // Waiting for the initial API calls to inventories-data
+            return;
+        }
+        const controllerAddress = inventoryData.controllerCrewData.delegatedToAddress;
+        if (customBlacklistByAddress[controllerAddress]) {
+            // Blacklisted controller
+            elRow.classList.add('e115-blacklisted-inventory'); //// TEST
+        }
+    });
+}
+
 /**
  * Highlight crews which are rationing, from among:
  * - selected crew (top-left)
@@ -2231,6 +2376,7 @@ function injectFeaturesPeriodically() {
         autoHideUsedDeposits();
         autoOpenInventoryPanel();
         autoOpenResourcesPanel();
+        highlightBlocklistedInventories();
         highlightCrewsRationing();
         showShipStatsForMyCrews();
         updateMarketValueOfSelectedItems();
@@ -2265,9 +2411,11 @@ function handleMessage(event) {
                 const addressData = customNameByAddress[address];
                 if (typeof addressData !== 'string') {
                     // New "addressData" format
+                    customBlacklistByAddress[address] = addressData.isBlacklisted;
                     customNameByAddress[address] = addressData.label;
                 }
             });
+            localStorage.setItem('e115CustomBlacklistByAddress', JSON.stringify(customBlacklistByAddress));
             localStorage.setItem('e115CustomNameByAddress', JSON.stringify(customNameByAddress));
             break;
     }
@@ -2302,6 +2450,9 @@ function onClickConfigOption(el) {
             break;
         case 'auto-open-resources-panel-bypass-other-panels':
             setExtensionSetting('autoOpenResourcesPanelBypassOtherPanels', el.checked);
+            break;
+        case 'highlight-blocklisted-inventories':
+            setExtensionSetting('highlightBlocklistedInventories', el.checked);
             break;
         case 'highlight-crews-rationing':
             setExtensionSetting('highlightCrewsRationing', el.checked);

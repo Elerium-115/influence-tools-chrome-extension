@@ -1,12 +1,13 @@
 @charset "UTF-8";
 :root {
   --color-bg-dark: rgba(15, 15, 15, 0.9);
-  --color-crew-rationing: rgba(255, 0, 0, 0.6);
   --color-influence: rgb(54, 167, 205);
   --color-influence-faded-35: rgba(54, 167, 205, 0.35);
   --color-influence-faded-25: rgba(54, 167, 205, 0.25);
   --color-influence-faded-175: rgba(54, 167, 205, 0.175);
   --color-influence-green: rgb(136, 230, 117);
+  --color-warning: rgba(255, 0, 0, 0.6);
+  --color-warning-faded: rgba(255, 0, 0, 0.3);
   --crewmate-color-intensity: 1;
 }
 
@@ -530,10 +531,10 @@ body[data-inventory-item-names=true] table [data-tooltip-id=selectionDialogToolt
 }
 
 #e115-captain-video-wrapper {
-  align-items: end;
+  align-items: flex-end;
   display: flex;
   height: 100%;
-  justify-content: start;
+  justify-content: flex-start;
   position: absolute;
   width: 100%;
 }
@@ -620,28 +621,28 @@ body[data-inventory-item-names=true] table [data-tooltip-id=selectionDialogToolt
 
 .e115-crew-rationing {
   animation: flash-crew-rationing 1500ms infinite;
-  filter: drop-shadow(0 0 10px var(--color-crew-rationing));
+  filter: drop-shadow(0 0 10px var(--color-warning));
 }
 @keyframes flash-crew-rationing {
   33% {
-    filter: drop-shadow(0 0 20px var(--color-crew-rationing));
+    filter: drop-shadow(0 0 20px var(--color-warning));
   }
   66% {
-    filter: drop-shadow(0 0 10px var(--color-crew-rationing));
+    filter: drop-shadow(0 0 10px var(--color-warning));
   }
 }
 
 .e115-my-crew-rationing {
   animation: flash-my-crew-rationing 1500ms infinite;
   background: rgba(255, 0, 0, 0.1) !important;
-  filter: drop-shadow(0 0 0 var(--color-crew-rationing));
+  filter: drop-shadow(0 0 0 var(--color-warning));
 }
 @keyframes flash-my-crew-rationing {
   33% {
-    filter: drop-shadow(0 0 10px var(--color-crew-rationing));
+    filter: drop-shadow(0 0 10px var(--color-warning));
   }
   66% {
-    filter: drop-shadow(0 0 0 var(--color-crew-rationing));
+    filter: drop-shadow(0 0 0 var(--color-warning));
   }
 }
 
@@ -662,7 +663,7 @@ body[data-inventory-item-names=true] table [data-tooltip-id=selectionDialogToolt
   right: 8px;
 }
 [data-e115-crew-food-ratio].e115-my-crew-rationing::after {
-  background-color: var(--color-crew-rationing);
+  background-color: var(--color-warning);
 }
 
 [data-e115-ship-loaded-propellant-percent]::before {
@@ -744,6 +745,29 @@ body[data-inventory-item-names=true] table [data-tooltip-id=selectionDialogToolt
 }
 #e115-location-controller-wrapper.system-view .controller:not(.controller-asteroid) {
   display: none !important;
+}
+
+.e115-blacklisted-inventory > * {
+  background-image: linear-gradient(90deg, var(--color-warning-faded) 0%, var(--color-warning-faded) 100%) !important;
+}
+.e115-blacklisted-inventory:hover > * {
+  background-image: linear-gradient(90deg, var(--color-warning) 0%, var(--color-warning) 100%) !important;
+  color: white;
+}
+.e115-blacklisted-inventory:hover > *:last-child {
+  position: relative;
+}
+.e115-blacklisted-inventory:hover > *:last-child::after {
+  align-items: center;
+  background: black;
+  bottom: 0;
+  content: "Blocklisted";
+  display: flex;
+  left: 0;
+  padding: 0 16px;
+  position: absolute;
+  right: 0;
+  top: 0;
 }
 
 .eUlTUS > img:not(:hover) {
