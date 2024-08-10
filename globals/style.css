@@ -591,7 +591,14 @@ body[data-inventory-item-names=true] table [data-tooltip-id=selectionDialogToolt
   display: none;
 }
 #e115-crew-controller::before {
-  content: "Crew controller:";
+  content: "Controller:";
+}
+#e115-crew-controller.is-blacklisted::before {
+  background: var(--color-warning);
+  color: white;
+  content: "Blocklisted controller:";
+  opacity: 1;
+  padding: 5px;
 }
 
 #e115-filter-select-process {
@@ -736,6 +743,9 @@ body[data-inventory-item-names=true] table [data-tooltip-id=selectionDialogToolt
 }
 #e115-location-controller-wrapper #e115-location-controller .controller.controller-asteroid::before {
   content: "Asteroid controller:";
+}
+#e115-location-controller-wrapper #e115-location-controller .controller.is-blacklisted {
+  background: var(--color-warning);
 }
 #e115-location-controller-wrapper:hover {
   z-index: 2000;

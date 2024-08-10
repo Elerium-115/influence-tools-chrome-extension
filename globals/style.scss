@@ -668,7 +668,17 @@ body[data-inventory-item-names='true'] {
     }
 
     &::before {
-        content: 'Crew controller:';
+        content: 'Controller:';
+    }
+
+    &.is-blacklisted {
+        &::before {
+            background: var(--color-warning);
+            color: white;
+            content: 'Blocklisted controller:';
+            opacity: 1;
+            padding: 5px;
+        }
     }
 }
 
@@ -812,6 +822,10 @@ body[data-inventory-item-names='true'] {
             &.controller-ship::before { content: 'Ship controller:'; }
             &.controller-lot::before { content: 'Lot controller:'; }
             &.controller-asteroid::before { content: 'Asteroid controller:'; }
+
+            &.is-blacklisted {
+                background: var(--color-warning);
+            }
         }
     }
 

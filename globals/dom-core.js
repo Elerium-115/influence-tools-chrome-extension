@@ -1501,17 +1501,19 @@ function injectCrewController() {
         let crewControllerText = delegatedToName;
         let crewControllerTextIsCustom = false;
         let crewControllerTextIsAddress = false;
-        if (!crewControllerText) {
-            const crewControllerAddress = delegatedToAddress;
-            if (customNameByAddress[crewControllerAddress]) {
-                crewControllerText = customNameByAddress[crewControllerAddress];
-                crewControllerTextIsCustom = true;
-            } else {
-                crewControllerText = delegatedToAddress;
-                crewControllerTextIsAddress = true;
-            }
+        const crewControllerTextIsBlacklisted = customBlacklistByAddress[delegatedToAddress];
+        // Prioritize custom label
+        const crewControllerAddress = delegatedToAddress;
+        if (customNameByAddress[crewControllerAddress]) {
+            crewControllerText = customNameByAddress[crewControllerAddress];
+            crewControllerTextIsCustom = true;
         }
-        setupElControllerItem('crew', crewControllerText, crewControllerTextIsCustom, crewControllerTextIsAddress, elCrewController);
+        // Fallback to address
+        if (!crewControllerText) {
+            crewControllerText = delegatedToAddress;
+            crewControllerTextIsAddress = true;
+        }
+        setupElControllerItem('crew', crewControllerText, crewControllerTextIsCustom, crewControllerTextIsAddress, crewControllerTextIsBlacklisted, elCrewController);
     } catch (error) {
         // Swallow this error
     }
@@ -1864,59 +1866,61 @@ function injectLocationController() {
         let buildingControllerText = locationControllerInfo.building.delegatedToName;
         let buildingControllerTextIsCustom = false;
         let buildingControllerTextIsAddress = false;
+        const buildingControllerTextIsBlacklisted = customBlacklistByAddress[locationControllerInfo.building.delegatedToAddress];
         let shipControllerText = locationControllerInfo.ship.delegatedToName;
         let shipControllerTextIsCustom = false;
         let shipControllerTextIsAddress = false;
+        const shipControllerTextIsBlacklisted = customBlacklistByAddress[locationControllerInfo.ship.delegatedToAddress];
         let lotControllerText = locationControllerInfo.lot.delegatedToName;
         let lotControllerTextIsCustom = false;
         let lotControllerTextIsAddress = false;
+        const lotControllerTextIsBlacklisted = customBlacklistByAddress[locationControllerInfo.lot.delegatedToAddress];
         let asteroidControllerText = locationControllerInfo.asteroid.delegatedToName;
         let asteroidControllerTextIsCustom = false;
         let asteroidControllerTextIsAddress = false;
+        const asteroidControllerTextIsBlacklisted = customBlacklistByAddress[locationControllerInfo.asteroid.delegatedToAddress];
+        // Prioritize custom label
+        const buildingControllerAddress = locationControllerInfo.building.delegatedToAddress;
+        if (customNameByAddress[buildingControllerAddress]) {
+            buildingControllerText = customNameByAddress[buildingControllerAddress];
+            buildingControllerTextIsCustom = true;
+        }
+        const shipControllerAddress = locationControllerInfo.ship.delegatedToAddress;
+        if (customNameByAddress[shipControllerAddress]) {
+            shipControllerText = customNameByAddress[shipControllerAddress];
+            shipControllerTextIsCustom = true;
+        }
+        const lotControllerAddress = locationControllerInfo.lot.delegatedToAddress;
+        if (customNameByAddress[lotControllerAddress]) {
+            lotControllerText = customNameByAddress[lotControllerAddress];
+            lotControllerTextIsCustom = true;
+        }
+        const asteroidControllerAddress = locationControllerInfo.asteroid.delegatedToAddress;
+        if (customNameByAddress[asteroidControllerAddress]) {
+            asteroidControllerText = customNameByAddress[asteroidControllerAddress];
+            asteroidControllerTextIsCustom = true;
+        }
+        // Fallback to address
         if (!buildingControllerText) {
-            const buildingControllerAddress = locationControllerInfo.building.delegatedToAddress;
-            if (customNameByAddress[buildingControllerAddress]) {
-                buildingControllerText = customNameByAddress[buildingControllerAddress];
-                buildingControllerTextIsCustom = true;
-            } else {
-                buildingControllerText = locationControllerInfo.building.delegatedToAddress;
-                buildingControllerTextIsAddress = true;
-            }
+            buildingControllerText = locationControllerInfo.building.delegatedToAddress;
+            buildingControllerTextIsAddress = true;
         }
         if (!shipControllerText) {
-            const shipControllerAddress = locationControllerInfo.ship.delegatedToAddress;
-            if (customNameByAddress[shipControllerAddress]) {
-                shipControllerText = customNameByAddress[shipControllerAddress];
-                shipControllerTextIsCustom = true;
-            } else {
-                shipControllerText = shipControllerAddress;
-                shipControllerTextIsAddress = true;
-            }
+            shipControllerText = shipControllerAddress;
+            shipControllerTextIsAddress = true;
         }
         if (!lotControllerText) {
-            const lotControllerAddress = locationControllerInfo.lot.delegatedToAddress;
-            if (customNameByAddress[lotControllerAddress]) {
-                lotControllerText = customNameByAddress[lotControllerAddress];
-                lotControllerTextIsCustom = true;
-            } else {
-                lotControllerText = lotControllerAddress;
-                lotControllerTextIsAddress = true;
-            }
+            lotControllerText = lotControllerAddress;
+            lotControllerTextIsAddress = true;
         }
         if (!asteroidControllerText) {
-            const asteroidControllerAddress = locationControllerInfo.asteroid.delegatedToAddress;
-            if (customNameByAddress[asteroidControllerAddress]) {
-                asteroidControllerText = customNameByAddress[asteroidControllerAddress];
-                asteroidControllerTextIsCustom = true;
-            } else {
-                asteroidControllerText = locationControllerInfo.asteroid.delegatedToAddress;
-                asteroidControllerTextIsAddress = true;
-            }
+            asteroidControllerText = locationControllerInfo.asteroid.delegatedToAddress;
+            asteroidControllerTextIsAddress = true;
         }
-        setupElControllerItem('building', buildingControllerText, buildingControllerTextIsCustom, buildingControllerTextIsAddress);
-        setupElControllerItem('ship', shipControllerText, shipControllerTextIsCustom, shipControllerTextIsAddress);
-        setupElControllerItem('lot', lotControllerText, lotControllerTextIsCustom, lotControllerTextIsAddress);
-        setupElControllerItem('asteroid', asteroidControllerText, asteroidControllerTextIsCustom, asteroidControllerTextIsAddress);
+        setupElControllerItem('building', buildingControllerText, buildingControllerTextIsCustom, buildingControllerTextIsAddress, buildingControllerTextIsBlacklisted);
+        setupElControllerItem('ship', shipControllerText, shipControllerTextIsCustom, shipControllerTextIsAddress, shipControllerTextIsBlacklisted);
+        setupElControllerItem('lot', lotControllerText, lotControllerTextIsCustom, lotControllerTextIsAddress, lotControllerTextIsBlacklisted);
+        setupElControllerItem('asteroid', asteroidControllerText, asteroidControllerTextIsCustom, asteroidControllerTextIsAddress, asteroidControllerTextIsBlacklisted);
         elLocationControllerWrapper.classList.remove('e115-hidden');
         // If both the building controller and ship controller are set => ship docked at spaceport
         elLocationControllerWrapper.classList.toggle('ship-view', buildingCrewId && shipCrewId);
@@ -1935,7 +1939,14 @@ function injectLocationController() {
  * - "asteroid"
  * - "crew"
  */
-function setupElControllerItem(controllerType, controllerText, controllerTextIsCustom, controllerTextIsAddress, elControllerItem = null) {
+function setupElControllerItem(
+    controllerType,
+    controllerText,
+    controllerTextIsCustom,
+    controllerTextIsAddress,
+    controllerTextIsBlacklisted = false,
+    elControllerItem = null,
+) {
     if (!elControllerItem && elLocationController) {
         // This function is being called for a location controller
         elControllerItem = elLocationController.querySelector(`.controller-${controllerType}`);
@@ -1954,6 +1965,7 @@ function setupElControllerItem(controllerType, controllerText, controllerTextIsC
     elControllerItem.dataset.controllerText = controllerText;
     elControllerItem.classList.toggle('is-custom', controllerTextIsCustom);
     elControllerItem.classList.toggle('is-address', controllerTextIsAddress);
+    elControllerItem.classList.toggle('is-blacklisted', controllerTextIsBlacklisted);
     if (controllerTextIsAddress) {
         addTooltip(elControllerItem, 'Click to add a label for this address in the "Private Labels" widget');
     } else {
