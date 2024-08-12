@@ -565,6 +565,43 @@
     }
 }
 
+#e115-loader {
+    align-items: center;
+    animation: pulse-loader 1500ms linear infinite;
+    background: var(--color-bg-dark);
+    display: flex;
+    font-size: 90%;
+    gap: 10px;
+    left: 50%;
+    padding: 5px 10px;
+    position: absolute;
+    top: 15px;
+    transform: translate(-50%, 0);
+    white-space: nowrap;
+    z-index: 20000; // higher than 10001 for "Available Inventories"
+
+    @keyframes pulse-loader { 50% { color: var(--color-influence); } }
+
+    &:not(:empty)::before {
+        content: 'Influence Tools extension:';
+        opacity: 0.5;
+    }
+
+    &:not(:empty)::after {
+        align-items: center;
+        animation: spin-loader 1500ms linear infinite;
+        content: '↻';
+        display: inline-flex;
+        font-size: 110%;
+        height: 15px;
+        justify-content: center;
+        padding-bottom: 4px;
+        width: 15px;
+
+        @keyframes spin-loader { 100% { transform: rotate(360deg); } }
+    }
+}
+
 // Inventory items with their wrapper NOT hovered.
 // Apply only for "[data-tooltip-place='top']", to avoid matching (some) non-inventory panels.
 body[data-inventory-item-names='true'] {
@@ -594,6 +631,13 @@ body[data-inventory-item-names='true'] {
             font-size: 60%;
             text-align: left;
         }
+    }
+}
+
+body[data-only-my-inventories='true'] {
+    // Hide inventories NOT controlled by the player, from among "prepared" inventories
+    .e115-prepared:not([data-e115-inventory-controlled-by-me='true']) {
+        display: none;
     }
 }
 
@@ -679,6 +723,26 @@ body[data-inventory-item-names='true'] {
             opacity: 1;
             padding: 5px;
         }
+    }
+}
+
+#e115-filter-available-inventories {
+    border: none;
+    color: #ccc;
+    display: flex;
+    font-size: unset;
+    gap: 8px;
+    margin: 0 90px;
+    padding: 10px;
+    text-transform: unset;
+    transition: color 150ms;
+
+    &.e115-checked {
+        color: var(--color-influence-green);
+    }
+
+    &:hover {
+        color: white !important;
     }
 }
 

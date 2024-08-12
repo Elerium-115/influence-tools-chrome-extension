@@ -54,6 +54,7 @@ const extensionSettingsDefault = {
     industryBuilderButton: true, // if true, inject a button in inventories re: "What can I make with these items?"
     inventoryItemNames: true, // if true, overlay names for inventory items
     locationController: true, // if true, inject details about the controller of the selected location (lot, building, landed ship, asteroid)
+    onlyMyInventories: false, // if true, show only inventories controlled by the player, in the "Available Inventories" window
     showShipStatsForMyCrews: true, // if true, show the loaded propellant percent in the "My Crews" list, for crews stationed on a ship
 };
 
@@ -679,7 +680,7 @@ function createEl(nodeType, id = null, classes = null) {
     return el;
 }
 
-function addTooltip(el, tooltipContent, tooltipId='globalTooltip', tooltipPlace = 'top') {
+function addTooltip(el, tooltipContent, tooltipPlace = 'top', tooltipId='globalTooltip') {
     el.dataset.tooltipId = tooltipId;
     el.dataset.tooltipPlace = tooltipPlace;
     el.dataset.tooltipContent = tooltipContent;
@@ -939,45 +940,23 @@ function injectConfig() {
     injectConfigOptionCheckbox('location-controller', 'Controller(s) for the selected location');
     injectConfigOptionCheckbox('show-ship-stats-for-my-crews', 'Ship propellant percent for "My Crews"');
     // Initialize config options, based on extension settings from local-storage
-    if (extensionSettings.autoHideMarketsWithoutPrice) {
-        elConfigPanel.querySelector('input[name="auto-hide-markets-without-price"]').checked = true;
-    }
-    if (extensionSettings.autoHideUsedDeposits) {
-        elConfigPanel.querySelector('input[name="auto-hide-used-deposits"]').checked = true;
-    }
-    if (extensionSettings.autoOpenInventoryPanel) {
-        elConfigPanel.querySelector('input[name="auto-open-inventory-panel"]').checked = true;
-    }
-    if (extensionSettings.autoOpenInventoryPanelBypassOtherPanels) {
-        elConfigPanel.querySelector('input[name="auto-open-inventory-panel-bypass-other-panels"]').checked = true;
-    }
-    if (extensionSettings.autoOpenResourcesPanel) {
-        elConfigPanel.querySelector('input[name="auto-open-resources-panel"]').checked = true;
-    }
-    if (extensionSettings.autoOpenResourcesPanelBypassOtherPanels) {
-        elConfigPanel.querySelector('input[name="auto-open-resources-panel-bypass-other-panels"]').checked = true;
-    }
-    if (extensionSettings.highlightBlocklistedInventories) {
-        elConfigPanel.querySelector('input[name="highlight-blocklisted-inventories"]').checked = true;
-    }
-    if (extensionSettings.highlightCrewsRationing) {
-        elConfigPanel.querySelector('input[name="highlight-crews-rationing"]').checked = true;
-    }
-    if (extensionSettings.industryBuilderButton) {
-        elConfigPanel.querySelector('input[name="industry-builder-button"]').checked = true;
-    }
-    if (extensionSettings.inventoryItemNames) {
-        elConfigPanel.querySelector('input[name="inventory-item-names"]').checked = true;
-    }
-    if (extensionSettings.locationController) {
-        elConfigPanel.querySelector('input[name="location-controller"]').checked = true;
-    }
-    if (extensionSettings.showShipStatsForMyCrews) {
-        elConfigPanel.querySelector('input[name="show-ship-stats-for-my-crews"]').checked = true;
-    }
+    elConfigPanel.querySelector('input[name="auto-hide-markets-without-price"]').checked = extensionSettings.autoHideMarketsWithoutPrice;
+    elConfigPanel.querySelector('input[name="auto-hide-used-deposits"]').checked = extensionSettings.autoHideUsedDeposits;
+    elConfigPanel.querySelector('input[name="auto-open-inventory-panel"]').checked = extensionSettings.autoOpenInventoryPanel;
+    elConfigPanel.querySelector('input[name="auto-open-inventory-panel-bypass-other-panels"]').checked = extensionSettings.autoOpenInventoryPanelBypassOtherPanels;
+    elConfigPanel.querySelector('input[name="auto-open-resources-panel"]').checked = extensionSettings.autoOpenResourcesPanel;
+    elConfigPanel.querySelector('input[name="auto-open-resources-panel-bypass-other-panels"]').checked = extensionSettings.autoOpenResourcesPanelBypassOtherPanels;
+    elConfigPanel.querySelector('input[name="highlight-blocklisted-inventories"]').checked = extensionSettings.highlightBlocklistedInventories;
+    elConfigPanel.querySelector('input[name="highlight-crews-rationing"]').checked = extensionSettings.highlightCrewsRationing;
+    elConfigPanel.querySelector('input[name="industry-builder-button"]').checked = extensionSettings.industryBuilderButton;
+    elConfigPanel.querySelector('input[name="inventory-item-names"]').checked = extensionSettings.inventoryItemNames;
+    elConfigPanel.querySelector('input[name="location-controller"]').checked = extensionSettings.locationController;
+    elConfigPanel.querySelector('input[name="show-ship-stats-for-my-crews"]').checked = extensionSettings.showShipStatsForMyCrews;
     // Initialize other data, based on extension settings from local-storage
     // -- set "data-inventory-item-names" on "body"
     document.body.dataset.inventoryItemNames = extensionSettings.inventoryItemNames;
+    // Set "data-only-my-inventories" on "body"
+    document.body.dataset.onlyMyInventories = extensionSettings.onlyMyInventories;
 }
 
 function injectConfigOptionCrewmateColorIntensity() {
@@ -1002,6 +981,20 @@ function injectConfigOptionCheckbox(optionName, optionDescription, isSecondaryOp
         elConfigOptionLabel.classList.add('e115-config-option-secondary')
     }
     elConfigOptions.append(elConfigOptionLabel);
+}
+
+function injectLoader() {
+    const elLoader = createEl('div', 'e115-loader', ['e115-hidden']);
+    document.body.append(elLoader);
+}
+
+function toggleLoader(shouldShow, message = '') {
+    const elLoader = document.getElementById('e115-loader');
+    if (!elLoader) {
+        return;
+    }
+    elLoader.classList.toggle('e115-hidden', !shouldShow);
+    elLoader.textContent = message;
 }
 
 async function updateCrewDataByCrewIdIfNotSet(crewId) {
@@ -1029,18 +1022,66 @@ async function updateCrewmateVideosIfNotSet() {
     }
 }
 
+/**
+ * NOTE: This filter requires inventories to be marked via "highlightBlocklistedInventories"
+ */
+function injectInventoriesFilter() {
+    if (document.getElementById('e115-filter-available-inventories')) {
+        // Filter already injected
+        return;
+    }
+    const elAvailableInventoriesTitle = findElWithMatchingTextNode(document.body, '*', 'Available Inventories');
+    if (!elAvailableInventoriesTitle) {
+        return;
+    }
+    // Inject filter for "My Inventories", if not yet injected
+    const elAvailableInventoriesHeader = elAvailableInventoriesTitle.parentElement;
+    const elFilterWrapper = createEl('label', 'e115-filter-available-inventories', ['e115-cursor-full']);
+    elFilterWrapper.for = 'e115-filter-available-inventories-input';
+    const elFilterInput = createEl('input', 'e115-filter-available-inventories-input');
+    elFilterInput.type = 'checkbox';
+    elFilterInput.checked = extensionSettings.onlyMyInventories;
+    elFilterWrapper.classList.toggle('e115-checked', elFilterInput.checked);
+    elFilterInput.addEventListener('input', () => {
+        filterAvailableInventories(elFilterInput.checked);
+        elFilterWrapper.classList.toggle('e115-checked', elFilterInput.checked);
+    });
+    elFilterWrapper.append(elFilterInput);
+    const elFilterText = createEl('div');
+    elFilterText.textContent = 'Only My Inventories';
+    elFilterWrapper.append(elFilterText);
+    // Inject the filter right after the title (before the close-button)
+    elAvailableInventoriesHeader.insertBefore(elFilterWrapper, elAvailableInventoriesTitle.nextSibling);
+}
+
+function filterAvailableInventories(elFilterInputIsChecked) {
+    setExtensionSetting('onlyMyInventories', elFilterInputIsChecked);
+    // Set "data-only-my-inventories" on "body"
+    document.body.dataset.onlyMyInventories = elFilterInputIsChecked;
+}
+
 async function updateInventoriesDataByLabelAndIdsIfNotSet(inventoriesLabel, inventoriesIds) {
     if (isUpdatingInventories) {
         // Wait for pending API calls for inventories data
         return;
     }
     isUpdatingInventories = true;
+    let inventoriesLabelText = '';
+    switch (inventoriesLabel) {
+        case ENTITY_IDS.BUILDING:
+            inventoriesLabelText = 'buildings';
+            break;
+        case ENTITY_IDS.SHIP:
+            inventoriesLabelText = 'ships';
+            break;
+    }
     try {
         // Fetch data only for NON-cached IDs associated w/ this label
         const cachedData = inventoriesDataByLabelAndId[inventoriesLabel];
         const cachedIds = Object.keys(cachedData);
         const nonCachedIds = inventoriesIds.filter(id => !cachedIds.includes(id));
         if (nonCachedIds.length) {
+            toggleLoader(true, `Updating data for ${nonCachedIds.length} ${inventoriesLabelText}...`);
             const nonCachedIdsList = nonCachedIds.join(',');
             const inventoriesDataResponse = await fetch(`${inventoriesDataEndpoint}/${inventoriesLabel}/${nonCachedIdsList}`);
             const inventoriesData = await inventoriesDataResponse.json();
@@ -1052,6 +1093,7 @@ async function updateInventoriesDataByLabelAndIdsIfNotSet(inventoriesLabel, inve
         // Swallow this error
     }
     isUpdatingInventories = false;
+    toggleLoader(false);
 }
 
 async function updatePrices() {
@@ -2197,14 +2239,14 @@ function autoOpenResourcesPanel() {
     elHudMenuItemResources.click();
 }
 
+/**
+ * NOTE: Most of the logic in this function is responsibe for
+ * generating data for each inventory, which is also required
+ * for the filter injected via "injectInventoriesFilter".
+ * The actual highlighting of blacklisted inventories
+ * is only done at the very end of this function.
+ */
 async function highlightBlocklistedInventories() {
-    if (!extensionSettings.highlightBlocklistedInventories) {
-        return;
-    }
-    if (!Object.values(customBlacklistByAddress).some(isBlacklisted => isBlacklisted)) {
-        // NO blacklisted address flagged by the player via "Private Labels" widget
-        return;
-    }
     const elAvailableInventoriesTitle = findElWithMatchingTextNode(document.body, '*', 'Available Inventories');
     if (!elAvailableInventoriesTitle) {
         return;
@@ -2217,6 +2259,7 @@ async function highlightBlocklistedInventories() {
     if (!reactFiberInventories || !reactFiberInventories.memoizedProps) {
         return;
     }
+    // Parse React data for inventories
     let buildingIds = [];
     let shipIds = [];
     let inventoryReactDataByName = {};
@@ -2260,6 +2303,14 @@ async function highlightBlocklistedInventories() {
         const elRowCells = elRow.querySelectorAll('td');
         const inventoryName = elRowCells[1].textContent.trim();
         const inventoryReactData = inventoryReactDataByName[inventoryName];
+        if (!inventoryReactData) {
+            /**
+             * This may happen if the user enables "Public Inventories"
+             * AFTER the non-public inventories were already parsed
+             * and saved into "inventoryReactDataByName".
+             */
+            return;
+        }
         /**
          * NOTE: Each ship name appears twice in "elAvailableInventoriesRows"
          * (cargo + propellant), but they have the same inventory ID.
@@ -2277,6 +2328,14 @@ async function highlightBlocklistedInventories() {
      */
     elAvailableInventoriesRows.forEach(elRow => {
         const inventoryId = elRow.dataset.e115InventoryId;
+        if (!inventoryId) {
+            /**
+             * This may happen if the user enables "Public Inventories"
+             * AFTER the non-public inventories were already parsed
+             * and saved into "inventoryReactDataByName".
+             */
+            return;
+        }
         const inventoryLabel = elRow.dataset.e115InventoryLabel;
         const inventoryData = inventoriesDataByLabelAndId[inventoryLabel][inventoryId];
         if (!inventoryData) {
@@ -2284,9 +2343,10 @@ async function highlightBlocklistedInventories() {
             return;
         }
         const controllerAddress = inventoryData.controllerCrewData.delegatedToAddress;
-        if (customBlacklistByAddress[controllerAddress]) {
+        elRow.dataset.e115InventoryControlledByMe = controllerAddress === getCurrentWalletAddress().toLowerCase();
+        if (extensionSettings.highlightBlocklistedInventories && customBlacklistByAddress[controllerAddress]) {
             // Blacklisted controller
-            elRow.classList.add('e115-blacklisted-inventory'); //// TEST
+            elRow.classList.add('e115-blacklisted-inventory');
         }
     });
 }
@@ -2385,6 +2445,7 @@ function injectFeaturesPeriodically() {
         injectWidgets();
         injectCaptainVideo();
         injectCrewController();
+        injectInventoriesFilter();
         injectProcessFilter();
         injectMyOrdersProductLinks();
         injectAndApplyExtractionPercent();

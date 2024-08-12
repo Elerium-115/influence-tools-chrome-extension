@@ -10,6 +10,7 @@ updateWidgetsIfNotSet();
 
 // Inject config, tools, widgets, features...
 injectConfig();
+injectLoader();
 injectRealTime();
 reInjectToolsPeriodically();
 injectFeaturesPeriodically();

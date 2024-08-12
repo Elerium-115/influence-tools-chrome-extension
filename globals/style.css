@@ -501,6 +501,47 @@
   opacity: 0.5;
 }
 
+#e115-loader {
+  align-items: center;
+  animation: pulse-loader 1500ms linear infinite;
+  background: var(--color-bg-dark);
+  display: flex;
+  font-size: 90%;
+  gap: 10px;
+  left: 50%;
+  padding: 5px 10px;
+  position: absolute;
+  top: 15px;
+  transform: translate(-50%, 0);
+  white-space: nowrap;
+  z-index: 20000;
+}
+@keyframes pulse-loader {
+  50% {
+    color: var(--color-influence);
+  }
+}
+#e115-loader:not(:empty)::before {
+  content: "Influence Tools extension:";
+  opacity: 0.5;
+}
+#e115-loader:not(:empty)::after {
+  align-items: center;
+  animation: spin-loader 1500ms linear infinite;
+  content: "↻";
+  display: inline-flex;
+  font-size: 110%;
+  height: 15px;
+  justify-content: center;
+  padding-bottom: 4px;
+  width: 15px;
+}
+@keyframes spin-loader {
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
 body[data-inventory-item-names=true] #hudMenuPanel :not(:hover) > [data-tooltip-id=hudMenuTooltip][data-tooltip-place=top][data-tooltip-content]::after,
 body[data-inventory-item-names=true] [data-tooltip-id=selectionDialogTooltip][data-tooltip-place=top][data-tooltip-content]:not(:hover)::after,
 body[data-inventory-item-names=true] [data-tooltip-id=actionDialogTooltip][data-tooltip-place=top][data-tooltip-content]:not(:hover)::after {
@@ -521,6 +562,10 @@ body[data-inventory-item-names=true] [data-tooltip-id=actionDialogTooltip][data-
 body[data-inventory-item-names=true] table [data-tooltip-id=selectionDialogTooltip][data-tooltip-place=top][data-tooltip-content]:not(:hover)::after {
   font-size: 60%;
   text-align: left;
+}
+
+body[data-only-my-inventories=true] .e115-prepared:not([data-e115-inventory-controlled-by-me=true]) {
+  display: none;
 }
 
 #timeMenu {
@@ -599,6 +644,24 @@ body[data-inventory-item-names=true] table [data-tooltip-id=selectionDialogToolt
   content: "Blocklisted controller:";
   opacity: 1;
   padding: 5px;
+}
+
+#e115-filter-available-inventories {
+  border: none;
+  color: #ccc;
+  display: flex;
+  font-size: unset;
+  gap: 8px;
+  margin: 0 90px;
+  padding: 10px;
+  text-transform: unset;
+  transition: color 150ms;
+}
+#e115-filter-available-inventories.e115-checked {
+  color: var(--color-influence-green);
+}
+#e115-filter-available-inventories:hover {
+  color: white !important;
 }
 
 #e115-filter-select-process {
