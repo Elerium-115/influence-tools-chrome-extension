@@ -1608,7 +1608,13 @@ function injectMyOrdersProductLinks() {
         // Not yet visible (e.g. on full page reload with this URL, before clicking "Play")
         return;
     }
-    const elsOrderRows = elMarketplaceHeader.parentElement.querySelectorAll('table tbody tr');
+    const elOrdersTable = elMarketplaceHeader.parentElement.querySelector('table');
+    if (!elOrdersTable) {
+        return;
+    }
+    // Fix re: final columns not visible on low-res (e.g. cancel-order buttons)
+    elOrdersTable.parentElement.style.overflow = 'auto';
+    const elsOrderRows = elOrdersTable.querySelectorAll('tbody tr');
     [...elsOrderRows].some(elOrderRow => {
         if (elOrderRow.classList.contains('e115-marked')) {
             // Order already parsed
