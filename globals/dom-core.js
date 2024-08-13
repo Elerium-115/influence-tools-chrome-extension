@@ -55,6 +55,7 @@ const extensionSettingsDefault = {
     inventoryItemNames: true, // if true, overlay names for inventory items
     locationController: true, // if true, inject details about the controller of the selected location (lot, building, landed ship, asteroid)
     onlyMyInventories: false, // if true, show only inventories controlled by the player, in the "Available Inventories" window
+    onlyWarehouses: false, // if true, show only Warehouse inventories, in the "Available Inventories" window
     showShipStatsForMyCrews: true, // if true, show the loaded propellant percent in the "My Crews" list, for crews stationed on a ship
 };
 
@@ -957,6 +958,7 @@ function injectConfig() {
     document.body.dataset.inventoryItemNames = extensionSettings.inventoryItemNames;
     // Set "data-only-my-inventories" on "body"
     document.body.dataset.onlyMyInventories = extensionSettings.onlyMyInventories;
+    document.body.dataset.onlyWarehouses = extensionSettings.onlyWarehouses;
 }
 
 function injectConfigOptionCrewmateColorIntensity() {
@@ -1023,41 +1025,49 @@ async function updateCrewmateVideosIfNotSet() {
 }
 
 /**
- * NOTE: This filter requires inventories to be marked via "highlightBlocklistedInventories"
+ * NOTE: These filters require inventories to be marked via "highlightBlocklistedInventories"
  */
-function injectInventoriesFilter() {
-    if (document.getElementById('e115-filter-available-inventories')) {
-        // Filter already injected
+function injectInventoriesFilters() {
+    if (document.getElementById('e115-inventories-filters')) {
+        // Filters already injected
         return;
     }
     const elAvailableInventoriesTitle = findElWithMatchingTextNode(document.body, '*', 'Available Inventories');
     if (!elAvailableInventoriesTitle) {
         return;
     }
-    // Inject filter for "My Inventories", if not yet injected
-    const elAvailableInventoriesHeader = elAvailableInventoriesTitle.parentElement;
-    const elFilterWrapper = createEl('label', 'e115-filter-available-inventories', ['e115-cursor-full']);
-    elFilterWrapper.for = 'e115-filter-available-inventories-input';
-    const elFilterInput = createEl('input', 'e115-filter-available-inventories-input');
-    elFilterInput.type = 'checkbox';
-    elFilterInput.checked = extensionSettings.onlyMyInventories;
-    elFilterWrapper.classList.toggle('e115-checked', elFilterInput.checked);
-    elFilterInput.addEventListener('input', () => {
-        filterAvailableInventories(elFilterInput.checked);
-        elFilterWrapper.classList.toggle('e115-checked', elFilterInput.checked);
-    });
-    elFilterWrapper.append(elFilterInput);
-    const elFilterText = createEl('div');
-    elFilterText.textContent = 'Only My Inventories';
-    elFilterWrapper.append(elFilterText);
+    const elInventoriesFilters = createEl('div', 'e115-inventories-filters');
+    // Inject filter for "Only My Inventories"
+    injectInventoriesFilter(elInventoriesFilters, 1, 'Only My Inventories', 'onlyMyInventories');
+    // Inject filter for "Only Warehouses"
+    injectInventoriesFilter(elInventoriesFilters, 2, 'Only Warehouses', 'onlyWarehouses');
     // Inject the filter right after the title (before the close-button)
-    elAvailableInventoriesHeader.insertBefore(elFilterWrapper, elAvailableInventoriesTitle.nextSibling);
+    const elAvailableInventoriesHeader = elAvailableInventoriesTitle.parentElement;
+    elAvailableInventoriesHeader.insertBefore(elInventoriesFilters, elAvailableInventoriesTitle.nextSibling);
 }
 
-function filterAvailableInventories(elFilterInputIsChecked) {
-    setExtensionSetting('onlyMyInventories', elFilterInputIsChecked);
-    // Set "data-only-my-inventories" on "body"
-    document.body.dataset.onlyMyInventories = elFilterInputIsChecked;
+function injectInventoriesFilter(elInventoriesFilters, filterIdx, filterText, extensionSettingKey) {
+    // Inject filter for "Only My Inventories"
+    const elFilterWrapper = createEl('label', null, ['e115-filter', 'e115-cursor-full']);
+    elFilterWrapper.for = `e115-inventories-filter-input-${filterIdx}`;
+    const elFilterInput = createEl('input', elFilterWrapper.for);
+    elFilterInput.type = 'checkbox';
+    elFilterInput.checked = extensionSettings[extensionSettingKey];
+    elFilterInput.addEventListener('input', () => {
+        filterAvailableInventories(extensionSettingKey, elFilterInput.checked);
+        elFilterWrapper.classList.toggle('e115-checked', elFilterInput.checked);
+    });
+    elFilterWrapper.classList.toggle('e115-checked', elFilterInput.checked);
+    elFilterWrapper.append(elFilterInput);
+    const elFilterText = createEl('div');
+    elFilterText.textContent = filterText;
+    elFilterWrapper.append(elFilterText);
+    elInventoriesFilters.append(elFilterWrapper);
+}
+
+function filterAvailableInventories(extensionSettingKey, elFilterInputIsChecked) {
+    setExtensionSetting(extensionSettingKey, elFilterInputIsChecked);
+    document.body.dataset[extensionSettingKey] = elFilterInputIsChecked;
 }
 
 async function updateInventoriesDataByLabelAndIdsIfNotSet(inventoriesLabel, inventoriesIds) {
@@ -1321,7 +1331,12 @@ async function searchMarketplace(searchText) {
     elInput.dispatchEvent(inputEvent);
     // Wait for search results to load
     await delay(500);
-    const elResultsList = elInput.parentElement.nextElementSibling.firstElementChild;
+    const elResultsListWrapper = elInput.parentElement.nextElementSibling;
+    if (!elResultsListWrapper) {
+        // Isolated occurrence, not sure how to reproduce
+        return;
+    }
+    const elResultsList = elResultsListWrapper.firstElementChild;
     const elsResults = [...elResultsList.children];
     if (elsResults.length === 1) {
         // Auto-click if single result matching the search
@@ -2242,7 +2257,7 @@ function autoOpenResourcesPanel() {
 /**
  * NOTE: Most of the logic in this function is responsibe for
  * generating data for each inventory, which is also required
- * for the filter injected via "injectInventoriesFilter".
+ * for the filters injected via "injectInventoriesFilters".
  * The actual highlighting of blacklisted inventories
  * is only done at the very end of this function.
  */
@@ -2270,9 +2285,11 @@ async function highlightBlocklistedInventories() {
             const inventoryId = keyData.id.toString();
             const inventoryName = reactChildInventory.props.row.name;
             const inventoryLabel = keyData.label;
+            const inventoryType = reactChildInventory.props.row.type;
             inventoryReactDataByName[inventoryName] = {
                 inventoryId,
                 inventoryLabel,
+                inventoryType,
             };
             switch (inventoryLabel) {
                 case ENTITY_IDS.BUILDING:
@@ -2317,6 +2334,7 @@ async function highlightBlocklistedInventories() {
          */
         elRow.dataset.e115InventoryId = inventoryReactData.inventoryId;
         elRow.dataset.e115InventoryLabel = inventoryReactData.inventoryLabel;
+        elRow.dataset.e115InventoryType = inventoryReactData.inventoryType;
         // Self inventory if the first cell contains an SVG ("star" icon)
         // elRow.dataset.e115InventorySelf = Boolean(elRowCells[0].querySelector('svg')); // NOT used yet
     });
@@ -2337,13 +2355,17 @@ async function highlightBlocklistedInventories() {
             return;
         }
         const inventoryLabel = elRow.dataset.e115InventoryLabel;
+        const inventoryType = elRow.dataset.e115InventoryType;
         const inventoryData = inventoriesDataByLabelAndId[inventoryLabel][inventoryId];
         if (!inventoryData) {
             // Waiting for the initial API calls to inventories-data
             return;
         }
         const controllerAddress = inventoryData.controllerCrewData.delegatedToAddress;
+        // Set "data-e115-inventory-controlled-by-me"
         elRow.dataset.e115InventoryControlledByMe = controllerAddress === getCurrentWalletAddress().toLowerCase();
+        // Set "data-e115-inventory-is-warehouse"
+        elRow.dataset.e115InventoryIsWarehouse = inventoryType === 'Warehouse';
         if (extensionSettings.highlightBlocklistedInventories && customBlacklistByAddress[controllerAddress]) {
             // Blacklisted controller
             elRow.classList.add('e115-blacklisted-inventory');
@@ -2445,7 +2467,7 @@ function injectFeaturesPeriodically() {
         injectWidgets();
         injectCaptainVideo();
         injectCrewController();
-        injectInventoriesFilter();
+        injectInventoriesFilters();
         injectProcessFilter();
         injectMyOrdersProductLinks();
         injectAndApplyExtractionPercent();

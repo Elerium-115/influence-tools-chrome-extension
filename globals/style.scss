@@ -641,6 +641,13 @@ body[data-only-my-inventories='true'] {
     }
 }
 
+body[data-only-warehouses='true'] {
+    // Hide inventories which are NOT a Warehouse, from among "prepared" inventories
+    .e115-prepared:not([data-e115-inventory-is-warehouse='true']) {
+        display: none;
+    }
+}
+
 #timeMenu {
     align-items: center;
     display: flex;
@@ -726,23 +733,28 @@ body[data-only-my-inventories='true'] {
     }
 }
 
-#e115-filter-available-inventories {
+#e115-inventories-filters {
     border: none;
-    color: #ccc;
     display: flex;
     font-size: unset;
-    gap: 8px;
-    margin: 0 90px;
-    padding: 10px;
+    margin: 0 15px;
     text-transform: unset;
-    transition: color 150ms;
 
-    &.e115-checked {
-        color: var(--color-influence-green);
-    }
+    .e115-filter {
+        align-items: center;
+        color: #ccc;
+        display: flex;
+        gap: 8px;
+        padding: 10px;
+        transition: color 150ms;
 
-    &:hover {
-        color: white !important;
+        &.e115-checked {
+            color: var(--color-influence-green);
+        }
+
+        &:hover {
+            color: white !important;
+        }
     }
 }
 

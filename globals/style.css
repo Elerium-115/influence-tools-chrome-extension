@@ -568,6 +568,10 @@ body[data-only-my-inventories=true] .e115-prepared:not([data-e115-inventory-cont
   display: none;
 }
 
+body[data-only-warehouses=true] .e115-prepared:not([data-e115-inventory-is-warehouse=true]) {
+  display: none;
+}
+
 #timeMenu {
   align-items: center;
   display: flex;
@@ -646,21 +650,25 @@ body[data-only-my-inventories=true] .e115-prepared:not([data-e115-inventory-cont
   padding: 5px;
 }
 
-#e115-filter-available-inventories {
+#e115-inventories-filters {
   border: none;
-  color: #ccc;
   display: flex;
   font-size: unset;
-  gap: 8px;
-  margin: 0 90px;
-  padding: 10px;
+  margin: 0 15px;
   text-transform: unset;
+}
+#e115-inventories-filters .e115-filter {
+  align-items: center;
+  color: #ccc;
+  display: flex;
+  gap: 8px;
+  padding: 10px;
   transition: color 150ms;
 }
-#e115-filter-available-inventories.e115-checked {
+#e115-inventories-filters .e115-filter.e115-checked {
   color: var(--color-influence-green);
 }
-#e115-filter-available-inventories:hover {
+#e115-inventories-filters .e115-filter:hover {
   color: white !important;
 }
 
