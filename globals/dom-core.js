@@ -1244,6 +1244,11 @@ function updateCrewData() {
     } catch (error) {
         selectedCrewData.rationing = null;
     }
+    // Mark the selected crew panel for CSS
+    const elSelectedCrewPanel = getElSelectedCrewPanel();
+    if (elSelectedCrewPanel) {
+        elSelectedCrewPanel.classList.add('e115-selected-crew-panel');
+    }
 }
 
 function updateLocationData() {

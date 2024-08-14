@@ -851,17 +851,20 @@ body[data-only-warehouses=true] .e115-prepared:not([data-e115-inventory-is-wareh
   top: 0;
 }
 
-.eUlTUS > img:not(:hover) {
+img[src*="/v2/crewmates/"] {
   -webkit-backdrop-filter: brightness(var(--crewmate-color-intensity));
           backdrop-filter: brightness(var(--crewmate-color-intensity));
 }
 
-#hudMenuPanel .eUlTUS > img {
-  -webkit-backdrop-filter: brightness(var(--crewmate-color-intensity));
-          backdrop-filter: brightness(var(--crewmate-color-intensity));
+.e115-selected-crew-panel [data-tooltip-id]:hover img[src*="/v2/crewmates/"] {
+  -webkit-backdrop-filter: unset;
+          backdrop-filter: unset;
+}
+.e115-selected-crew-panel [data-tooltip-id] > * {
+  transition: unset;
 }
 
-div[src*=OwnedCrew] + div .eUlTUS > img {
+div[src*=OwnedCrew] + div img[src*="/v2/crewmates/"] {
   -webkit-backdrop-filter: unset;
           backdrop-filter: unset;
 }/*# sourceMappingURL=style.css.map */

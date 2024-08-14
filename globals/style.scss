@@ -951,22 +951,30 @@ body[data-only-warehouses='true'] {
     }
 }
 
-// Volatile changes for dynamic class names
+// Enhance the class-specific background color for crewmates -- START
 
-.eUlTUS > img:not(:hover) {
-    // Enhance the class-specific background color for crewmates only when NOT hovering
+img[src*='/v2/crewmates/'] {
     backdrop-filter: brightness(var(--crewmate-color-intensity));
 }
 
-#hudMenuPanel .eUlTUS > img {
-    // Enhance the class-specific background color for crewmates in the hud menu, even when hovering
-    backdrop-filter: brightness(var(--crewmate-color-intensity));
+.e115-selected-crew-panel [data-tooltip-id] {
+    &:hover img[src*='/v2/crewmates/'] {
+        // Prevent overly bright background on hover
+        backdrop-filter: unset;
+    }
+
+    > * {
+        // Prevent background flickering on mouseleave
+        transition: unset;
+    }
 }
 
-div[src*="OwnedCrew"] + div .eUlTUS > img {
+div[src*="OwnedCrew"] + div img[src*='/v2/crewmates/'] {
     // Do NOT enhance the class-specific background color for crewmates in the "Crew Details" window.
     // This avoids some issues:
     // -- hovering over those crewmates would make them too bright
     // -- the captain-video would not be overlayed as expected
     backdrop-filter: unset;
 }
+
+// Enhance the class-specific background color for crewmates -- END
