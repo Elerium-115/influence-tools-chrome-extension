@@ -2083,8 +2083,13 @@ function resetElLocationController() {
 }
 
 function autoHideMarketsWithoutPrice() {
+    const elMarketsFilters = document.getElementById('e115-markets-filters');
     if (!location.pathname.match(/^\/marketplace\/(\d+)\/all\/(\d+)/)) {
         // Product-specific markets window NOT open
+        if (elMarketsFilters) {
+            // Remove injected filters while navigating through other Marketplace pages
+            elMarketsFilters.parentElement.removeChild(elMarketsFilters);
+        }
         return;
     }
     const elsTable = document.querySelectorAll("table");
@@ -2107,7 +2112,7 @@ function autoHideMarketsWithoutPrice() {
         }
     });
     // Inject filter to hide markets with no prices, if not already injected
-    if (!document.getElementById('e115-markets-filters')) {
+    if (!elMarketsFilters) {
         const elMarketsTitle = document.querySelector('h1');
         if (elMarketsTitle) {
             const elMarketsFilters = createEl('div', 'e115-markets-filters');
