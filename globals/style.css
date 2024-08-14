@@ -70,6 +70,21 @@
   width: var(--corner-size);
 }
 
+.e115-filter {
+  align-items: center;
+  color: #ccc;
+  display: flex;
+  gap: 8px;
+  padding: 10px;
+  transition: color 150ms;
+}
+.e115-filter.e115-checked {
+  color: var(--color-influence-green);
+}
+.e115-filter:hover {
+  color: white !important;
+}
+
 .e115-flash-copy {
   animation: flash-copy 200ms infinite;
   transition: color 200ms;
@@ -542,6 +557,10 @@
   }
 }
 
+body[data-auto-hide-markets-without-price=true] .e115-no-prices {
+  display: none;
+}
+
 body[data-inventory-item-names=true] #hudMenuPanel :not(:hover) > [data-tooltip-id=hudMenuTooltip][data-tooltip-place=top][data-tooltip-content]::after,
 body[data-inventory-item-names=true] [data-tooltip-id=selectionDialogTooltip][data-tooltip-place=top][data-tooltip-content]:not(:hover)::after,
 body[data-inventory-item-names=true] [data-tooltip-id=actionDialogTooltip][data-tooltip-place=top][data-tooltip-content]:not(:hover)::after {
@@ -656,20 +675,6 @@ body[data-only-warehouses=true] .e115-prepared:not([data-e115-inventory-is-wareh
   font-size: unset;
   margin: 0 15px;
   text-transform: unset;
-}
-#e115-inventories-filters .e115-filter {
-  align-items: center;
-  color: #ccc;
-  display: flex;
-  gap: 8px;
-  padding: 10px;
-  transition: color 150ms;
-}
-#e115-inventories-filters .e115-filter.e115-checked {
-  color: var(--color-influence-green);
-}
-#e115-inventories-filters .e115-filter:hover {
-  color: white !important;
 }
 
 #e115-filter-select-process {
@@ -849,6 +854,19 @@ body[data-only-warehouses=true] .e115-prepared:not([data-e115-inventory-is-wareh
   position: absolute;
   right: 0;
   top: 0;
+}
+
+.e115-markets-title {
+  display: flex;
+}
+.e115-markets-title #e115-markets-filters {
+  display: flex;
+  flex-grow: 1;
+  font-size: 1rem;
+  gap: 8px;
+  justify-content: center;
+  margin-right: 90px;
+  text-align: center;
 }
 
 img[src*="/v2/crewmates/"] {

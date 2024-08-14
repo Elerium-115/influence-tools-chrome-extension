@@ -954,10 +954,13 @@ function injectConfig() {
     elConfigPanel.querySelector('input[name="location-controller"]').checked = extensionSettings.locationController;
     elConfigPanel.querySelector('input[name="show-ship-stats-for-my-crews"]').checked = extensionSettings.showShipStatsForMyCrews;
     // Initialize other data, based on extension settings from local-storage
+    // -- set "data-auto-hide-markets-without-price" on "body"
+    document.body.dataset.autoHideMarketsWithoutPrice = extensionSettings.autoHideMarketsWithoutPrice;
     // -- set "data-inventory-item-names" on "body"
     document.body.dataset.inventoryItemNames = extensionSettings.inventoryItemNames;
     // Set "data-only-my-inventories" on "body"
     document.body.dataset.onlyMyInventories = extensionSettings.onlyMyInventories;
+    // Set "data-only-warehouses" on "body"
     document.body.dataset.onlyWarehouses = extensionSettings.onlyWarehouses;
 }
 
@@ -1038,23 +1041,27 @@ function injectInventoriesFilters() {
     }
     const elInventoriesFilters = createEl('div', 'e115-inventories-filters');
     // Inject filter for "Only My Inventories"
-    injectInventoriesFilter(elInventoriesFilters, 1, 'Only My Inventories', 'onlyMyInventories');
+    injectFilterWithCheckbox(elInventoriesFilters, 'Only My Inventories', 'onlyMyInventories');
     // Inject filter for "Only Warehouses"
-    injectInventoriesFilter(elInventoriesFilters, 2, 'Only Warehouses', 'onlyWarehouses');
+    injectFilterWithCheckbox(elInventoriesFilters, 'Only Warehouses', 'onlyWarehouses');
     // Inject the filter right after the title (before the close-button)
     const elAvailableInventoriesHeader = elAvailableInventoriesTitle.parentElement;
     elAvailableInventoriesHeader.insertBefore(elInventoriesFilters, elAvailableInventoriesTitle.nextSibling);
+    // Auto-focus the native filter
+    const elNativeFilter = elAvailableInventoriesHeader.parentElement.querySelector('input[placeholder="Filter by Name..."]');
+    if (elNativeFilter) {
+        elNativeFilter.focus();
+    }
 }
 
-function injectInventoriesFilter(elInventoriesFilters, filterIdx, filterText, extensionSettingKey) {
-    // Inject filter for "Only My Inventories"
+function injectFilterWithCheckbox(elFilterContainer, filterText, extensionSettingKey) {
     const elFilterWrapper = createEl('label', null, ['e115-filter', 'e115-cursor-full']);
-    elFilterWrapper.for = `e115-inventories-filter-input-${filterIdx}`;
-    const elFilterInput = createEl('input', elFilterWrapper.for);
+    const elFilterInput = createEl('input');
     elFilterInput.type = 'checkbox';
     elFilterInput.checked = extensionSettings[extensionSettingKey];
     elFilterInput.addEventListener('input', () => {
-        filterAvailableInventories(extensionSettingKey, elFilterInput.checked);
+        setExtensionSetting(extensionSettingKey, elFilterInput.checked);
+        document.body.dataset[extensionSettingKey] = elFilterInput.checked;
         elFilterWrapper.classList.toggle('e115-checked', elFilterInput.checked);
     });
     elFilterWrapper.classList.toggle('e115-checked', elFilterInput.checked);
@@ -1062,12 +1069,7 @@ function injectInventoriesFilter(elInventoriesFilters, filterIdx, filterText, ex
     const elFilterText = createEl('div');
     elFilterText.textContent = filterText;
     elFilterWrapper.append(elFilterText);
-    elInventoriesFilters.append(elFilterWrapper);
-}
-
-function filterAvailableInventories(extensionSettingKey, elFilterInputIsChecked) {
-    setExtensionSetting(extensionSettingKey, elFilterInputIsChecked);
-    document.body.dataset[extensionSettingKey] = elFilterInputIsChecked;
+    elFilterContainer.append(elFilterWrapper);
 }
 
 async function updateInventoriesDataByLabelAndIdsIfNotSet(inventoriesLabel, inventoriesIds) {
@@ -2081,9 +2083,6 @@ function resetElLocationController() {
 }
 
 function autoHideMarketsWithoutPrice() {
-    if (!extensionSettings.autoHideMarketsWithoutPrice) {
-        return;
-    }
     if (!location.pathname.match(/^\/marketplace\/(\d+)\/all\/(\d+)/)) {
         // Product-specific markets window NOT open
         return;
@@ -2097,16 +2096,42 @@ function autoHideMarketsWithoutPrice() {
     elMarketsTable.querySelectorAll('tbody tr').forEach(elRow => {
         /**
          * Markets without any supply / demand have "—" for each of the
-         * values below, leading to their textContent containing "————"
+         * properties below, leading to their textContent containing "————"
          * - Supply
          * - Selling Price
          * - Demand
          * - Buying Price
          */
         if (elRow.textContent.replace(/\s/g, '').includes('————')) {
-            elRow.classList.add('e115-hidden');
+            elRow.classList.add('e115-no-prices');
         }
     });
+    // Inject filter to hide markets with no prices, if not already injected
+    if (!document.getElementById('e115-markets-filters')) {
+        const elMarketsTitle = document.querySelector('h1');
+        if (elMarketsTitle) {
+            const elMarketsFilters = createEl('div', 'e115-markets-filters');
+            injectFilterWithCheckbox(elMarketsFilters, 'Hide markets with no prices', 'autoHideMarketsWithoutPrice');
+            // Additional handler to also update the toggle for this extension setting in the config panel
+            elMarketsFilters.querySelector('input').addEventListener('input', onInputAutoHideMarketsWithoutPrice);
+            // Inject the toggle next to the title
+            elMarketsTitle.append(elMarketsFilters);
+            elMarketsTitle.classList.add('e115-markets-title');
+        }
+    }
+}
+
+function onInputAutoHideMarketsWithoutPrice() {
+    const isChecked = extensionSettings.autoHideMarketsWithoutPrice;
+    // Sync the "checked" status of all toggles for this extension setting
+    const elConfigPanel = document.getElementById('e115-config-panel-wrapper');
+    if (elConfigPanel) {
+        elConfigPanel.querySelector('input[name="auto-hide-markets-without-price"]').checked = isChecked;
+    }
+    const elMarketsFilters = document.getElementById('e115-markets-filters');
+    if (elMarketsFilters) {
+        elMarketsFilters.querySelector('input').checked = isChecked;
+    }
 }
 
 /**
@@ -2541,6 +2566,8 @@ function onClickConfigOption(el) {
     switch (el.name) {
         case 'auto-hide-markets-without-price':
             setExtensionSetting('autoHideMarketsWithoutPrice', el.checked);
+            document.body.dataset.autoHideMarketsWithoutPrice = el.checked;
+            onInputAutoHideMarketsWithoutPrice();
             break;
         case 'auto-hide-used-deposits':
             setExtensionSetting('autoHideUsedDeposits', el.checked);

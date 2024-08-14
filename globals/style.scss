@@ -85,6 +85,23 @@
     }
 }
 
+.e115-filter {
+    align-items: center;
+    color: #ccc;
+    display: flex;
+    gap: 8px;
+    padding: 10px;
+    transition: color 150ms;
+
+    &.e115-checked {
+        color: var(--color-influence-green);
+    }
+
+    &:hover {
+        color: white !important;
+    }
+}
+
 .e115-flash-copy {
     animation: flash-copy 200ms infinite;
     transition: color 200ms;
@@ -602,6 +619,13 @@
     }
 }
 
+body[data-auto-hide-markets-without-price='true'] {
+    // Hide product-specific markets without any prices (no supply / demand)
+    .e115-no-prices {
+        display: none;
+    }
+}
+
 // Inventory items with their wrapper NOT hovered.
 // Apply only for "[data-tooltip-place='top']", to avoid matching (some) non-inventory panels.
 body[data-inventory-item-names='true'] {
@@ -739,23 +763,6 @@ body[data-only-warehouses='true'] {
     font-size: unset;
     margin: 0 15px;
     text-transform: unset;
-
-    .e115-filter {
-        align-items: center;
-        color: #ccc;
-        display: flex;
-        gap: 8px;
-        padding: 10px;
-        transition: color 150ms;
-
-        &.e115-checked {
-            color: var(--color-influence-green);
-        }
-
-        &:hover {
-            color: white !important;
-        }
-    }
 }
 
 #e115-filter-select-process {
@@ -948,6 +955,20 @@ body[data-only-warehouses='true'] {
                 }
             }
         }
+    }
+}
+
+.e115-markets-title {
+    display: flex;
+
+    #e115-markets-filters {
+        display: flex;
+        flex-grow: 1;
+        font-size: 1rem;
+        gap: 8px;
+        justify-content: center;
+        margin-right: 90px; // 30px for close-button + 30px around it
+        text-align: center;
     }
 }
 
