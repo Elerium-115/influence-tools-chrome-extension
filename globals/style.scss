@@ -665,9 +665,9 @@ body[data-only-my-inventories='true'] {
     }
 }
 
-body[data-only-warehouses='true'] {
-    // Hide inventories which are NOT a Warehouse, from among "prepared" inventories
-    .e115-prepared:not([data-e115-inventory-is-warehouse='true']) {
+body[data-only-buildings='true'] {
+    // Hide inventories which are NOT a building, from among "prepared" inventories
+    .e115-prepared:not([data-e115-inventory-is-building='true']) {
         display: none;
     }
 }

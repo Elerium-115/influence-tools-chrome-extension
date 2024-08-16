@@ -587,7 +587,7 @@ body[data-only-my-inventories=true] .e115-prepared:not([data-e115-inventory-cont
   display: none;
 }
 
-body[data-only-warehouses=true] .e115-prepared:not([data-e115-inventory-is-warehouse=true]) {
+body[data-only-buildings=true] .e115-prepared:not([data-e115-inventory-is-building=true]) {
   display: none;
 }
 

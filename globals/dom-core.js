@@ -55,7 +55,7 @@ const extensionSettingsDefault = {
     inventoryItemNames: true, // if true, overlay names for inventory items
     locationController: true, // if true, inject details about the controller of the selected location (lot, building, landed ship, asteroid)
     onlyMyInventories: false, // if true, show only inventories controlled by the player, in the "Available Inventories" window
-    onlyWarehouses: false, // if true, show only Warehouse inventories, in the "Available Inventories" window
+    onlyBuildings: false, // if true, show only building inventories, in the "Available Inventories" window
     showShipStatsForMyCrews: true, // if true, show the loaded propellant percent in the "My Crews" list, for crews stationed on a ship
 };
 
@@ -102,7 +102,8 @@ const BUILDING_TYPE = {
     SHIPYARD: 6,
     SPACEPORT: 7,
     MARKETPLACE: 8,
-    HABITAT: 9
+    HABITAT: 9,
+    TANK_FARM: 10,
 };
 
 // Source: Influence SDK - "src/lib/entity.js"
@@ -115,7 +116,7 @@ const ENTITY_IDS = {
     SHIP: 6,
     DEPOSIT: 7,
     DELIVERY: 9,
-    SPACE: 10
+    SPACE: 10,
 };
 
 const YEAR_IN_SECONDS = 31536000; // 60 * 60 * 24 * 365
@@ -936,7 +937,7 @@ function injectConfig() {
     injectConfigOptionCheckbox('auto-open-resources-panel-bypass-other-panels', '... even if another menu item is open', true);
     injectConfigOptionCheckbox('highlight-blocklisted-inventories', 'Highlight blocklisted inventories');
     injectConfigOptionCheckbox('highlight-crews-rationing', 'Highlight crews which are rationing');
-    injectConfigOptionCheckbox('industry-builder-button', 'Process Finder button for warehouses');
+    injectConfigOptionCheckbox('industry-builder-button', 'Process Finder button for inventories');
     injectConfigOptionCheckbox('inventory-item-names', 'Overlay names for inventory items');
     injectConfigOptionCheckbox('location-controller', 'Controller(s) for the selected location');
     injectConfigOptionCheckbox('show-ship-stats-for-my-crews', 'Ship propellant percent for "My Crews"');
@@ -960,8 +961,8 @@ function injectConfig() {
     document.body.dataset.inventoryItemNames = extensionSettings.inventoryItemNames;
     // Set "data-only-my-inventories" on "body"
     document.body.dataset.onlyMyInventories = extensionSettings.onlyMyInventories;
-    // Set "data-only-warehouses" on "body"
-    document.body.dataset.onlyWarehouses = extensionSettings.onlyWarehouses;
+    // Set "data-only-buildings" on "body"
+    document.body.dataset.onlyBuildings = extensionSettings.onlyBuildings;
 }
 
 function injectConfigOptionCrewmateColorIntensity() {
@@ -1042,8 +1043,8 @@ function injectInventoriesFilters() {
     const elInventoriesFilters = createEl('div', 'e115-inventories-filters');
     // Inject filter for "Only My Inventories"
     injectFilterWithCheckbox(elInventoriesFilters, 'Only My Inventories', 'onlyMyInventories');
-    // Inject filter for "Only Warehouses"
-    injectFilterWithCheckbox(elInventoriesFilters, 'Only Warehouses', 'onlyWarehouses');
+    // Inject filter for "Only Buildings"
+    injectFilterWithCheckbox(elInventoriesFilters, 'Only Buildings', 'onlyBuildings');
     // Inject the filter right after the title (before the close-button)
     const elAvailableInventoriesHeader = elAvailableInventoriesTitle.parentElement;
     elAvailableInventoriesHeader.insertBefore(elInventoriesFilters, elAvailableInventoriesTitle.nextSibling);
@@ -1394,7 +1395,7 @@ function updateMarketValueOfSelectedItems() {
  * Also inject market value of selected items in the inventory-footer.
  * 
  * NOTE re: injecting the "Search in Marketplace" button
- * - This only works for inventories where the "Marketplace" button exists in the hud-menu (Warehouse / contruction site).
+ * - This only works for inventories where the "Marketplace" button exists in the hud-menu (building inventory / contruction site).
  * - It does NOT work for ship-cargo and ship-propellant inventories.
  */
 function onClickInventoryItem(elItem) {
@@ -1433,7 +1434,7 @@ function onClickInventoryItem(elItem) {
         // Single item selected => inject relevant buttons
         const elItemSelectedName = elItemSelected.querySelector('[data-tooltip-content]').dataset.tooltipContent;
         // -- Inject "Search in Marketplace" button
-        // ---- This only works for inventories where the "Marketplace" button exists in the hud-menu (Warehouse / contruction site).
+        // ---- This only works for inventories where the "Marketplace" button exists in the hud-menu (building inventory / contruction site).
         // ---- It does NOT work for ship-cargo and ship-propellant inventories.
         const elHudMenuMarketplace = getElHudMenuItemByLabel(hudMenuItemLabelMarketplace);
         if (elHudMenuMarketplace) {
@@ -1834,7 +1835,11 @@ function injectIndustryBuilderButton() {
     const elInventoryItem = document.querySelector(`${selectorHudMenuPanel} [data-tooltip-id='hudMenuTooltip'][data-tooltip-content]`);
     let elIndustryButton = document.getElementById('e115-industry-builder-button');
     if (!elInventoryItem || !selectedLocationData.idCurrent.startsWith('B')) {
-        // Inventory not open, or no items in inventory, or not a Warehouse (i.e. a ship)
+        /**
+         * Inventory not open, or no items in inventory, or not a building inventory (i.e. a ship).
+         * 
+         * NOTE: A building (NOT ship) inventory will be required when generating "processFinderUrl".
+         */
         if (elIndustryButton) {
             // Remove button injected for a previous inventory
             elIndustryButton.parentElement.removeChild(elIndustryButton);
@@ -1858,8 +1863,8 @@ function injectIndustryBuilderButton() {
      * the URL param "walletAddress". This ensures that the "Process Finder" tool only receives
      * the URL param "warehouses", allowing it to also be used for Warehouses owned by other players.
      */
-    const warehouseId = selectedLocationData.idCurrent.replace('B', '');
-    const processFinderUrl = getToolUrlProcessFinder() + '?warehouses=' + warehouseId;
+    const buildingInventoryId = selectedLocationData.idCurrent.replace('B', '');
+    const processFinderUrl = getToolUrlProcessFinder() + '?warehouses=' + buildingInventoryId;
     elIndustryButton.dataset.onClickFunction = 'onClickToolCategoryItem';
     elIndustryButton.dataset.onClickArgs = JSON.stringify(['Process Finder', processFinderUrl, false]);
 }
@@ -2197,7 +2202,7 @@ function autoHideUsedDeposits() {
 }
 
 /**
- * Auto-open the "Lot Inventory" panel, if a Warehouse is currently selected.
+ * Auto-open the "Lot Inventory" panel, if a building inventory is currently selected.
  * Auto-open the "Ship Inventory" panel, if a ship is currently selected.
  */
 function autoOpenInventoryPanel() {
@@ -2399,8 +2404,8 @@ async function highlightBlocklistedInventories() {
         const controllerAddress = inventoryData.controllerCrewData.delegatedToAddress;
         // Set "data-e115-inventory-controlled-by-me"
         elRow.dataset.e115InventoryControlledByMe = controllerAddress === getCurrentWalletAddress().toLowerCase();
-        // Set "data-e115-inventory-is-warehouse"
-        elRow.dataset.e115InventoryIsWarehouse = inventoryType === 'Warehouse';
+        // Set "data-e115-inventory-is-building"
+        elRow.dataset.e115InventoryIsBuilding = inventoryLabel === ENTITY_IDS.BUILDING.toString();
         if (extensionSettings.highlightBlocklistedInventories && customBlacklistByAddress[controllerAddress]) {
             // Blacklisted controller
             elRow.classList.add('e115-blacklisted-inventory');
