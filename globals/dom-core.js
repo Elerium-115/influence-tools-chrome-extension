@@ -1863,8 +1863,8 @@ function injectIndustryBuilderButton() {
      * the URL param "walletAddress". This ensures that the "Process Finder" tool only receives
      * the URL param "warehouses", allowing it to also be used for Warehouses owned by other players.
      */
-    const buildingInventoryId = selectedLocationData.idCurrent.replace('B', '');
-    const processFinderUrl = getToolUrlProcessFinder() + '?warehouses=' + buildingInventoryId;
+    const buildingId = selectedLocationData.idCurrent.replace('B', '');
+    const processFinderUrl = getToolUrlProcessFinder() + '?warehouses=' + buildingId;
     elIndustryButton.dataset.onClickFunction = 'onClickToolCategoryItem';
     elIndustryButton.dataset.onClickArgs = JSON.stringify(['Process Finder', processFinderUrl, false]);
 }
@@ -2141,6 +2141,23 @@ function onInputAutoHideMarketsWithoutPrice() {
     const elMarketsFilters = document.getElementById('e115-markets-filters');
     if (elMarketsFilters) {
         elMarketsFilters.querySelector('input').checked = isChecked;
+    }
+}
+
+/**
+ * Auto-focus the "Search by Name" input when opening the prodducts-list window,
+ * either for an individual Marketplace ("Marketplace Products" hud menu item),
+ * or for all Marketplaces on the current asteroid ("Asteroid Markets" hud menu item).
+ */
+function autoFocusMarketSearchInput() {
+    if (!location.pathname.match(/^\/marketplace\/(\d+)\/(all|\d+)/)) {
+        // Products-list market window NOT open
+        return;
+    }
+    const elInput = document.querySelector('input[placeholder="Search by Name"]');
+    if (elInput && !elInput.classList.contains('e115-focused')) {
+        elInput.focus();
+        elInput.classList.add('e115-focused');
     }
 }
 
@@ -2514,6 +2531,7 @@ function injectFeaturesPeriodically() {
         injectIndustryBuilderButton();
         injectLocationController();
         autoHideMarketsWithoutPrice();
+        autoFocusMarketSearchInput();
         autoHideUsedDeposits();
         autoOpenInventoryPanel();
         autoOpenResourcesPanel();
