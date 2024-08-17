@@ -80,6 +80,7 @@ if (!localStorage.getItem('e115CustomNameByAddress')) {
 }
 
 const selectedCrewData = {
+    crewmates: [],
     rationing: null,
 };
 
@@ -104,6 +105,16 @@ const BUILDING_TYPE = {
     MARKETPLACE: 8,
     HABITAT: 9,
     TANK_FARM: 10,
+};
+
+// Source: Influence SDK - "src/lib/crewmate.js"
+const CLASS_IDS = {
+    UNDECIDED: 0,
+    PILOT: 1,
+    ENGINEER: 2,
+    MINER: 3,
+    MERCHANT: 4,
+    SCIENTIST: 5,
 };
 
 // Source: Influence SDK - "src/lib/entity.js"
@@ -1240,11 +1251,20 @@ function injectRealTime() {
     }, 1000);
 }
 
+/**
+ * Expecting `crewmateClass` of type `CLASS_IDS`
+ */
+function isCrewmateClassInSelectedCrew(crewmateClass) {
+    return selectedCrewData.crewmates.some(crewmateData => crewmateData.class === crewmateClass);
+}
+
 function updateCrewData() {
     const selectedCrewValues = getSelectedCrewValues();
     try {
+        selectedCrewData.crewmates = selectedCrewValues.crewValue._crewmates.map(crewmateData => ({class: crewmateData.Crewmate.class}));
         selectedCrewData.rationing = selectedCrewValues.crewValue._foodBonuses.rationing;
     } catch (error) {
+        selectedCrewData.crewmates = [];
         selectedCrewData.rationing = null;
     }
     // Mark the selected crew panel for CSS
@@ -2503,6 +2523,70 @@ function showShipStatsForMyCrews() {
     });
 }
 
+function warnIfWrongClassForJob() {
+    if (document.getElementById('e115-job-warning')) {
+        // Job warning already injected
+        return;
+    }
+    // Prospect / Optimize
+    const elCoreSampleHeader = document.querySelector('div[src*="/static/media/CoreSample"]');
+    if (elCoreSampleHeader) {
+        // "Prospect" or "Optimize Deposit" window open
+        const hasButtonToStartAction = [...elCoreSampleHeader.parentElement.querySelectorAll('button')].some(elButton => {
+            // Using "includes" to also match e.g. "Purchase & Optimize"
+            return elButton.textContent.includes('Prospect') || elButton.textContent.includes('Optimize');
+        });
+        if (hasButtonToStartAction) {
+            const hasEligibleClass = isCrewmateClassInSelectedCrew(CLASS_IDS.MINER);
+            if (!hasEligibleClass) {
+                // Crew without Miner
+                injectJobWarning(elCoreSampleHeader, 'Crew without Miner');
+            }
+        }
+        return;
+    }
+    // Extract
+    const elExtractHeader = document.querySelector('div[src*="/static/media/Extraction"]');
+    if (elExtractHeader) {
+        // "Prospect" or "Optimize Deposit" window open
+        const hasButtonToStartAction = [...elExtractHeader.parentElement.querySelectorAll('button')].some(elButton => {
+            // Using "includes" to also match e.g. "Purchase & Extract"
+            return elButton.textContent.includes('Extract');
+        });
+        if (hasButtonToStartAction) {
+            const hasEligibleClass = isCrewmateClassInSelectedCrew(CLASS_IDS.MINER);
+            if (!hasEligibleClass) {
+                // Crew without Miner
+                injectJobWarning(elExtractHeader, 'Crew without Miner');
+            }
+        }
+        return;
+    }
+    // Refine
+    const elRefineHeader = document.querySelector('div[src*="/static/media/Production_3"]');
+    if (elRefineHeader) {
+        // "Refine" window open
+        const hasButtonToStartAction = [...elRefineHeader.parentElement.querySelectorAll('button')].some(elButton => {
+            return elButton.textContent.trim() === 'Begin';
+        });
+        if (hasButtonToStartAction) {
+            const hasEligibleClass = isCrewmateClassInSelectedCrew(CLASS_IDS.ENGINEER) || isCrewmateClassInSelectedCrew(CLASS_IDS.SCIENTIST);
+            if (!hasEligibleClass) {
+                // Crew without Engineer / Scientist
+                injectJobWarning(elRefineHeader, 'Crew without Engineer / Scientist');
+            }
+        }
+        return;
+    }
+    //// TO DO: check additional jobs
+}
+
+function injectJobWarning(elHeader, message) {
+    const elJobWarning = createEl('div', 'e115-job-warning');
+    elJobWarning.textContent = message;
+    elHeader.parentElement.append(elJobWarning);
+}
+
 /**
  * Inject various features into the DOM periodically, as needed
  */
@@ -2539,6 +2623,7 @@ function injectFeaturesPeriodically() {
         highlightCrewsRationing();
         showShipStatsForMyCrews();
         updateMarketValueOfSelectedItems();
+        warnIfWrongClassForJob();
     }, 1000);
 }
 

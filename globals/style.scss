@@ -972,6 +972,22 @@ body[data-only-buildings='true'] {
     }
 }
 
+#e115-job-warning {
+    background-image: linear-gradient(90deg, var(--color-warning) 0%, transparent 100%);
+    bottom: 0;
+    left: 0;
+    line-height: 70px;
+    padding-left: 35px;
+    position: absolute;
+    right: 0;
+
+    &::before {
+        content: 'WARNING';
+        font-weight: bold;
+        padding-right: 35px;
+    }
+}
+
 // Enhance the class-specific background color for crewmates -- START
 
 img[src*='/v2/crewmates/'] {

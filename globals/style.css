@@ -869,6 +869,21 @@ body[data-only-buildings=true] .e115-prepared:not([data-e115-inventory-is-buildi
   text-align: center;
 }
 
+#e115-job-warning {
+  background-image: linear-gradient(90deg, var(--color-warning) 0%, transparent 100%);
+  bottom: 0;
+  left: 0;
+  line-height: 70px;
+  padding-left: 35px;
+  position: absolute;
+  right: 0;
+}
+#e115-job-warning::before {
+  content: "WARNING";
+  font-weight: bold;
+  padding-right: 35px;
+}
+
 img[src*="/v2/crewmates/"] {
   -webkit-backdrop-filter: brightness(var(--crewmate-color-intensity));
           backdrop-filter: brightness(var(--crewmate-color-intensity));
