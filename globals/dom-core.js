@@ -66,6 +66,16 @@ if (!localStorage.getItem('e115Settings')) {
 
 const extensionSettings = JSON.parse(localStorage.getItem('e115Settings'));
 
+/**
+ * Use properties which may have been recently added to default settings,
+ * if they are not yet saved in local-storage. This also saves them into local-storage.
+ */
+for (const [settingKey, settingValue] of Object.entries(extensionSettingsDefault)) {
+    if (typeof extensionSettings[settingKey] === 'undefined') {
+        setExtensionSetting(settingKey, settingValue);
+    }
+}
+
 const customBlacklistByAddressDefault = {};
 const customNameByAddressDefault = {};
 
@@ -117,6 +127,15 @@ const CLASS_IDS = {
     SCIENTIST: 5,
 };
 
+const CLASS_NAMES_BY_ID = {
+    0: 'Undecided',
+    1: 'Pilot',
+    2: 'Engineer',
+    3: 'Miner',
+    4: 'Merchant',
+    5: 'Scientist',
+};  
+
 // Source: Influence SDK - "src/lib/entity.js"
 const ENTITY_IDS = {
     CREW: 1,
@@ -133,15 +152,27 @@ const ENTITY_IDS = {
 const YEAR_IN_SECONDS = 31536000; // 60 * 60 * 24 * 365
 const MINUTE_IN_MILLISECONDS = 60000; // 60 * 1000
 
-/**
- * Use properties which may have been recently added to default settings,
- * if they are not yet saved in local-storage. This also saves them into local-storage.
- */
-for (const [settingKey, settingValue] of Object.entries(extensionSettingsDefault)) {
-    if (typeof extensionSettings[settingKey] === 'undefined') {
-        setExtensionSetting(settingKey, settingValue);
-    }
-}
+const jobScenarios = [
+    {
+        // Prospect / Optimize
+        eligibleClassIds: [CLASS_IDS.MINER],
+        headerSelector: 'div[src*="/static/media/CoreSample"]',
+        startActionPartialButtonTexts: ['Prospect', 'Optimize'],
+    },
+    {
+        // Extract
+        eligibleClassIds: [CLASS_IDS.MINER],
+        headerSelector: 'div[src*="/static/media/Extraction"]',
+        startActionPartialButtonTexts: ['Extract'],
+    },
+    {
+        // Refine
+        eligibleClassIds: [CLASS_IDS.ENGINEER, CLASS_IDS.SCIENTIST],
+        headerSelector: 'div[src*="/static/media/Production_3"]',
+        startActionPartialButtonTexts: ['Begin'],
+    },
+    //// TO DO: add more job scenarios
+];
 
 let customBlacklistByAddress = JSON.parse(localStorage.getItem('e115CustomBlacklistByAddress'));
 let customNameByAddress = JSON.parse(localStorage.getItem('e115CustomNameByAddress'));
@@ -1306,10 +1337,10 @@ function injectRealTime() {
 }
 
 /**
- * Expecting `crewmateClass` of type `CLASS_IDS`
+ * Expecting `classId` of type `CLASS_IDS`
  */
-function isCrewmateClassInSelectedCrew(crewmateClass) {
-    return selectedCrewData.crewmates.some(crewmateData => crewmateData.class === crewmateClass);
+function isClassIdInSelectedCrew(classId) {
+    return selectedCrewData.crewmates.some(crewmateData => crewmateData.class === classId);
 }
 
 function updateCrewData() {
@@ -2582,57 +2613,33 @@ function warnIfWrongClassForJob() {
         // Job warning already injected
         return;
     }
-    // Prospect / Optimize
-    const elCoreSampleHeader = document.querySelector('div[src*="/static/media/CoreSample"]');
-    if (elCoreSampleHeader) {
-        // "Prospect" or "Optimize Deposit" window open
-        const hasButtonToStartAction = [...elCoreSampleHeader.parentElement.querySelectorAll('button')].some(elButton => {
-            // Using "includes" to also match e.g. "Purchase & Optimize"
-            return elButton.textContent.includes('Prospect') || elButton.textContent.includes('Optimize');
-        });
-        if (hasButtonToStartAction) {
-            const hasEligibleClass = isCrewmateClassInSelectedCrew(CLASS_IDS.MINER);
-            if (!hasEligibleClass) {
-                // Crew with no Miner
-                injectJobWarning(elCoreSampleHeader, 'Crew with no Miner');
-            }
+    // Parse via "some" instead of "forEach", to exit early if matching job scenario found
+    jobScenarios.some(jobScenario => {
+        const elHeader = document.querySelector(jobScenario.headerSelector);
+        if (!elHeader) {
+            return false;
         }
-        return;
-    }
-    // Extract
-    const elExtractHeader = document.querySelector('div[src*="/static/media/Extraction"]');
-    if (elExtractHeader) {
-        // "Prospect" or "Optimize Deposit" window open
-        const hasButtonToStartAction = [...elExtractHeader.parentElement.querySelectorAll('button')].some(elButton => {
-            // Using "includes" to also match e.g. "Purchase & Extract"
-            return elButton.textContent.includes('Extract');
+        // Matching job scenario found
+        const hasButtonToStartAction = [...elHeader.parentElement.querySelectorAll('button')].some(elButton => {
+            /**
+             * Check if any of the buttons includes one of the "startActionPartialButtonTexts".
+             * Using "includes" to also match e.g. "Purchase & Optimize", for the partial button text "Optimize".
+             */
+            return jobScenario.startActionPartialButtonTexts.some(buttonText => elButton.textContent.includes(buttonText))
         });
-        if (hasButtonToStartAction) {
-            const hasEligibleClass = isCrewmateClassInSelectedCrew(CLASS_IDS.MINER);
-            if (!hasEligibleClass) {
-                // Crew with no Miner
-                injectJobWarning(elExtractHeader, 'Crew with no Miner');
-            }
+        if (!hasButtonToStartAction) {
+            return false;
         }
-        return;
-    }
-    // Refine
-    const elRefineHeader = document.querySelector('div[src*="/static/media/Production_3"]');
-    if (elRefineHeader) {
-        // "Refine" window open
-        const hasButtonToStartAction = [...elRefineHeader.parentElement.querySelectorAll('button')].some(elButton => {
-            return elButton.textContent.trim() === 'Begin';
-        });
-        if (hasButtonToStartAction) {
-            const hasEligibleClass = isCrewmateClassInSelectedCrew(CLASS_IDS.ENGINEER) || isCrewmateClassInSelectedCrew(CLASS_IDS.SCIENTIST);
-            if (!hasEligibleClass) {
-                // Crew with no Engineer / Scientist
-                injectJobWarning(elRefineHeader, 'Crew with no Engineer / Scientist');
-            }
+        // Check if the selected crew has any of the "eligibleClassIds"
+        const hasEligibleClass = jobScenario.eligibleClassIds.some(classId => isClassIdInSelectedCrew(classId));
+        if (!hasEligibleClass) {
+            // Generate class names for warning message - e.g. "Engineer / Scientist"
+            const eligibleClassNamesText = jobScenario.eligibleClassIds.map(classId => CLASS_NAMES_BY_ID[classId]).join(' / ');
+            injectJobWarning(elHeader, `Crew with no ${eligibleClassNamesText}`);
         }
-        return;
-    }
-    //// TO DO: check additional jobs
+        // Exit early re: matching job scenario found
+        return true;
+    });
 }
 
 function injectJobWarning(elHeader, message) {
