@@ -1000,6 +1000,60 @@ function injectConfigOptionCheckbox(optionName, optionDescription, isSecondaryOp
     elConfigOptions.append(elConfigOptionLabel);
 }
 
+function onClickConfigTitle() {
+    // Show / hide the extension-config options
+    document.getElementById('e115-config-panel-wrapper').classList.toggle('active');
+}
+
+function onInputCrewmateColorIntensity(el) {
+    setExtensionSetting('crewmateColorIntensity', parseInt(el.value));
+    document.querySelector(':root').style.setProperty('--crewmate-color-intensity', extensionSettings.crewmateColorIntensity);
+}
+
+function onClickConfigOption(el) {
+    switch (el.name) {
+        case 'auto-hide-markets-without-price':
+            setExtensionSetting('autoHideMarketsWithoutPrice', el.checked);
+            document.body.dataset.autoHideMarketsWithoutPrice = el.checked;
+            onInputAutoHideMarketsWithoutPrice();
+            break;
+        case 'auto-hide-used-deposits':
+            setExtensionSetting('autoHideUsedDeposits', el.checked);
+            break;
+        case 'auto-open-inventory-panel':
+            setExtensionSetting('autoOpenInventoryPanel', el.checked);
+            break;
+        case 'auto-open-inventory-panel-bypass-other-panels':
+            setExtensionSetting('autoOpenInventoryPanelBypassOtherPanels', el.checked);
+            break;
+        case 'auto-open-resources-panel':
+            setExtensionSetting('autoOpenResourcesPanel', el.checked);
+            break;
+        case 'auto-open-resources-panel-bypass-other-panels':
+            setExtensionSetting('autoOpenResourcesPanelBypassOtherPanels', el.checked);
+            break;
+        case 'highlight-blocklisted-inventories':
+            setExtensionSetting('highlightBlocklistedInventories', el.checked);
+            break;
+        case 'highlight-crews-rationing':
+            setExtensionSetting('highlightCrewsRationing', el.checked);
+            break;
+        case 'industry-builder-button':
+            setExtensionSetting('industryBuilderButton', el.checked);
+            break;
+        case 'inventory-item-names':
+            setExtensionSetting('inventoryItemNames', el.checked);
+            document.body.dataset.inventoryItemNames = el.checked;
+            break;
+        case 'location-controller':
+            setExtensionSetting('locationController', el.checked);
+            break;
+        case 'show-ship-stats-for-my-crews':
+            setExtensionSetting('showShipStatsForMyCrews', el.checked);
+            break;
+    }
+}
+
 function injectLoader() {
     const elLoader = createEl('div', 'e115-loader', ['e115-hidden']);
     document.body.append(elLoader);
@@ -2539,8 +2593,8 @@ function warnIfWrongClassForJob() {
         if (hasButtonToStartAction) {
             const hasEligibleClass = isCrewmateClassInSelectedCrew(CLASS_IDS.MINER);
             if (!hasEligibleClass) {
-                // Crew without Miner
-                injectJobWarning(elCoreSampleHeader, 'Crew without Miner');
+                // Crew with no Miner
+                injectJobWarning(elCoreSampleHeader, 'Crew with no Miner');
             }
         }
         return;
@@ -2556,8 +2610,8 @@ function warnIfWrongClassForJob() {
         if (hasButtonToStartAction) {
             const hasEligibleClass = isCrewmateClassInSelectedCrew(CLASS_IDS.MINER);
             if (!hasEligibleClass) {
-                // Crew without Miner
-                injectJobWarning(elExtractHeader, 'Crew without Miner');
+                // Crew with no Miner
+                injectJobWarning(elExtractHeader, 'Crew with no Miner');
             }
         }
         return;
@@ -2572,8 +2626,8 @@ function warnIfWrongClassForJob() {
         if (hasButtonToStartAction) {
             const hasEligibleClass = isCrewmateClassInSelectedCrew(CLASS_IDS.ENGINEER) || isCrewmateClassInSelectedCrew(CLASS_IDS.SCIENTIST);
             if (!hasEligibleClass) {
-                // Crew without Engineer / Scientist
-                injectJobWarning(elRefineHeader, 'Crew without Engineer / Scientist');
+                // Crew with no Engineer / Scientist
+                injectJobWarning(elRefineHeader, 'Crew with no Engineer / Scientist');
             }
         }
         return;
@@ -2648,75 +2702,31 @@ function handleMessage(event) {
             searchMarketplace(event.data.widgetEventValue);
             break;
         case 'PRIVATE_LABELS_UPDATED':
-            // Save private labels from widget, into local-storage
-            customNameByAddress = JSON.parse(event.data.widgetEventValue);
-            // Handle new JSON format
-            Object.keys(customNameByAddress).forEach(address => {
-                const addressData = customNameByAddress[address];
-                if (typeof addressData !== 'string') {
-                    // New "addressData" format
-                    customBlacklistByAddress[address] = addressData.isBlacklisted;
-                    customNameByAddress[address] = addressData.label;
-                }
-            });
-            localStorage.setItem('e115CustomBlacklistByAddress', JSON.stringify(customBlacklistByAddress));
-            localStorage.setItem('e115CustomNameByAddress', JSON.stringify(customNameByAddress));
+            const customDataByAddress = JSON.parse(event.data.widgetEventValue);
+            handlePrivateLabelsUpdated(customDataByAddress);
             break;
     }
 }
 
-function onClickConfigTitle() {
-    // Show / hide the extension-config options
-    document.getElementById('e115-config-panel-wrapper').classList.toggle('active');
-}
-
-function onInputCrewmateColorIntensity(el) {
-    setExtensionSetting('crewmateColorIntensity', parseInt(el.value));
-    document.querySelector(':root').style.setProperty('--crewmate-color-intensity', extensionSettings.crewmateColorIntensity);
-}
-
-function onClickConfigOption(el) {
-    switch (el.name) {
-        case 'auto-hide-markets-without-price':
-            setExtensionSetting('autoHideMarketsWithoutPrice', el.checked);
-            document.body.dataset.autoHideMarketsWithoutPrice = el.checked;
-            onInputAutoHideMarketsWithoutPrice();
-            break;
-        case 'auto-hide-used-deposits':
-            setExtensionSetting('autoHideUsedDeposits', el.checked);
-            break;
-        case 'auto-open-inventory-panel':
-            setExtensionSetting('autoOpenInventoryPanel', el.checked);
-            break;
-        case 'auto-open-inventory-panel-bypass-other-panels':
-            setExtensionSetting('autoOpenInventoryPanelBypassOtherPanels', el.checked);
-            break;
-        case 'auto-open-resources-panel':
-            setExtensionSetting('autoOpenResourcesPanel', el.checked);
-            break;
-        case 'auto-open-resources-panel-bypass-other-panels':
-            setExtensionSetting('autoOpenResourcesPanelBypassOtherPanels', el.checked);
-            break;
-        case 'highlight-blocklisted-inventories':
-            setExtensionSetting('highlightBlocklistedInventories', el.checked);
-            break;
-        case 'highlight-crews-rationing':
-            setExtensionSetting('highlightCrewsRationing', el.checked);
-            break;
-        case 'industry-builder-button':
-            setExtensionSetting('industryBuilderButton', el.checked);
-            break;
-        case 'inventory-item-names':
-            setExtensionSetting('inventoryItemNames', el.checked);
-            document.body.dataset.inventoryItemNames = el.checked;
-            break;
-        case 'location-controller':
-            setExtensionSetting('locationController', el.checked);
-            break;
-        case 'show-ship-stats-for-my-crews':
-            setExtensionSetting('showShipStatsForMyCrews', el.checked);
-            break;
+/**
+ * Save private labels from widget, into local-storage
+ */
+function handlePrivateLabelsUpdated(customDataByAddress) {
+    if (!customDataByAddress || typeof customDataByAddress !== 'object') {
+        return;
     }
+    /**
+     * Remove all previous custom data, to ensure that deleting
+     * a private label from the widget also removes it from local-storage.
+     */
+    customBlacklistByAddress = {};
+    customNameByAddress = {};
+    for (const [address, addressData] of Object.entries(customDataByAddress)) {
+        customBlacklistByAddress[address] = addressData.isBlacklisted;
+        customNameByAddress[address] = addressData.label;
+    }
+    localStorage.setItem('e115CustomBlacklistByAddress', JSON.stringify(customBlacklistByAddress));
+    localStorage.setItem('e115CustomNameByAddress', JSON.stringify(customNameByAddress));
 }
 
 // Source: https://gist.github.com/Machy8/1b0e3cd6c61f140a6b520269acdd645f
