@@ -11,8 +11,8 @@ const svgIconFactoryArrows = `<svg fill="currentColor" stroke-width="0" viewBox=
 
 const eleriumApiUrl = 'https://elerium-influence-api.vercel.app';
 
-const crewDataEndpoint = `${eleriumApiUrl}/crew-data`;
 const crewmateVideosEndpoint = `${eleriumApiUrl}/data/crewmate-videos`;
+const crewsDataEndpoint = `${eleriumApiUrl}/crews-data`;
 const inventoriesDataEndpoint = `${eleriumApiUrl}/inventories-data`;
 const pricesEndpoint = `${eleriumApiUrl}/data/prices`;
 const shipDataEndpoint = `${eleriumApiUrl}/ship-data`;
@@ -178,14 +178,14 @@ let customBlacklistByAddress = JSON.parse(localStorage.getItem('e115CustomBlackl
 let customNameByAddress = JSON.parse(localStorage.getItem('e115CustomNameByAddress'));
 
 /**
- * This will be populated via API call to "crewDataEndpoint"
- */
-let crewDataByCrewId = {};
-
-/**
  * This will be populated via API call to "crewmateVideosEndpoint"
  */
 let crewmateVideos = null;
+
+/**
+ * This will be populated via API call to "crewsDataEndpoint"
+ */
+let crewsDataById = {};
 
 /**
  * This will be populated via API call to "inventoriesDataEndpoint"
@@ -266,7 +266,8 @@ let isOpenPanelWithUsedDeposits = false;
 let elLocationControllerWrapper = null;
 let elLocationController = null;
 
-let isUpdatingInventories = false;
+let isUpdatingCrews = false; // TRUE while fetching data from "crewsDataEndpoint"
+let isUpdatingInventories = false; // TRUE while fetching data from "inventoriesDataEndpoint"
 
 function delay(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
@@ -1099,19 +1100,6 @@ function toggleLoader(shouldShow, message = '') {
     elLoader.textContent = message;
 }
 
-async function updateCrewDataByCrewIdIfNotSet(crewId) {
-    if (!crewId || crewDataByCrewId[crewId]) {
-        return;
-    }
-    try {
-        const crewDataResponse = await fetch(`${crewDataEndpoint}/${crewId}`);
-        const crewData = await crewDataResponse.json();
-        crewDataByCrewId[crewId] = crewData;
-    } catch (error) {
-        // Swallow this error
-    }
-}
-
 async function updateCrewmateVideosIfNotSet() {
     if (crewmateVideos) {
         return;
@@ -1124,49 +1112,35 @@ async function updateCrewmateVideosIfNotSet() {
     }
 }
 
-/**
- * NOTE: These filters require inventories to be marked via "highlightBlocklistedInventories"
- */
-function injectInventoriesFilters() {
-    if (document.getElementById('e115-inventories-filters')) {
-        // Filters already injected
+async function updateCrewsDataByIdsIfNotSet(crewsIds) {
+    // Ensure no NULL crew IDs (e.g. if no location currently selected)
+    crewsIds = crewsIds.filter(crewId => crewId !== null);
+    if (!crewsIds.length) {
         return;
     }
-    const elAvailableInventoriesTitle = findElWithMatchingTextNode(document.body, '*', 'Available Inventories');
-    if (!elAvailableInventoriesTitle) {
+    if (isUpdatingCrews) {
+        // Wait for pending API calls for crews data
         return;
     }
-    const elInventoriesFilters = createEl('div', 'e115-inventories-filters');
-    // Inject filter for "Only My Inventories"
-    injectFilterWithCheckbox(elInventoriesFilters, 'Only My Inventories', 'onlyMyInventories');
-    // Inject filter for "Only Buildings"
-    injectFilterWithCheckbox(elInventoriesFilters, 'Only Buildings', 'onlyBuildings');
-    // Inject the filter right after the title (before the close-button)
-    const elAvailableInventoriesHeader = elAvailableInventoriesTitle.parentElement;
-    elAvailableInventoriesHeader.insertBefore(elInventoriesFilters, elAvailableInventoriesTitle.nextSibling);
-    // Auto-focus the native filter
-    const elNativeFilter = elAvailableInventoriesHeader.parentElement.querySelector('input[placeholder="Filter by Name..."]');
-    if (elNativeFilter) {
-        elNativeFilter.focus();
+    isUpdatingCrews = true;
+    try {
+        // Fetch data only for NON-cached IDs
+        const cachedIds = Object.keys(crewsDataById);
+        const nonCachedIds = crewsIds.filter(id => !cachedIds.includes(id.toString()));
+        if (nonCachedIds.length) {
+            toggleLoader(true, `Updating data for ${nonCachedIds.length} crews...`);
+            const nonCachedIdsList = nonCachedIds.join(',');
+            const crewsDataResponse = await fetch(`${crewsDataEndpoint}/${nonCachedIdsList}`);
+            const crewsData = await crewsDataResponse.json();
+            nonCachedIds.forEach(crewId => {
+                crewsDataById[crewId] = crewsData[crewId];
+            });
+        }
+    } catch (error) {
+        // Swallow this error
     }
-}
-
-function injectFilterWithCheckbox(elFilterContainer, filterText, extensionSettingKey) {
-    const elFilterWrapper = createEl('label', null, ['e115-filter', 'e115-cursor-full']);
-    const elFilterInput = createEl('input');
-    elFilterInput.type = 'checkbox';
-    elFilterInput.checked = extensionSettings[extensionSettingKey];
-    elFilterInput.addEventListener('input', () => {
-        setExtensionSetting(extensionSettingKey, elFilterInput.checked);
-        document.body.dataset[extensionSettingKey] = elFilterInput.checked;
-        elFilterWrapper.classList.toggle('e115-checked', elFilterInput.checked);
-    });
-    elFilterWrapper.classList.toggle('e115-checked', elFilterInput.checked);
-    elFilterWrapper.append(elFilterInput);
-    const elFilterText = createEl('div');
-    elFilterText.textContent = filterText;
-    elFilterWrapper.append(elFilterText);
-    elFilterContainer.append(elFilterWrapper);
+    isUpdatingCrews = false;
+    toggleLoader(false);
 }
 
 async function updateInventoriesDataByLabelAndIdsIfNotSet(inventoriesLabel, inventoriesIds) {
@@ -1186,8 +1160,7 @@ async function updateInventoriesDataByLabelAndIdsIfNotSet(inventoriesLabel, inve
     }
     try {
         // Fetch data only for NON-cached IDs associated w/ this label
-        const cachedData = inventoriesDataByLabelAndId[inventoriesLabel];
-        const cachedIds = Object.keys(cachedData);
+        const cachedIds = Object.keys(inventoriesDataByLabelAndId[inventoriesLabel]);
         const nonCachedIds = inventoriesIds.filter(id => !cachedIds.includes(id));
         if (nonCachedIds.length) {
             toggleLoader(true, `Updating data for ${nonCachedIds.length} ${inventoriesLabelText}...`);
@@ -1336,6 +1309,24 @@ function injectRealTime() {
     }, 1000);
 }
 
+function injectFilterWithCheckbox(elFilterContainer, filterText, extensionSettingKey) {
+    const elFilterWrapper = createEl('label', null, ['e115-filter', 'e115-cursor-full']);
+    const elFilterInput = createEl('input');
+    elFilterInput.type = 'checkbox';
+    elFilterInput.checked = extensionSettings[extensionSettingKey];
+    elFilterInput.addEventListener('input', () => {
+        setExtensionSetting(extensionSettingKey, elFilterInput.checked);
+        document.body.dataset[extensionSettingKey] = elFilterInput.checked;
+        elFilterWrapper.classList.toggle('e115-checked', elFilterInput.checked);
+    });
+    elFilterWrapper.classList.toggle('e115-checked', elFilterInput.checked);
+    elFilterWrapper.append(elFilterInput);
+    const elFilterText = createEl('div');
+    elFilterText.textContent = filterText;
+    elFilterWrapper.append(elFilterText);
+    elFilterContainer.append(elFilterWrapper);
+}
+
 /**
  * Expecting `classId` of type `CLASS_IDS`
  */
@@ -1417,9 +1408,7 @@ function updateLocationData() {
     // Update crew data via API, for each UNIQUE crew ID
     const crewIds = Object.values(selectedLocationData.controllerData);
     const crewIdsUnique = [...new Set(crewIds)];
-    crewIdsUnique.forEach(crewId => {
-        updateCrewDataByCrewIdIfNotSet(crewId);
-    });
+    updateCrewsDataByIdsIfNotSet(crewIdsUnique);
 }
 
 async function searchMarketplace(searchText) {
@@ -1664,10 +1653,10 @@ function injectCrewController() {
     }
     // Update the crew controller label
     const crewId = crewIdMatches[1];
-    updateCrewDataByCrewIdIfNotSet(crewId);
+    updateCrewsDataByIdsIfNotSet([crewId]);
     try {
-        const delegatedToAddress = crewDataByCrewId[crewId].delegatedToAddress;
-        const delegatedToName = crewDataByCrewId[crewId].delegatedToName;
+        const delegatedToAddress = crewsDataById[crewId].delegatedToAddress;
+        const delegatedToName = crewsDataById[crewId].delegatedToName;
         let crewControllerText = delegatedToName;
         let crewControllerTextIsCustom = false;
         let crewControllerTextIsAddress = false;
@@ -1686,6 +1675,33 @@ function injectCrewController() {
         setupElControllerItem('crew', crewControllerText, crewControllerTextIsCustom, crewControllerTextIsAddress, crewControllerTextIsBlacklisted, elCrewController);
     } catch (error) {
         // Swallow this error
+    }
+}
+
+/**
+ * NOTE: These filters require inventories to be marked via "highlightBlocklistedInventories"
+ */
+function injectInventoriesFilters() {
+    if (document.getElementById('e115-inventories-filters')) {
+        // Filters already injected
+        return;
+    }
+    const elAvailableInventoriesTitle = findElWithMatchingTextNode(document.body, '*', 'Available Inventories');
+    if (!elAvailableInventoriesTitle) {
+        return;
+    }
+    const elInventoriesFilters = createEl('div', 'e115-inventories-filters');
+    // Inject filter for "Only My Inventories"
+    injectFilterWithCheckbox(elInventoriesFilters, 'Only My Inventories', 'onlyMyInventories');
+    // Inject filter for "Only Buildings"
+    injectFilterWithCheckbox(elInventoriesFilters, 'Only Buildings', 'onlyBuildings');
+    // Inject the filter right after the title (before the close-button)
+    const elAvailableInventoriesHeader = elAvailableInventoriesTitle.parentElement;
+    elAvailableInventoriesHeader.insertBefore(elInventoriesFilters, elAvailableInventoriesTitle.nextSibling);
+    // Auto-focus the native filter
+    const elNativeFilter = elAvailableInventoriesHeader.parentElement.querySelector('input[placeholder="Filter by Name..."]');
+    if (elNativeFilter) {
+        elNativeFilter.focus();
     }
 }
 
@@ -1999,7 +2015,7 @@ function injectLocationController() {
         resetElLocationController();
         return;
     }
-    // NOT using "ownerAddress" / "ownerName" from "crewDataByCrewId"
+    // NOT using "ownerAddress" / "ownerName" from "crewsDataById"
     const locationControllerInfo = {
         asteroid: {
             delegatedToAddress: null,
@@ -2020,28 +2036,28 @@ function injectLocationController() {
     };
     try {
         /**
-         * NOTE: "crewDataByCrewId" may not yet contain any data for the crew IDs below, until the API response arrives.
+         * NOTE: "crewsDataById" may not yet contain any data for the crew IDs below, until the API response arrives.
          * In this case, "resetElLocationController" is triggered via "catch", until the crew data becomes available.
          */
         const buildingCrewId = selectedLocationData.controllerData.buildingCrewId;
         if (buildingCrewId) {
-            locationControllerInfo.building.delegatedToAddress = crewDataByCrewId[buildingCrewId].delegatedToAddress;
-            locationControllerInfo.building.delegatedToName = crewDataByCrewId[buildingCrewId].delegatedToName;
+            locationControllerInfo.building.delegatedToAddress = crewsDataById[buildingCrewId].delegatedToAddress;
+            locationControllerInfo.building.delegatedToName = crewsDataById[buildingCrewId].delegatedToName;
         }
         const shipCrewId = selectedLocationData.controllerData.shipCrewId;
         if (shipCrewId) {
-            locationControllerInfo.ship.delegatedToAddress = crewDataByCrewId[shipCrewId].delegatedToAddress;
-            locationControllerInfo.ship.delegatedToName = crewDataByCrewId[shipCrewId].delegatedToName;
+            locationControllerInfo.ship.delegatedToAddress = crewsDataById[shipCrewId].delegatedToAddress;
+            locationControllerInfo.ship.delegatedToName = crewsDataById[shipCrewId].delegatedToName;
         }
         const lotCrewId = selectedLocationData.controllerData.lotCrewId;
         if (lotCrewId) {
-            locationControllerInfo.lot.delegatedToAddress = crewDataByCrewId[lotCrewId].delegatedToAddress;
-            locationControllerInfo.lot.delegatedToName = crewDataByCrewId[lotCrewId].delegatedToName;
+            locationControllerInfo.lot.delegatedToAddress = crewsDataById[lotCrewId].delegatedToAddress;
+            locationControllerInfo.lot.delegatedToName = crewsDataById[lotCrewId].delegatedToName;
         }
         const asteroidCrewId = selectedLocationData.controllerData.asteroidCrewId;
         if (asteroidCrewId) {
-            locationControllerInfo.asteroid.delegatedToAddress = crewDataByCrewId[asteroidCrewId].delegatedToAddress;
-            locationControllerInfo.asteroid.delegatedToName = crewDataByCrewId[asteroidCrewId].delegatedToName;
+            locationControllerInfo.asteroid.delegatedToAddress = crewsDataById[asteroidCrewId].delegatedToAddress;
+            locationControllerInfo.asteroid.delegatedToName = crewsDataById[asteroidCrewId].delegatedToName;
         }
         let buildingControllerText = locationControllerInfo.building.delegatedToName;
         let buildingControllerTextIsCustom = false;
