@@ -2713,19 +2713,24 @@ function updatePricesPeriodically() {
 }
 
 /**
- * Handle messages e.g. from widgets iframe
+ * Handle messages e.g. from tools iframe / widgets iframe
  */
 function handleMessage(event) {
-    if (!event.data.widgetEventKey || !event.data.widgetEventValue) {
-        // Not a valid message from the widgets iframe
+    // Migrating from "widget events" to more generic "tool events"
+    const toolEventKey = event.data.toolEventKey || event.data.widgetEventKey;
+    const toolEventValue = event.data.toolEventValue || event.data.widgetEventValue;
+    if (!toolEventKey || !toolEventValue) {
+        // Not a valid message format, or not a message from the tools iframe / widgets iframe
         return;
     }
-    switch (event.data.widgetEventKey) {
+    // Debug valid message format for community devs
+    console.log(`Tool event data:`, {toolEventKey, toolEventValue});
+    switch (toolEventKey) {
         case 'SHOPPING_LIST_CLICKED_PRODUCT_NAME':
-            searchMarketplace(event.data.widgetEventValue);
+            searchMarketplace(toolEventValue);
             break;
         case 'PRIVATE_LABELS_UPDATED':
-            const customDataByAddress = JSON.parse(event.data.widgetEventValue);
+            const customDataByAddress = JSON.parse(toolEventValue);
             handlePrivateLabelsUpdated(customDataByAddress);
             break;
     }

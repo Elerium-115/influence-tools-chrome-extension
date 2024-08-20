@@ -77,6 +77,29 @@ These may be referenced and used within the tools displayed in that iframe. For 
     }
     ```
 
+Sending events from a tool or widget, to this extension, is also possible.
+- The event data must have this format, in order to be handled by the extension - via `handleMessage` in `/globals/dom-core.js`:
+    ```
+    {
+        toolEventKey: 'YOUR_EVENT_KEY_IN_SCREAMING_SNAKE_CASE',
+        toolEventVaule: any_data_type
+    }
+    ```
+- The example below shows how the "Shopping List" widget is sending an event when the user clicks on a product name from the widget, and the extension handles that event by doing a marketplace-search for that product.
+    ```
+    const productName = 'Fluids Automation Module'; // EXAMPLE
+    // Emit event to parent window, when clicking on a product name
+    if (window.self !== window.top) {
+        const toolEventData = {
+            toolEventKey: 'SHOPPING_LIST_CLICKED_PRODUCT_NAME',
+            toolEventValue: productName,
+        };
+        window.parent.postMessage(toolEventData, '*');
+    }
+    ```
+- If your event data format is correct and ready to be handled by the extension, it will show up in the dev-tools console like this:
+<img src="./tool-event-data.png">
+
 ---
 
 Created by [@elerium115](https://twitter.com/elerium115) for the space strategy sandbox MMO [Influence](https://www.influenceth.io/).
