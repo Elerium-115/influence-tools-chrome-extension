@@ -149,8 +149,8 @@ const ENTITY_IDS = {
     SPACE: 10,
 };
 
+const HOUR_IN_MILLISECONDS = 3600000; // 60 * 60 * 1000
 const YEAR_IN_SECONDS = 31536000; // 60 * 60 * 24 * 365
-const MINUTE_IN_MILLISECONDS = 60000; // 60 * 1000
 
 const jobScenarios = [
     {
@@ -2709,7 +2709,7 @@ function injectFeaturesPeriodically() {
  */
 function updatePricesPeriodically() {
     updatePrices()
-    setInterval(updatePrices, 10 * MINUTE_IN_MILLISECONDS);
+    setInterval(updatePrices, HOUR_IN_MILLISECONDS); // NOT more frequent re: Vercel limit
 }
 
 /**
@@ -2717,8 +2717,8 @@ function updatePricesPeriodically() {
  */
 function handleMessage(event) {
     // Migrating from "widget events" to more generic "tool events"
-    const toolEventKey = event.data.toolEventKey || event.data.widgetEventKey;
-    const toolEventValue = event.data.toolEventValue || event.data.widgetEventValue;
+    const toolEventKey = event.data.toolEventKey;
+    const toolEventValue = event.data.toolEventValue;
     if (!toolEventKey || !toolEventValue) {
         // Not a valid message format, or not a message from the tools iframe / widgets iframe
         return;
