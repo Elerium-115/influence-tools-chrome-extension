@@ -9,11 +9,11 @@ const svgIconProductionChains = `<svg stroke="currentColor" fill="currentColor" 
 // Source: https://www.iconfinder.com/icons/3302789/energy_geothermal_plant_power_steam_icon
 const svgIconFactoryArrows = `<svg fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg"><g transform="translate(0 1024) scale(.1 -.1)"><path d="m6450 10229c-32-13-78-56-97-93-9-17-70-428-159-1077-79-578-144-1054-144-1059 0-7-883-10-2432-10-2344 0-2434-1-2473-19-46-21-79-54-94-94-8-19-11-366-11-1102v-1074l-916-6-41-27c-24-16-49-44-62-70l-21-44v-2702c0-2410 2-2707 15-2739 21-50 42-72 90-94 39-18 209-19 5015-19s4976 1 5015 19c48 22 69 44 90 94 13 32 15 329 15 2739v2702l-21 44c-13 26-38 54-62 70l-41 27-467 3-468 3-6 32c-3 18-140 1012-304 2210-283 2062-300 2180-324 2216-15 23-44 47-69 60-44 21-45 21-1024 20-624 0-988-4-1004-10zm1790-351c0-2 16-118 35-258s35-258 35-262c0-5-385-8-856-8h-856l6 28c3 15 20 134 37 265l32 237h784c430 0 783-1 783-2zm124-915c7-32 446-3237 446-3253 0-7-418-10-1355-10-745 0-1355 2-1355 4s101 741 225 1641c124 901 225 1639 225 1641s407 4 904 4h904l6-27zm-2370-1365c-3-18-63-451-133-963l-127-930-2167-3-2167-2v965 965h2299 2300l-5-32zm3884-4032 2-1769-287 6c-157 4-562 7-899 7h-612l-7 183c-3 100-5 526-3 947l3 765 258-250c142-137 273-258 290-267 76-41 188-9 232 66 29 50 34 130 10 175-21 41-848 842-897 869-47 25-103 28-151 8-33-13-866-815-899-865-38-57-32-148 14-206 48-61 150-82 220-46 20 10 149 128 287 262s255 245 261 247c7 3 10-339 10-1035 0-683 4-1051 10-1075 14-50 55-97 105-119 37-17 73-19 431-19 215 0 668-3 1007-7l617-6v-539-538h-2290-2290v1677 1678l93-90c50-50 169-166 263-258 99-97 186-173 207-182 132-55 273 51 253 188-4 23-15 55-24 70-36 53-856 838-897 858-50 23-99 24-147 1-41-19-869-817-900-867-27-45-24-128 7-181 44-75 156-107 232-66 18 9 149 131 292 270l261 254v-1676-1676h-2290-2290v538 539l587 6c322 4 775 7 1005 7 450 0 461 1 516 53 60 56 57-17 62 1146l5 1063 265-256c146-140 279-263 297-271 17-8 50-15 72-15 129 0 214 123 170 248-14 41-865 867-914 888-44 18-96 18-140 0-48-20-885-835-907-884-50-108 23-238 141-250 88-8 101 1 383 274l263 256 3-734c2-403 0-828-3-944l-7-211-892-5c-490-3-894-3-898-1-10 5-11 3517-1 3526 3 4 2144 6 4757 5l4751-3 3-1769z"/><path d="m1817 7315c-128-45-162-200-66-296 53-53 106-62 342-57 163 3 198 6 230 22 144 71 125 292-30 335-58 16-429 13-476-4z"/><path d="m2827 7315c-75-26-118-86-119-165 0-91 53-159 142-179 58-14 382-14 440 0 89 20 142 88 142 179-1 82-52 148-130 170-57 15-428 12-475-5z"/><path d="m3837 7315c-75-26-118-86-119-165 0-94 54-160 150-181 33-6 127-10 245-7 220 3 249 12 301 86 69 97 15 239-102 272-57 15-428 12-475-5z"/><path d="m4847 7315c-75-26-118-86-119-165 0-91 53-159 142-179 60-14 376-14 441 0 183 39 191 299 11 349-57 15-428 12-475-5z"/></g></svg>`;
 
-/**
- * Use this to quickly disable API prices (i.e. use only default prices),
- * in case of issues with the source of real-time prices on mainnet.
- */
+// Use these flags to quickly disable API calls for static data
+const isDisabledApiCrewmateVideos = true;
 const isDisabledApiPrices = true;
+const isDisabledApiTools = true;
+const isDisabledApiWidgets = true;
 
 const eleriumApiUrl = 'https://elerium-influence-api.vercel.app';
 
@@ -1107,6 +1107,10 @@ function toggleLoader(shouldShow, message = '') {
 }
 
 async function updateCrewmateVideosIfNotSet() {
+    if (isDisabledApiCrewmateVideos) {
+        crewmateVideos = crewmateVideosDefault;
+        return;
+    }
     if (crewmateVideos) {
         return;
     }
@@ -1211,6 +1215,10 @@ async function updateShipDataByShipIdIfNotSet(shipId) {
 }
 
 async function updateToolsIfNotSet() {
+    if (isDisabledApiTools) {
+        tools = toolsDefault;
+        return;
+    }
     if (tools) {
         return;
     }
@@ -1223,6 +1231,10 @@ async function updateToolsIfNotSet() {
 }
 
 async function updateWidgetsIfNotSet() {
+    if (isDisabledApiWidgets) {
+        widgets = widgetsDefault;
+        return;
+    }
     if (widgets) {
         return;
     }
