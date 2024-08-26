@@ -95,6 +95,28 @@ if (!localStorage.getItem('e115CustomNameByAddress')) {
     localStorage.setItem('e115CustomNameByAddress', JSON.stringify(customNameByAddressDefault));
 }
 
+// Each key of `cachedDataDefault` must have a value of type Object
+const cachedDataDefault = {
+    crewsDataById: {},
+    inventoriesDataByLabelAndId: {
+        5: {}, // buildings
+        6: {}, // ships
+    },
+    shipDataByShipId: {},
+};
+
+// Save default cached data into local-storage, if needed
+if (!localStorage.getItem('e115CachedData')) {
+    localStorage.setItem('e115CachedData', JSON.stringify(cachedDataDefault));
+}
+
+/**
+ * Each key of `cachedData` must have a value of type `Object` - same format as `cachedDataDefault`.
+ * 
+ * NOTE: When updating any of the cached data, the local-storage cache must also be updated.
+ */
+const cachedData = getCachedData();
+
 const selectedCrewData = {
     crewmates: [],
     rationing: null,
@@ -155,8 +177,9 @@ const ENTITY_IDS = {
     SPACE: 10,
 };
 
-const HOUR_IN_MILLISECONDS = 3600000; // 60 * 60 * 1000
-const YEAR_IN_SECONDS = 31536000; // 60 * 60 * 24 * 365
+const HOUR_IN_MILLISECONDS = 3_600_000; // 60 * 60 * 1000
+const DAY_IN_MILLISECONDS = 86_400_000; // 24 * 60 * 60 * 1000
+const YEAR_IN_SECONDS = 31_536_000; // 365 * 24 * 60 * 60
 
 const jobScenarios = [
     {
@@ -184,40 +207,22 @@ let customBlacklistByAddress = JSON.parse(localStorage.getItem('e115CustomBlackl
 let customNameByAddress = JSON.parse(localStorage.getItem('e115CustomNameByAddress'));
 
 /**
- * This will be populated via API call to "crewmateVideosEndpoint"
+ * This will be populated via API calls to `crewmateVideosEndpoint`
  */
 let crewmateVideos = null;
 
 /**
- * This will be populated via API call to "crewsDataEndpoint"
- */
-let crewsDataById = {};
-
-/**
- * This will be populated via API call to "inventoriesDataEndpoint"
- */
-let inventoriesDataByLabelAndId = {
-    5: {}, // buildings
-    6: {}, // ships
-};
-
-/**
- * This will be populated via API call to "pricesEndpoint"
+ * This will be populated via API calls to `pricesEndpoint`
  */
 let prices = null;
 
 /**
- * This will be populated via API call to "shipDataEndpoint"
- */
-let shipDataByShipId = {};
-
-/**
- * This will be populated via API call to "toolsEndpoint"
+ * This will be populated via API calls to `toolsEndpoint`
  */
 let tools = null;
 
 /**
- * This will be populated via API call to "widgetsEndpoint"
+ * This will be populated via API calls to "widgetsEndpoint"
  */
 let widgets = null;
 
@@ -293,6 +298,16 @@ function isObject(obj) {
 function setExtensionSetting(settingKey, settingValue) {
     extensionSettings[settingKey] = settingValue;
     localStorage.setItem('e115Settings', JSON.stringify(extensionSettings));
+}
+
+function getCachedData() {
+    let cachedData = {};
+    try {
+        cachedData = JSON.parse(localStorage.getItem('e115CachedData'));
+    } catch (error) {
+        // Swallow this error
+    }
+    return cachedData;
 }
 
 function getReactPropsForEl(el) {
@@ -1122,6 +1137,20 @@ async function updateCrewmateVideosIfNotSet() {
     }
 }
 
+function isFreshCacheCrewsDataById(crewId) {
+    const cacheExpiresInMilliseconds = DAY_IN_MILLISECONDS;
+    if (!cachedData.crewsDataById[crewId]) {
+        return false;
+    }
+    return Date.now() - cachedData.crewsDataById[crewId]._timestamp < cacheExpiresInMilliseconds;
+}
+
+function setCacheCrewsDataById(crewId, crewData) {
+    cachedData.crewsDataById[crewId] = crewData;
+    cachedData.crewsDataById[crewId]._timestamp = Date.now();
+    localStorage.setItem('e115CachedData', JSON.stringify(cachedData));
+}
+
 async function updateCrewsDataByIdsIfNotSet(crewsIds) {
     // Ensure no NULL crew IDs (e.g. if no location currently selected)
     crewsIds = crewsIds.filter(crewId => crewId !== null);
@@ -1134,16 +1163,15 @@ async function updateCrewsDataByIdsIfNotSet(crewsIds) {
     }
     isUpdatingCrews = true;
     try {
-        // Fetch data only for NON-cached IDs
-        const cachedIds = Object.keys(crewsDataById);
-        const nonCachedIds = crewsIds.filter(id => !cachedIds.includes(id.toString()));
+        // Fetch data only for NON-cached (or cache expired for) crew IDs
+        const nonCachedIds = crewsIds.filter(crewId => !isFreshCacheCrewsDataById(crewId));
         if (nonCachedIds.length) {
             toggleLoader(true, `Updating data for ${nonCachedIds.length} crews...`);
             const nonCachedIdsList = nonCachedIds.join(',');
             const crewsDataResponse = await fetch(`${crewsDataEndpoint}/${nonCachedIdsList}`);
             const crewsData = await crewsDataResponse.json();
             nonCachedIds.forEach(crewId => {
-                crewsDataById[crewId] = crewsData[crewId];
+                setCacheCrewsDataById(crewId, crewsData[crewId]);
             });
         }
     } catch (error) {
@@ -1151,6 +1179,20 @@ async function updateCrewsDataByIdsIfNotSet(crewsIds) {
     }
     isUpdatingCrews = false;
     toggleLoader(false);
+}
+
+function isFreshCacheInventoriesDataByLabelAndId(inventoryLabel, inventoryId) {
+    const cacheExpiresInMilliseconds = DAY_IN_MILLISECONDS;
+    if (!cachedData.inventoriesDataByLabelAndId[inventoryLabel][inventoryId]) {
+        return false;
+    }
+    return Date.now() - cachedData.inventoriesDataByLabelAndId[inventoryLabel][inventoryId]._timestamp < cacheExpiresInMilliseconds;
+}
+
+function setCacheInventoriesDataByLabelAndId(inventoryLabel, inventoryId, inventoryData) {
+    cachedData.inventoriesDataByLabelAndId[inventoryLabel][inventoryId] = inventoryData;
+    cachedData.inventoriesDataByLabelAndId[inventoryLabel][inventoryId]._timestamp = Date.now();
+    localStorage.setItem('e115CachedData', JSON.stringify(cachedData));
 }
 
 async function updateInventoriesDataByLabelAndIdsIfNotSet(inventoriesLabel, inventoriesIds) {
@@ -1169,16 +1211,15 @@ async function updateInventoriesDataByLabelAndIdsIfNotSet(inventoriesLabel, inve
             break;
     }
     try {
-        // Fetch data only for NON-cached IDs associated w/ this label
-        const cachedIds = Object.keys(inventoriesDataByLabelAndId[inventoriesLabel]);
-        const nonCachedIds = inventoriesIds.filter(id => !cachedIds.includes(id));
+        // Fetch data only for NON-cached (or cache expired for) inventory IDs associated w/ this label
+        const nonCachedIds = inventoriesIds.filter(inventoryId => !isFreshCacheInventoriesDataByLabelAndId(inventoriesLabel, inventoryId));
         if (nonCachedIds.length) {
             toggleLoader(true, `Updating data for ${nonCachedIds.length} ${inventoriesLabelText}...`);
             const nonCachedIdsList = nonCachedIds.join(',');
             const inventoriesDataResponse = await fetch(`${inventoriesDataEndpoint}/${inventoriesLabel}/${nonCachedIdsList}`);
             const inventoriesData = await inventoriesDataResponse.json();
             nonCachedIds.forEach(inventoryId => {
-                inventoriesDataByLabelAndId[inventoriesLabel][inventoryId] = inventoriesData[inventoryId];
+                setCacheInventoriesDataByLabelAndId(inventoriesLabel, inventoryId, inventoriesData[inventoryId]);
             });
         }
     } catch (error) {
@@ -1201,14 +1242,29 @@ async function updatePrices() {
     }
 }
 
+function isFreshCacheShipDataByShipId(shipId) {
+    const cacheExpiresInMilliseconds = DAY_IN_MILLISECONDS;
+    if (!cachedData.shipDataByShipId[shipId]) {
+        return false;
+    }
+    return Date.now() - cachedData.shipDataByShipId[shipId]._timestamp < cacheExpiresInMilliseconds;
+}
+
+function setCacheShipDataByShipId(shipId, shipData) {
+    cachedData.shipDataByShipId[shipId] = shipData;
+    cachedData.shipDataByShipId[shipId]._timestamp = Date.now();
+    localStorage.setItem('e115CachedData', JSON.stringify(cachedData));
+}
+
 async function updateShipDataByShipIdIfNotSet(shipId) {
-    if (!shipId || shipDataByShipId[shipId]) {
+    // Fetch data only for NON-cached (or cache expired for) ship ID
+    if (!shipId || isFreshCacheShipDataByShipId(shipId)) {
         return;
     }
     try {
         const shipDataResponse = await fetch(`${shipDataEndpoint}/${shipId}`);
         const shipData = await shipDataResponse.json();
-        shipDataByShipId[shipId] = shipData;
+        setCacheShipDataByShipId(shipId, shipData);
     } catch (error) {
         // Swallow this error
     }
@@ -1313,7 +1369,7 @@ function injectRealTime() {
                 // Update the real-time, based on the user-previewed game-time
                 const gameTimeDaysPreviewed = getGameTimeDays();
                 const realTimeDaysDiff = (gameTimeDaysPreviewed - gameTimeDaysCurrent) / 24;
-                const nowTs = new Date().getTime();
+                const nowTs = Date.now();
                 const realTimeDiffTs = realTimeDaysDiff * 24 * 60 * 60 * 1000;
                 const realTimePreviewedDate = new Date(nowTs + realTimeDiffTs);
                 // Format real-time based on the user's locale and timezone
@@ -1677,8 +1733,8 @@ function injectCrewController() {
     const crewId = crewIdMatches[1];
     updateCrewsDataByIdsIfNotSet([crewId]);
     try {
-        const delegatedToAddress = crewsDataById[crewId].delegatedToAddress;
-        const delegatedToName = crewsDataById[crewId].delegatedToName;
+        const delegatedToAddress = cachedData.crewsDataById[crewId].delegatedToAddress;
+        const delegatedToName = cachedData.crewsDataById[crewId].delegatedToName;
         let crewControllerText = delegatedToName;
         let crewControllerTextIsCustom = false;
         let crewControllerTextIsAddress = false;
@@ -2063,23 +2119,23 @@ function injectLocationController() {
          */
         const buildingCrewId = selectedLocationData.controllerData.buildingCrewId;
         if (buildingCrewId) {
-            locationControllerInfo.building.delegatedToAddress = crewsDataById[buildingCrewId].delegatedToAddress;
-            locationControllerInfo.building.delegatedToName = crewsDataById[buildingCrewId].delegatedToName;
+            locationControllerInfo.building.delegatedToAddress = cachedData.crewsDataById[buildingCrewId].delegatedToAddress;
+            locationControllerInfo.building.delegatedToName = cachedData.crewsDataById[buildingCrewId].delegatedToName;
         }
         const shipCrewId = selectedLocationData.controllerData.shipCrewId;
         if (shipCrewId) {
-            locationControllerInfo.ship.delegatedToAddress = crewsDataById[shipCrewId].delegatedToAddress;
-            locationControllerInfo.ship.delegatedToName = crewsDataById[shipCrewId].delegatedToName;
+            locationControllerInfo.ship.delegatedToAddress = cachedData.crewsDataById[shipCrewId].delegatedToAddress;
+            locationControllerInfo.ship.delegatedToName = cachedData.crewsDataById[shipCrewId].delegatedToName;
         }
         const lotCrewId = selectedLocationData.controllerData.lotCrewId;
         if (lotCrewId) {
-            locationControllerInfo.lot.delegatedToAddress = crewsDataById[lotCrewId].delegatedToAddress;
-            locationControllerInfo.lot.delegatedToName = crewsDataById[lotCrewId].delegatedToName;
+            locationControllerInfo.lot.delegatedToAddress = cachedData.crewsDataById[lotCrewId].delegatedToAddress;
+            locationControllerInfo.lot.delegatedToName = cachedData.crewsDataById[lotCrewId].delegatedToName;
         }
         const asteroidCrewId = selectedLocationData.controllerData.asteroidCrewId;
         if (asteroidCrewId) {
-            locationControllerInfo.asteroid.delegatedToAddress = crewsDataById[asteroidCrewId].delegatedToAddress;
-            locationControllerInfo.asteroid.delegatedToName = crewsDataById[asteroidCrewId].delegatedToName;
+            locationControllerInfo.asteroid.delegatedToAddress = cachedData.crewsDataById[asteroidCrewId].delegatedToAddress;
+            locationControllerInfo.asteroid.delegatedToName = cachedData.crewsDataById[asteroidCrewId].delegatedToName;
         }
         let buildingControllerText = locationControllerInfo.building.delegatedToName;
         let buildingControllerTextIsCustom = false;
@@ -2556,7 +2612,7 @@ async function highlightBlocklistedInventories() {
         }
         const inventoryLabel = elRow.dataset.e115InventoryLabel;
         const inventoryType = elRow.dataset.e115InventoryType;
-        const inventoryData = inventoriesDataByLabelAndId[inventoryLabel][inventoryId];
+        const inventoryData = cachedData.inventoriesDataByLabelAndId[inventoryLabel][inventoryId];
         if (!inventoryData) {
             // Waiting for the initial API calls to inventories-data
             return;
@@ -2605,7 +2661,7 @@ function highlightCrewsRationing() {
             }
             const crewConsumption = crewData.propValue._foodBonuses.consumption;
             const crewLastFed = crewData.propValue.Crew.lastFed;
-            const crewTimeSinceFed = ((new Date().getTime()) / 1000 - crewLastFed) * 24;
+            const crewTimeSinceFed = (Date.now() / 1000 - crewLastFed) * 24;
             const crewFoodRatio = Math.round(getCurrentFoodRatio(parseInt(crewTimeSinceFed), crewConsumption) * 100);
             elCrew.dataset.e115CrewFoodRatio = `${crewFoodRatio}%`;
         } catch (error) {
@@ -2635,7 +2691,7 @@ function showShipStatsForMyCrews() {
             }
             const shipId = crewLocationData.id;
             updateShipDataByShipIdIfNotSet(shipId);
-            const shipData = shipDataByShipId[shipId];
+            const shipData = cachedData.shipDataByShipId[shipId];
             if (!shipData) {
                 return;
             }

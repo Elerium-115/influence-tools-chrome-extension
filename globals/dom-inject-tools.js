@@ -75,7 +75,7 @@ async function injectTools() {
         const targetSelectedStateReached = await waitForHudMenuItemSelectedState(elHudMenuItemDefault, true, checkIntervalMs);
         if (!targetSelectedStateReached) {
             // hud-menu item did NOT become selected => ABORT
-            console.log(`%c--- [injectTools] ABORT re: elHudMenuItemDefault did NOT become selected`, 'background: orange; color: black');
+            // console.log(`%c--- [injectTools] ABORT re: elHudMenuItemDefault did NOT become selected`, 'background: orange; color: black');
             return;
         }
     }
