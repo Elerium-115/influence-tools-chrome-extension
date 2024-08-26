@@ -777,11 +777,23 @@ body[data-only-buildings=true] .e115-prepared:not([data-e115-inventory-is-buildi
   position: absolute;
   white-space: nowrap;
 }
+#e115-location-controller-wrapper #e115-location-controller .lease-expires,
 #e115-location-controller-wrapper #e115-location-controller .controller {
   display: flex;
   gap: 10px;
   justify-content: space-between;
   padding: 5px 10px;
+}
+#e115-location-controller-wrapper #e115-location-controller .lease-expires:empty,
+#e115-location-controller-wrapper #e115-location-controller .controller:empty {
+  display: none;
+}
+#e115-location-controller-wrapper #e115-location-controller .lease-expires::before,
+#e115-location-controller-wrapper #e115-location-controller .controller::before {
+  color: rgba(255, 255, 255, 0.5);
+}
+#e115-location-controller-wrapper #e115-location-controller .lease-expires::before {
+  content: "Lease expires:";
 }
 #e115-location-controller-wrapper #e115-location-controller .controller:hover {
   color: var(--color-influence);
@@ -801,12 +813,6 @@ body[data-only-buildings=true] .e115-prepared:not([data-e115-inventory-is-buildi
 }
 #e115-location-controller-wrapper #e115-location-controller .controller:hover::after {
   background: var(--color-bg-dark);
-}
-#e115-location-controller-wrapper #e115-location-controller .controller:empty {
-  display: none;
-}
-#e115-location-controller-wrapper #e115-location-controller .controller::before {
-  color: rgba(255, 255, 255, 0.5);
 }
 #e115-location-controller-wrapper #e115-location-controller .controller.controller-building::before {
   content: "Building controller:";

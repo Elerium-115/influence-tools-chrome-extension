@@ -872,12 +872,30 @@ body[data-only-buildings='true'] {
         position: absolute;
         white-space: nowrap;
 
+        .lease-expires,
         .controller {
-            @include copy-icon-on-hover;
             display: flex;
             gap: 10px;
             justify-content: space-between;
             padding: 5px 10px;
+
+            &:empty {
+                display: none;
+            }
+
+            &::before {
+                color: rgba(255, 255, 255, 0.5);
+            }
+        }
+
+        .lease-expires {
+            &::before {
+                content: 'Lease expires:';
+            }
+        }
+
+        .controller {
+            @include copy-icon-on-hover;
 
             &.is-custom {
                 color: var(--color-influence-green);
@@ -891,14 +909,6 @@ body[data-only-buildings='true'] {
                 &::after {
                     background: var(--color-bg-dark);
                 }
-            }
-
-            &:empty {
-                display: none;
-            }
-
-            &::before {
-                color: rgba(255, 255, 255, 0.5);
             }
 
             &.controller-building::before { content: 'Building controller:'; }

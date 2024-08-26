@@ -128,6 +128,7 @@ const selectedLocationData = {
     idCurrent: null,
     idPrevious: null,
     isSystemView: false,
+    leaseEndTimestamp: null,
 };
 
 // Source: Influence SDK - "src/lib/building.js"
@@ -1440,6 +1441,11 @@ function updateLocationData() {
     }
     // System-view if "lotValue" undefined (NOT if "null")
     selectedLocationData.isSystemView = selectedLocationValues && typeof selectedLocationValues.lotValue === 'undefined';
+    try {
+        selectedLocationData.leaseEndTimestamp = selectedLocationValues.lotValue.PrepaidAgreements[0].endTime * 1000;
+    } catch (error) {
+        selectedLocationData.leaseEndTimestamp = null;
+    }
     let buildingCrewId = null;
     let shipCrewId = null;
     let asteroidCrewId = null;
@@ -2081,6 +2087,7 @@ function injectLocationController() {
         elLocationControllerWrapper = createEl('div', 'e115-location-controller-wrapper', ['e115-hidden']);
         elLocationController = createEl('div', 'e115-location-controller', ['e115-cursor-full']);
         elLocationController.innerHTML = /*html*/ `
+            <div class="lease-expires"></div>
             <div class="controller controller-building"></div>
             <div class="controller controller-ship"></div>
             <div class="controller controller-lot"></div>
@@ -2088,6 +2095,14 @@ function injectLocationController() {
         `;
         elLocationControllerWrapper.append(elLocationController);
         document.body.append(elLocationControllerWrapper);
+    }
+    // Lease expiration
+    const elLeaseExpires = elLocationController.querySelector(`.lease-expires`);
+    if (selectedLocationData.leaseEndTimestamp) {
+        const endDate = new Date(selectedLocationData.leaseEndTimestamp);
+        elLeaseExpires.textContent = fromNow(endDate);
+    } else {
+        elLeaseExpires.textContent = '';
     }
     if (!selectedLocationData.controllerData) {
         resetElLocationController();
