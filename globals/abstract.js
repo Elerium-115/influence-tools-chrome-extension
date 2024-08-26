@@ -44,3 +44,21 @@ function fromNow(
         }
     }
 }
+
+/**
+ * @param {string} c0 color code at 0% (without the leading #)
+ * @param {string} c1 color code at 100% (without the leading #)
+ * @param {number} f progression between 0 and 1 (0% and 100%)
+ * 
+ * @see https://stackoverflow.com/a/63775249
+ */
+function interpolateColor(c0, c1, f) {
+    c0 = c0.match(/.{1,2}/g).map(oct => parseInt(oct, 16) * (1 - f));
+    c1 = c1.match(/.{1,2}/g).map(oct => parseInt(oct, 16) * f);
+    let ci = [0,1,2].map(i => Math.min(Math.round(c0[i] + c1[i]), 255));
+    return ci.reduce((a, v) => ((a << 8) + v), 0).toString(16).padStart(6, '0');
+}
+
+function normalize(val, min, max) {
+    return (val - min) / (max - min);
+}

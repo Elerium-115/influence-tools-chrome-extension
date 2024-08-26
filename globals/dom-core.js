@@ -666,6 +666,17 @@ const getCurrentFoodRatio = (timeSinceFed = 0, consumption = 1) => {
     );
 };
 
+function getColorByLeaseEndTimestamp(leaseEndTimestamp) {
+    const diffTimestamp = leaseEndTimestamp - Date.now();
+    const colorLimitTimestamp = MS_WEEK;
+    if (diffTimestamp > colorLimitTimestamp) {
+        return 'white';
+    }
+    const progress = normalize(diffTimestamp, 0, colorLimitTimestamp);
+    // Interpolate color from red (NO time remaining), to yellow ("colorLimitTimestamp" remaining)
+    return `#${interpolateColor('ff0000', 'ffff00', progress)}`;
+}
+
 /**
  * Get the DOM elements for each crew in the "My Crews" list,
  * if the "My Crews" panel is currently selected.
@@ -2101,8 +2112,10 @@ function injectLocationController() {
     if (selectedLocationData.leaseEndTimestamp) {
         const endDate = new Date(selectedLocationData.leaseEndTimestamp);
         elLeaseExpires.textContent = fromNow(endDate);
+        elLeaseExpires.style.color = getColorByLeaseEndTimestamp(selectedLocationData.leaseEndTimestamp);
     } else {
         elLeaseExpires.textContent = '';
+        // No need to reset the color, because this element is hidden if empty
     }
     if (!selectedLocationData.controllerData) {
         resetElLocationController();
