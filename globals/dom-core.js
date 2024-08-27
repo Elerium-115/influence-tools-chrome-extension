@@ -11,7 +11,7 @@ const svgIconFactoryArrows = `<svg fill="currentColor" stroke-width="0" viewBox=
 
 // Use these flags to quickly disable API calls for static data
 const isDisabledApiCrewmateVideos = true;
-const isDisabledApiPrices = true;
+const isDisabledApiPrices = false;
 const isDisabledApiTools = true;
 const isDisabledApiWidgets = true;
 
@@ -102,6 +102,7 @@ const cachedDataDefault = {
         5: {}, // buildings
         6: {}, // ships
     },
+    prices: {},
     shipDataByShipId: {},
 };
 
@@ -211,11 +212,6 @@ let customNameByAddress = JSON.parse(localStorage.getItem('e115CustomNameByAddre
  * This will be populated via API calls to `crewmateVideosEndpoint`
  */
 let crewmateVideos = null;
-
-/**
- * This will be populated via API calls to `pricesEndpoint`
- */
-let prices = null;
 
 /**
  * This will be populated via API calls to `toolsEndpoint`
@@ -1241,14 +1237,34 @@ async function updateInventoriesDataByLabelAndIdsIfNotSet(inventoriesLabel, inve
     toggleLoader(false);
 }
 
+function isFreshCachePrices() {
+    const cacheExpiresInMilliseconds = DAY_IN_MILLISECONDS;
+    if (!cachedData.prices) {
+        // Backwards compatibility for old "cachedData" format without "prices"
+        return false;
+    }
+    return Date.now() - cachedData.prices._timestamp < cacheExpiresInMilliseconds;
+}
+
+function setCachePrices(pricesData) {
+    cachedData.prices = pricesData;
+    cachedData.prices._timestamp = Date.now();
+    localStorage.setItem('e115CachedData', JSON.stringify(cachedData));
+}
+
 async function updatePrices() {
+    // Fetch data only if prices NOT cached (or cache expired)
+    if (isFreshCachePrices()) {
+        return;
+    }
     if (isDisabledApiPrices) {
-        prices = pricesDefault;
+        setCachePrices(pricesDefault);
         return;
     }
     try {
         const pricesResponse = await fetch(pricesEndpoint);
-        prices = await pricesResponse.json();
+        const pricesData = await pricesResponse.json();
+        setCachePrices(pricesData);
     } catch (error) {
         // Swallow this error
     }
@@ -1550,10 +1566,10 @@ function getMarketValueOfSelectedItems(elItemsList) {
         }
         const selectedQty = reactProps.selected;
         const productName = elParsedItemWrapper.querySelector('[data-tooltip-content]').dataset.tooltipContent;
-        if (!productName || !prices[productName]) {
+        if (!productName || !cachedData.prices[productName]) {
             return;
         }
-        const productPrice = prices[productName] * selectedQty;
+        const productPrice = cachedData.prices[productName] * selectedQty;
         marketValue += productPrice;
     });
     return marketValue;
@@ -2113,9 +2129,14 @@ function injectLocationController() {
         const endDate = new Date(selectedLocationData.leaseEndTimestamp);
         elLeaseExpires.textContent = fromNow(endDate);
         elLeaseExpires.style.color = getColorByLeaseEndTimestamp(selectedLocationData.leaseEndTimestamp);
+        addTooltip(elLeaseExpires, Intl.DateTimeFormat(undefined, {
+            dateStyle: 'long',
+            timeStyle: 'long',
+        }).format(selectedLocationData.leaseEndTimestamp), 'right');
     } else {
         elLeaseExpires.textContent = '';
         // No need to reset the color, because this element is hidden if empty
+        removeTooltip(elLeaseExpires);
     }
     if (!selectedLocationData.controllerData) {
         resetElLocationController();
@@ -2815,7 +2836,11 @@ function injectFeaturesPeriodically() {
  */
 function updatePricesPeriodically() {
     updatePrices()
-    setInterval(updatePrices, HOUR_IN_MILLISECONDS); // NOT more frequent re: Vercel limit
+    /**
+     * Relatively frequent checks to determine if the prices need to be updated,
+     * but the actual frequency of API calls is defined in "isFreshCachePrices".
+     */
+    setInterval(updatePrices, HOUR_IN_MILLISECONDS);
 }
 
 /**
