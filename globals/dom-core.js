@@ -1595,8 +1595,42 @@ function updateMarketValueOfSelectedItems() {
     elSelectedProductsInfo.dataset.e115MarketValue = `Market value: ${marketValueFormatted} SWAY`;
 }
 
+function updateInventoryFooterExtra() {
+    const elInventoryFooterExtra = document.getElementById('e115-inventory-footer-extra');
+    if (!elInventoryFooterExtra) {
+        return;
+    }
+    const elInventoryFooter = elInventoryFooterExtra.parentElement;
+    const elItemsList = elInventoryFooter.previousElementSibling;
+    if (!elItemsList) {
+        return;
+    }
+    const elsItemsSelected = getSelectedInventoryItems(elItemsList);
+    if (elsItemsSelected.length === 1) {
+        /**
+         * Single item selected => inject relevant buttons,
+         * only if NO buttons in the "extra" inventory-footer.
+         * 
+         * NOTE: This is typically triggered NOT when the user clicks an inventory item
+         * (which triggers "onClickInventoryItem"), but after the user selects an item
+         * in inventory #X, then opens #Y, then opens #X again, in quick succession.
+         */
+        if (!elInventoryFooterExtra.querySelectorAll('.e115-button-inventory').length) {
+            const elItemSelected = elsItemsSelected[0];
+            injectInventoryButtonsForSelectedItem(elItemSelected);
+        }
+    } else {
+        /**
+         * Empty (NOT remove) the "extra" inventory-footer if no / multiple products currently selected.
+         * This may happen after the user selects an item in inventory #X, then opens inventory #Y.
+         * Or multiple multiple items in inventory #X, then a single item in #Y, then opens #X again.
+         */
+        elInventoryFooterExtra.textContent = '';
+    }
+}
+
 /**
- * Inject relevant buttons in the inventory-footer, if a single inventory item is selected.
+ * Inject relevant buttons in the "extra" inventory-footer, if a single inventory item is selected.
  * Also inject market value of selected items in the inventory-footer.
  * 
  * NOTE re: injecting the "Search in Marketplace" button
@@ -1618,52 +1652,6 @@ function onClickInventoryItem(elItem) {
     if (!elInventoryFooter) {
         return;
     }
-    let countSelected = 0;
-    let elItemSelected = null;
-    [...elItemsList.children].forEach(elParsedItemWrapper => {
-        const reactProps = getReactPropsForEl(elParsedItemWrapper);
-        if (reactProps && reactProps.selected) {
-            elItemSelected = elParsedItemWrapper;
-            countSelected++;
-        }
-    });
-    /**
-     * ALWAYS remove any injected buttons, to avoid duplicating them in this scenario:
-     * - open inventory #1, select product #A => 1st set of inventory-buttons injected
-     * - open inventory #2, select product #B => 2nd set of inventory-buttons injected
-     */
-    elInventoryFooter.querySelectorAll('.e115-button-inventory').forEach(elButton => {
-        elButton.parentElement.removeChild(elButton);
-    });
-    if (countSelected === 1) {
-        // Single item selected => inject relevant buttons
-        const elItemSelectedName = elItemSelected.querySelector('[data-tooltip-content]').dataset.tooltipContent;
-        // -- Inject "Search in Marketplace" button
-        // ---- This only works for inventories where the "Marketplace" button exists in the hud-menu (building inventory / contruction site).
-        // ---- It does NOT work for ship-cargo and ship-propellant inventories.
-        const elHudMenuMarketplace = getElHudMenuItemByLabel(hudMenuItemLabelMarketplace);
-        if (elHudMenuMarketplace) {
-            const elMarketplaceButton = createEl('div', null, ['e115-button', 'e115-button-inventory']);
-            addTooltip(elMarketplaceButton, 'Search in Marketplace');
-            elMarketplaceButton.innerHTML = svgIconSearch;
-            elMarketplaceButton.dataset.onClickFunction = 'searchMarketplace';
-            elMarketplaceButton.dataset.onClickArgs = JSON.stringify([elItemSelectedName]);
-            elInventoryFooter.append(elMarketplaceButton);
-        }
-        // -- Inject "Production Planner" button
-        const elProductionButton = createEl('div', null, ['e115-button', 'e115-button-inventory']);
-        addTooltip(elProductionButton, 'Production Planner');
-        elProductionButton.innerHTML = svgIconProductionChains;
-        // ---- On click, open the item's production chain using the "Production Planner" tool
-        const itemNameCompact = getCompactName(elItemSelectedName);
-        const productionPlannerUrl = getToolUrlProductionPlanner() + '#' + itemNameCompact;
-        if (!closeButtonClone) {
-            closeButtonClone = getCloseButtonFromHudMenuPanel().cloneNode(true);
-        }
-        elProductionButton.dataset.onClickFunction = 'onClickToolCategoryItem';
-        elProductionButton.dataset.onClickArgs = JSON.stringify(['Production Planner', productionPlannerUrl, true]);
-        elInventoryFooter.append(elProductionButton);
-    }
     // Inject market value of selected items
     const elSelectedProductsInfo = elInventoryFooter.querySelector('div[content*="Product"]');
     if (elSelectedProductsInfo) {
@@ -1671,6 +1659,70 @@ function onClickInventoryItem(elItem) {
         const marketValueFormatted = Intl.NumberFormat().format(parseInt(marketValue));
         elSelectedProductsInfo.dataset.e115MarketValue = `Market value: ${marketValueFormatted} SWAY`;
     }
+    // Inject the "extra" inventory-footer if needed
+    let elInventoryFooterExtra = document.getElementById('e115-inventory-footer-extra');
+    if (!elInventoryFooterExtra) {
+        elInventoryFooterExtra = createEl('div', 'e115-inventory-footer-extra');
+        elInventoryFooter.append(elInventoryFooterExtra);
+    }
+    /**
+     * ALWAYS remove any injected buttons, to avoid duplicating them in this scenario:
+     * - open inventory #1, select product #A => 1st set of inventory-buttons injected
+     * - open inventory #2, select product #B => 2nd set of inventory-buttons injected
+     */
+    elInventoryFooterExtra.querySelectorAll('.e115-button-inventory').forEach(elButton => {
+        elButton.parentElement.removeChild(elButton);
+    });
+    const elsItemsSelected = getSelectedInventoryItems(elItemsList);
+    if (elsItemsSelected.length === 1) {
+        // Single item selected => inject relevant buttons
+        const elItemSelected = elsItemsSelected[0];
+        injectInventoryButtonsForSelectedItem(elItemSelected);
+    }
+}
+
+function getSelectedInventoryItems(elItemsList) {
+    return [...elItemsList.children].filter(elItemWrapper => {
+        const reactProps = getReactPropsForEl(elItemWrapper);
+        return Boolean(reactProps && reactProps.selected);
+    });
+}
+
+function injectInventoryButtonsForSelectedItem(elItemSelected) {
+    const elInventoryFooterExtra = document.getElementById('e115-inventory-footer-extra');
+    if (!elInventoryFooterExtra) {
+        return;
+    }
+    const elItemSelectedName = elItemSelected.querySelector('[data-tooltip-content]').dataset.tooltipContent;
+    // Inject "Search in Marketplace" button
+    // -- This only works for inventories where the "Marketplace" button exists in the hud-menu (building inventory / contruction site).
+    // -- It does NOT work for ship-cargo and ship-propellant inventories.
+    const elHudMenuMarketplace = getElHudMenuItemByLabel(hudMenuItemLabelMarketplace);
+    if (elHudMenuMarketplace) {
+        const elMarketplaceButton = createEl('div', null, ['e115-button', 'e115-button-inventory']);
+        addTooltip(elMarketplaceButton, 'Search in Marketplace');
+        elMarketplaceButton.innerHTML = svgIconSearch;
+        elMarketplaceButton.dataset.onClickFunction = 'searchMarketplace';
+        elMarketplaceButton.dataset.onClickArgs = JSON.stringify([elItemSelectedName]);
+        elInventoryFooterExtra.append(elMarketplaceButton);
+    }
+    // Inject "Production Planner" button
+    const elProductionButton = createEl('div', null, ['e115-button', 'e115-button-inventory']);
+    addTooltip(elProductionButton, 'Production Planner');
+    elProductionButton.innerHTML = svgIconProductionChains;
+    // -- On click, open the item's production chain using the "Production Planner" tool
+    const itemNameCompact = getCompactName(elItemSelectedName);
+    const productionPlannerUrl = getToolUrlProductionPlanner() + '#' + itemNameCompact;
+    if (!closeButtonClone) {
+        /**
+         * Ensure "closeButtonClone" set at this point, as it will be required for
+         * the "Production Planner" window to be triggered by "elProductionButton".
+         */
+        closeButtonClone = getCloseButtonFromHudMenuPanel().cloneNode(true);
+    }
+    elProductionButton.dataset.onClickFunction = 'onClickToolCategoryItem';
+    elProductionButton.dataset.onClickArgs = JSON.stringify(['Production Planner', productionPlannerUrl, true]);
+    elInventoryFooterExtra.append(elProductionButton);
 }
 
 function onMouseoverCaptainVideoPlay() {
@@ -2791,6 +2843,17 @@ function injectJobWarning(elHeader, message) {
     elHeader.parentElement.append(elJobWarning);
 }
 
+function updateCrewWindow() {
+    injectCaptainVideo();
+    injectCrewController();
+}
+
+function updateInventoryPanel() {
+    injectIndustryBuilderButton();
+    updateMarketValueOfSelectedItems();
+    updateInventoryFooterExtra();
+}
+
 /**
  * Inject various features into the DOM periodically, as needed
  */
@@ -2801,6 +2864,7 @@ function injectFeaturesPeriodically() {
          * - "highlightCrewsRationing"
          */
         updateCrewData();
+
         /**
          * The location data must be updated BEFORE calling other functions which rely on "selectedLocationData":
          * - "injectIndustryBuilderButton"
@@ -2809,14 +2873,12 @@ function injectFeaturesPeriodically() {
          * - "autoOpenResourcesPanel"
          */
         updateLocationData();
+
         injectWidgets();
-        injectCaptainVideo();
-        injectCrewController();
         injectInventoriesFilters();
         injectProcessFilter();
         injectMyOrdersProductLinks();
         injectAndApplyExtractionPercent();
-        injectIndustryBuilderButton();
         injectLocationController();
         autoHideMarketsWithoutPrice();
         autoFocusMarketSearchInput();
@@ -2826,8 +2888,11 @@ function injectFeaturesPeriodically() {
         highlightBlocklistedInventories();
         highlightCrewsRationing();
         showShipStatsForMyCrews();
-        updateMarketValueOfSelectedItems();
         warnIfWrongClassForJob();
+
+        // Grouped updates
+        updateCrewWindow();
+        updateInventoryPanel();
     }, 1000);
 }
 
@@ -2838,7 +2903,8 @@ function updatePricesPeriodically() {
     updatePrices()
     /**
      * Relatively frequent checks to determine if the prices need to be updated,
-     * but the actual frequency of API calls is defined in "isFreshCachePrices".
+     * but the actual frequency of API calls may be slower,
+     * as defined in "isFreshCachePrices" > "cacheExpiresInMilliseconds".
      */
     setInterval(updatePrices, HOUR_IN_MILLISECONDS);
 }

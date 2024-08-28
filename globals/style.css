@@ -437,11 +437,32 @@
   }
 }
 
+#hudMenuPanel {
+  -webkit-clip-path: unset;
+          clip-path: unset;
+}
+
+#e115-inventory-footer-extra {
+  align-items: center;
+  background: var(--color-bg-dark);
+  border: 1px solid rgb(68, 68, 68);
+  border-bottom: none;
+  border-right: none;
+  bottom: -8px;
+  display: flex;
+  padding: 10px 8px 17px 0;
+  position: absolute;
+  right: 100%;
+}
+#e115-inventory-footer-extra:empty {
+  display: none;
+}
+
 .e115-button-inventory {
   align-items: center;
   display: flex;
   height: 60px;
-  margin-right: 8px;
+  margin-left: 8px;
   width: 60px;
 }
 .e115-button-inventory svg {
