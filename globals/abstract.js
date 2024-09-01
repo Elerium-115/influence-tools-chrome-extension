@@ -62,3 +62,22 @@ function interpolateColor(c0, c1, f) {
 function normalize(val, min, max) {
     return (val - min) / (max - min);
 }
+
+function getShortMassOrVolume(value, type) {
+    switch (type) {
+        case 'mass':
+            // value in grams
+            if (value > 1_000_000_000_000) {
+                return Math.round(10 * value / 1_000_000_000_000) / 10 + ' Mt';
+            } else if (value > 1_000_000_000) {
+                return Math.round(10 * value / 1_000_000_000) / 10 + ' kt';
+            } else if (value > 1_000_000) {
+                return Math.round(10 * value / 1_000_000) / 10 + ' t';
+            } else {
+                return Math.round(value / 1_000) + ' kg';
+            }
+        case 'volume':
+            // value in ml
+            return Math.round(value / 1_000_000) + ' m³';
+    }
+}

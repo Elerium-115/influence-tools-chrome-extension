@@ -679,6 +679,15 @@ body[data-inventory-item-names='true'] {
     }
 }
 
+.e115-prepared {
+    [data-e115-inventory-available]::after {
+        content: attr(data-e115-inventory-available);
+        display: block;
+        font-size: 85%;
+        opacity: 0.5;
+    }
+}
+
 body[data-only-my-inventories='true'] {
     // Hide inventories NOT controlled by the player, from among "prepared" inventories
     .e115-prepared:not([data-e115-inventory-controlled-by-me='true']) {

@@ -604,6 +604,13 @@ body[data-inventory-item-names=true] table [data-tooltip-id=selectionDialogToolt
   text-align: left;
 }
 
+.e115-prepared [data-e115-inventory-available]::after {
+  content: attr(data-e115-inventory-available);
+  display: block;
+  font-size: 85%;
+  opacity: 0.5;
+}
+
 body[data-only-my-inventories=true] .e115-prepared:not([data-e115-inventory-controlled-by-me=true]) {
   display: none;
 }

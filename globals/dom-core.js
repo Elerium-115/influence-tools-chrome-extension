@@ -132,53 +132,6 @@ const selectedLocationData = {
     leaseEndTimestamp: null,
 };
 
-// Source: Influence SDK - "src/lib/building.js"
-const BUILDING_TYPE = {
-    EMPTY_LOT: 0,
-    WAREHOUSE: 1,
-    EXTRACTOR: 2,
-    REFINERY: 3,
-    BIOREACTOR: 4,
-    FACTORY: 5,
-    SHIPYARD: 6,
-    SPACEPORT: 7,
-    MARKETPLACE: 8,
-    HABITAT: 9,
-    TANK_FARM: 10,
-};
-
-// Source: Influence SDK - "src/lib/crewmate.js"
-const CLASS_IDS = {
-    UNDECIDED: 0,
-    PILOT: 1,
-    ENGINEER: 2,
-    MINER: 3,
-    MERCHANT: 4,
-    SCIENTIST: 5,
-};
-
-const CLASS_NAMES_BY_ID = {
-    0: 'Undecided',
-    1: 'Pilot',
-    2: 'Engineer',
-    3: 'Miner',
-    4: 'Merchant',
-    5: 'Scientist',
-};  
-
-// Source: Influence SDK - "src/lib/entity.js"
-const ENTITY_IDS = {
-    CREW: 1,
-    CREWMATE: 2,
-    ASTEROID: 3,
-    LOT: 4,
-    BUILDING: 5,
-    SHIP: 6,
-    DEPOSIT: 7,
-    DELIVERY: 9,
-    SPACE: 10,
-};
-
 const HOUR_IN_MILLISECONDS = 3_600_000; // 60 * 60 * 1000
 const DAY_IN_MILLISECONDS = 86_400_000; // 24 * 60 * 60 * 1000
 const YEAR_IN_SECONDS = 31_536_000; // 365 * 24 * 60 * 60
@@ -2628,6 +2581,42 @@ function autoOpenResourcesPanel() {
     elHudMenuItemResources.click();
 }
 
+function getStorageInventoryTypeId(reactInventoryData) {
+    switch (reactInventoryData.type) {
+        case 'Warehouse':
+            return INVENTORY_IDS.WAREHOUSE_PRIMARY;
+        case 'Tank Farm':
+            return INVENTORY_IDS.TANK_FARM_PRIMARY;
+        case 'Shuttle':
+            return reactInventoryData.slotLabel === 'Propellant' ? INVENTORY_IDS.PROPELLANT_SMALL : INVENTORY_IDS.CARGO_SMALL;
+        case 'Light Transport':
+            return reactInventoryData.slotLabel === 'Propellant' ? INVENTORY_IDS.PROPELLANT_MEDIUM : INVENTORY_IDS.CARGO_MEDIUM;
+        case 'Heavy Transport':
+            return reactInventoryData.slotLabel === 'Propellant' ? INVENTORY_IDS.PROPELLANT_LARGE : INVENTORY_IDS.CARGO_LARGE;
+        default:
+            return null;
+    }
+}
+
+function getInventoryStorageData(reactInventoryData) {
+    const storageInventoryTypeId = getStorageInventoryTypeId(reactInventoryData);
+    const storageInventoryTypeData = INVENTORY_TYPES[storageInventoryTypeId];
+    const allInventories = reactInventoryData.entity.Inventories;
+    const storageInventoryData = allInventories.find(inventoryData => inventoryData.inventoryType === storageInventoryTypeId);
+    // Determine available mass
+    const massCapacity = storageInventoryTypeData.massConstraint;
+    const massStored = storageInventoryData.mass;
+    const massReserved = storageInventoryData.reservedMass;
+    // Determine available volume
+    const volumeCapacity = storageInventoryTypeData.volumeConstraint;
+    const volumeStored = storageInventoryData.volume;
+    const volumeReserved = storageInventoryData.reservedVolume;
+    return {
+        massAvailable: massCapacity - massStored - massReserved,
+        volumeAvailable: volumeCapacity - volumeStored - volumeReserved,
+    };
+}
+
 /**
  * NOTE: Most of the logic in this function is responsibe for
  * generating data for each inventory, which is also required
@@ -2656,11 +2645,17 @@ async function highlightBlocklistedInventories() {
         const reactChildrenInventories = reactFiberInventories.memoizedProps.children[1].props.children;
         reactChildrenInventories.forEach(reactChildInventory => {
             const keyData = JSON.parse(reactChildInventory.key);
+            const rowData = reactChildInventory.props.row;
+            const storageData = getInventoryStorageData(rowData);
+            const inventoryAvailableMass = storageData.massAvailable;
+            const inventoryAvailableVolume = storageData.volumeAvailable;
             const inventoryId = keyData.id.toString();
-            const inventoryName = reactChildInventory.props.row.name;
+            const inventoryName = rowData.name;
             const inventoryLabel = keyData.label;
-            const inventoryType = reactChildInventory.props.row.type;
+            const inventoryType = rowData.type;
             inventoryReactDataByName[inventoryName] = {
+                inventoryAvailableMass,
+                inventoryAvailableVolume,
                 inventoryId,
                 inventoryLabel,
                 inventoryType,
@@ -2709,6 +2704,12 @@ async function highlightBlocklistedInventories() {
         elRow.dataset.e115InventoryId = inventoryReactData.inventoryId;
         elRow.dataset.e115InventoryLabel = inventoryReactData.inventoryLabel;
         elRow.dataset.e115InventoryType = inventoryReactData.inventoryType;
+        const availableMass = getShortMassOrVolume(inventoryReactData.inventoryAvailableMass, 'mass');
+        const availableVolume = getShortMassOrVolume(inventoryReactData.inventoryAvailableVolume, 'volume');
+        const elCellName = elRow.querySelector('td:nth-child(2) > div > div');
+        if (elCellName) {
+            elCellName.dataset.e115InventoryAvailable = `Free: ${availableVolume} / ${availableMass}`;
+        }
         // Self inventory if the first cell contains an SVG ("star" icon)
         // elRow.dataset.e115InventorySelf = Boolean(elRowCells[0].querySelector('svg')); // NOT used yet
     });
