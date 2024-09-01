@@ -307,6 +307,10 @@ function getCachedData() {
     return cachedData;
 }
 
+function saveCachedData() {
+    localStorage.setItem('e115CachedData', JSON.stringify(cachedData));
+}
+
 function getReactPropsForEl(el) {
     const reactPropsKey = Object.keys(el).find(key => key.includes('__reactProps'));
     if (!reactPropsKey) {
@@ -667,6 +671,10 @@ function getColorByLeaseEndTimestamp(leaseEndTimestamp) {
     const colorLimitTimestamp = MS_WEEK;
     if (diffTimestamp > colorLimitTimestamp) {
         return 'white';
+    }
+    if (diffTimestamp < 0) {
+        // Expired
+        return '#ff0000';
     }
     const progress = normalize(diffTimestamp, 0, colorLimitTimestamp);
     // Interpolate color from red (NO time remaining), to yellow ("colorLimitTimestamp" remaining)
@@ -1156,7 +1164,7 @@ function isFreshCacheCrewsDataById(crewId) {
 function setCacheCrewsDataById(crewId, crewData) {
     cachedData.crewsDataById[crewId] = crewData;
     cachedData.crewsDataById[crewId]._timestamp = Date.now();
-    localStorage.setItem('e115CachedData', JSON.stringify(cachedData));
+    saveCachedData();
 }
 
 async function updateCrewsDataByIdsIfNotSet(crewsIds) {
@@ -1200,7 +1208,7 @@ function isFreshCacheInventoriesDataByLabelAndId(inventoryLabel, inventoryId) {
 function setCacheInventoriesDataByLabelAndId(inventoryLabel, inventoryId, inventoryData) {
     cachedData.inventoriesDataByLabelAndId[inventoryLabel][inventoryId] = inventoryData;
     cachedData.inventoriesDataByLabelAndId[inventoryLabel][inventoryId]._timestamp = Date.now();
-    localStorage.setItem('e115CachedData', JSON.stringify(cachedData));
+    saveCachedData();
 }
 
 async function updateInventoriesDataByLabelAndIdsIfNotSet(inventoriesLabel, inventoriesIds) {
@@ -1249,7 +1257,7 @@ function isFreshCachePrices() {
 function setCachePrices(pricesData) {
     cachedData.prices = pricesData;
     cachedData.prices._timestamp = Date.now();
-    localStorage.setItem('e115CachedData', JSON.stringify(cachedData));
+    saveCachedData();
 }
 
 async function updatePrices() {
@@ -1281,7 +1289,7 @@ function isFreshCacheShipDataByShipId(shipId) {
 function setCacheShipDataByShipId(shipId, shipData) {
     cachedData.shipDataByShipId[shipId] = shipData;
     cachedData.shipDataByShipId[shipId]._timestamp = Date.now();
-    localStorage.setItem('e115CachedData', JSON.stringify(cachedData));
+    saveCachedData();
 }
 
 async function updateShipDataByShipIdIfNotSet(shipId) {
@@ -1456,6 +1464,13 @@ function updateCrewData() {
     }
 }
 
+/**
+ * Sort array elements by "endTime" descending
+ */
+function compareByEndTimeDescending(el1, el2) {
+    return el2.endTime - el1.endTime;
+}
+
 function updateLocationData() {
     selectedLocationData.idPrevious = selectedLocationData.idCurrent;
     const selectedLocationValues = getSelectedLocationValues();
@@ -1469,7 +1484,9 @@ function updateLocationData() {
     // System-view if "lotValue" undefined (NOT if "null")
     selectedLocationData.isSystemView = selectedLocationValues && typeof selectedLocationValues.lotValue === 'undefined';
     try {
-        selectedLocationData.leaseEndTimestamp = selectedLocationValues.lotValue.PrepaidAgreements[0].endTime * 1000;
+        // Use the latest lease
+        const leasesSorted = selectedLocationValues.lotValue.PrepaidAgreements.sort(compareByEndTimeDescending);
+        selectedLocationData.leaseEndTimestamp = leasesSorted[0].endTime * 1000;
     } catch (error) {
         selectedLocationData.leaseEndTimestamp = null;
     }
