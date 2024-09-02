@@ -62,6 +62,7 @@ const extensionSettingsDefault = {
     locationController: true, // if true, inject details about the controller of the selected location (lot, building, landed ship, asteroid)
     onlyMyInventories: false, // if true, show only inventories controlled by the player, in the "Available Inventories" window
     onlyBuildings: false, // if true, show only building inventories, in the "Available Inventories" window
+    storageInfo: true, // if true, show storage info (e.g. free volume / mass), in the "Available Inventories" window
     showShipStatsForMyCrews: true, // if true, show the loaded propellant percent in the "My Crews" list, for crews stationed on a ship
 };
 
@@ -996,6 +997,8 @@ function injectConfig() {
     document.body.dataset.onlyMyInventories = extensionSettings.onlyMyInventories;
     // Set "data-only-buildings" on "body"
     document.body.dataset.onlyBuildings = extensionSettings.onlyBuildings;
+    // Set "data-storage-info" on "body"
+    document.body.dataset.storageInfo = extensionSettings.storageInfo;
 }
 
 function injectConfigOptionCrewmateColorIntensity() {
@@ -1828,6 +1831,8 @@ function injectInventoriesFilters() {
     injectFilterWithCheckbox(elInventoriesFilters, 'Only My Inventories', 'onlyMyInventories');
     // Inject filter for "Only Buildings"
     injectFilterWithCheckbox(elInventoriesFilters, 'Only Buildings', 'onlyBuildings');
+    // Inject filter for "Storage Info"
+    injectFilterWithCheckbox(elInventoriesFilters, 'Storage Info', 'storageInfo');
     // Inject the filter right after the title (before the close-button)
     const elAvailableInventoriesHeader = elAvailableInventoriesTitle.parentElement;
     elAvailableInventoriesHeader.insertBefore(elInventoriesFilters, elAvailableInventoriesTitle.nextSibling);
@@ -2646,18 +2651,15 @@ async function highlightBlocklistedInventories() {
         reactChildrenInventories.forEach(reactChildInventory => {
             const keyData = JSON.parse(reactChildInventory.key);
             const rowData = reactChildInventory.props.row;
-            const storageData = getInventoryStorageData(rowData);
-            const inventoryAvailableMass = storageData.massAvailable;
-            const inventoryAvailableVolume = storageData.volumeAvailable;
             const inventoryId = keyData.id.toString();
             const inventoryName = rowData.name;
             const inventoryLabel = keyData.label;
+            const inventoryStorage = getInventoryStorageData(rowData);
             const inventoryType = rowData.type;
             inventoryReactDataByName[inventoryName] = {
-                inventoryAvailableMass,
-                inventoryAvailableVolume,
                 inventoryId,
                 inventoryLabel,
+                inventoryStorage,
                 inventoryType,
             };
             switch (inventoryLabel) {
@@ -2704,11 +2706,13 @@ async function highlightBlocklistedInventories() {
         elRow.dataset.e115InventoryId = inventoryReactData.inventoryId;
         elRow.dataset.e115InventoryLabel = inventoryReactData.inventoryLabel;
         elRow.dataset.e115InventoryType = inventoryReactData.inventoryType;
-        const availableMass = getShortMassOrVolume(inventoryReactData.inventoryAvailableMass, 'mass');
-        const availableVolume = getShortMassOrVolume(inventoryReactData.inventoryAvailableVolume, 'volume');
-        const elCellName = elRow.querySelector('td:nth-child(2) > div > div');
-        if (elCellName) {
-            elCellName.dataset.e115InventoryAvailable = `Free: ${availableVolume} / ${availableMass}`;
+        // Inject the storage info into the "Type" cells (i.e. below "Warehouse" / "Light Transport" etc.)
+        const elCellForStorageInfo = elRow.querySelector('td:nth-child(4)');
+        if (elCellForStorageInfo) {
+            const storageData = inventoryReactData.inventoryStorage;
+            const availableMass = getShortMassOrVolume(storageData.massAvailable, 'mass');
+            const availableVolume = getShortMassOrVolume(storageData.volumeAvailable, 'volume');
+            elCellForStorageInfo.dataset.e115InventoryAvailable = `Free: ${availableVolume} / ${availableMass}`;
         }
         // Self inventory if the first cell contains an SVG ("star" icon)
         // elRow.dataset.e115InventorySelf = Boolean(elRowCells[0].querySelector('svg')); // NOT used yet
@@ -2730,7 +2734,6 @@ async function highlightBlocklistedInventories() {
             return;
         }
         const inventoryLabel = elRow.dataset.e115InventoryLabel;
-        const inventoryType = elRow.dataset.e115InventoryType;
         const inventoryData = cachedData.inventoriesDataByLabelAndId[inventoryLabel][inventoryId];
         if (!inventoryData) {
             // Waiting for the initial API calls to inventories-data

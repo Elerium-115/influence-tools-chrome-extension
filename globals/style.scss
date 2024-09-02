@@ -679,15 +679,6 @@ body[data-inventory-item-names='true'] {
     }
 }
 
-.e115-prepared {
-    [data-e115-inventory-available]::after {
-        content: attr(data-e115-inventory-available);
-        display: block;
-        font-size: 85%;
-        opacity: 0.5;
-    }
-}
-
 body[data-only-my-inventories='true'] {
     // Hide inventories NOT controlled by the player, from among "prepared" inventories
     .e115-prepared:not([data-e115-inventory-controlled-by-me='true']) {
@@ -699,6 +690,24 @@ body[data-only-buildings='true'] {
     // Hide inventories which are NOT a building, from among "prepared" inventories
     .e115-prepared:not([data-e115-inventory-is-building='true']) {
         display: none;
+    }
+}
+
+body[data-storage-info='true'] {
+    .e115-prepared {
+        [data-e115-inventory-available] {
+            &::after {
+                content: attr(data-e115-inventory-available);
+                display: block;
+                font-size: 85%;
+                opacity: 0.5;
+                padding: 0 16px;
+            }
+
+            > div {
+                height: unset;
+            }
+        }
     }
 }
 
@@ -790,7 +799,7 @@ body[data-only-buildings='true'] {
 #e115-inventories-filters {
     border: none;
     display: flex;
-    font-size: unset;
+    font-size: 80%;
     margin: 0 15px;
     text-transform: unset;
 }
