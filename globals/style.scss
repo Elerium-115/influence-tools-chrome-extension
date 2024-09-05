@@ -695,6 +695,26 @@ body[data-only-buildings='true'] {
 
 body[data-storage-info='true'] {
     .e115-prepared {
+        [data-e115-inventory-unavailable] {
+            border-right: 1px solid #171717;
+            position: relative;
+
+            &::before {
+                background: var(--color-influence-faded-35);
+                content: '';
+                display: block;
+                height: 10px;
+                left: 0;
+                position: absolute;
+                top: calc(50% - 5px);
+                width: var(--percent-unavailable);
+            }
+
+            > div {
+                filter: drop-shadow(0 0 1px black);
+            }
+        }
+
         [data-e115-inventory-available] {
             &::after {
                 content: attr(data-e115-inventory-available);

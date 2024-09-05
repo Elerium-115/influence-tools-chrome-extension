@@ -2616,9 +2616,13 @@ function getInventoryStorageData(reactInventoryData) {
     const volumeCapacity = storageInventoryTypeData.volumeConstraint;
     const volumeStored = storageInventoryData.volume;
     const volumeReserved = storageInventoryData.reservedVolume;
+    // Determine unavailable percent re: mass and volume
+    const massPercent = Math.round(100 * (massStored + massReserved) / massCapacity);
+    const volumePercent = Math.round(100 * (volumeStored + volumeReserved) / volumeCapacity);
     return {
         massAvailable: massCapacity - massStored - massReserved,
         volumeAvailable: volumeCapacity - volumeStored - volumeReserved,
+        percentUnavailable: Math.max(massPercent, volumePercent),
     };
 }
 
@@ -2706,13 +2710,19 @@ async function highlightBlocklistedInventories() {
         elRow.dataset.e115InventoryId = inventoryReactData.inventoryId;
         elRow.dataset.e115InventoryLabel = inventoryReactData.inventoryLabel;
         elRow.dataset.e115InventoryType = inventoryReactData.inventoryType;
-        // Inject the storage info into the "Type" cells (i.e. below "Warehouse" / "Light Transport" etc.)
-        const elCellForStorageInfo = elRow.querySelector('td:nth-child(4)');
-        if (elCellForStorageInfo) {
-            const storageData = inventoryReactData.inventoryStorage;
+        const storageData = inventoryReactData.inventoryStorage;
+        // Inject the unavailable-percent bar into the first column
+        const elCellForStorageInfoBar = elRow.querySelector('td:first-child');
+        if (elCellForStorageInfoBar) {
+            elCellForStorageInfoBar.dataset.e115InventoryUnavailable = storageData.percentUnavailable;
+            elCellForStorageInfoBar.style.setProperty('--percent-unavailable', `${storageData.percentUnavailable}%`);
+        }
+        // Inject the storage info into the "Type" column (i.e. below "Warehouse" / "Light Transport" etc.)
+        const elCellForStorageInfoFree = elRow.querySelector('td:nth-child(4)');
+        if (elCellForStorageInfoFree) {
             const availableMass = getShortMassOrVolume(storageData.massAvailable, 'mass');
             const availableVolume = getShortMassOrVolume(storageData.volumeAvailable, 'volume');
-            elCellForStorageInfo.dataset.e115InventoryAvailable = `Free: ${availableVolume} / ${availableMass}`;
+            elCellForStorageInfoFree.dataset.e115InventoryAvailable = `Free: ${availableVolume} / ${availableMass}`;
         }
         // Self inventory if the first cell contains an SVG ("star" icon)
         // elRow.dataset.e115InventorySelf = Boolean(elRowCells[0].querySelector('svg')); // NOT used yet
