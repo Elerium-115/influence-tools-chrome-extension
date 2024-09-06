@@ -763,13 +763,8 @@ function injectUrlParam(url, key, value) {
     return urlData.href;
 }
 
-function onClickToolCategoryItem(title, url, autoInjectUrlParams) {
-    // Check if window already exists with the same "title"
-    const elMatchingWindow = document.querySelector(`[data-e115-window-id="${title}"]`);
-    if (elMatchingWindow) {
-        return;
-    }
-    // Close any injected window (but keep any official window)
+function onClickToolCategoryItem(title, url, autoInjectUrlParams = true) {
+    // Close any injected window
     const elOldWindowClose = document.querySelector('.e115-window-close');
     if (elOldWindowClose) {
         elOldWindowClose.click();
@@ -1694,7 +1689,7 @@ function injectInventoryButtonsForSelectedItem(elItemSelected) {
         closeButtonClone = getCloseButtonFromHudMenuPanel().cloneNode(true);
     }
     elProductionButton.dataset.onClickFunction = 'onClickToolCategoryItem';
-    elProductionButton.dataset.onClickArgs = JSON.stringify(['Production Planner', productionPlannerUrl, true]);
+    elProductionButton.dataset.onClickArgs = JSON.stringify(['Production Planner', productionPlannerUrl, false]);
     elInventoryFooterExtra.append(elProductionButton);
 }
 
@@ -2941,27 +2936,18 @@ function updatePricesPeriodically() {
 }
 
 /**
- * Handle messages e.g. from tools iframe / widgets iframe
+ * Open the Production Planner tool for the corresponding product and process variant
  */
-function handleMessage(event) {
-    // Migrating from "widget events" to more generic "tool events"
-    const toolEventKey = event.data.toolEventKey;
-    const toolEventValue = event.data.toolEventValue;
-    if (!toolEventKey || !toolEventValue) {
-        // Not a valid message format, or not a message from the tools iframe / widgets iframe
+function handleProcessProfitsClickedListItem(listItemData) {
+    if (!listItemData || typeof listItemData !== 'object') {
         return;
     }
-    // Debug valid message format for community devs
-    console.log(`Tool event data:`, {toolEventKey, toolEventValue});
-    switch (toolEventKey) {
-        case 'SHOPPING_LIST_CLICKED_PRODUCT_NAME':
-            searchMarketplace(toolEventValue);
-            break;
-        case 'PRIVATE_LABELS_UPDATED':
-            const customDataByAddress = JSON.parse(toolEventValue);
-            handlePrivateLabelsUpdated(customDataByAddress);
-            break;
-    }
+    const {processName, productName} = listItemData;
+    const productNameCompact = getCompactName(productName);
+    const processNameCompact = getCompactName(processName);
+    // Special URL format with 4x "_" between the compact product name and process name
+    const productionPlannerUrl = `${getToolUrlProductionPlanner()}#${productNameCompact}____${processNameCompact}`;
+    onClickToolCategoryItem('Production Planner', productionPlannerUrl, false);
 }
 
 /**
@@ -2983,6 +2969,33 @@ function handlePrivateLabelsUpdated(customDataByAddress) {
     }
     localStorage.setItem('e115CustomBlacklistByAddress', JSON.stringify(customBlacklistByAddress));
     localStorage.setItem('e115CustomNameByAddress', JSON.stringify(customNameByAddress));
+}
+
+/**
+ * Handle messages e.g. from tools iframe / widgets iframe
+ */
+function handleMessage(event) {
+    // Migrating from "widget events" to more generic "tool events"
+    const toolEventKey = event.data.toolEventKey;
+    const toolEventValue = event.data.toolEventValue;
+    if (!toolEventKey || !toolEventValue) {
+        // Not a valid message format, or not a message from the tools iframe / widgets iframe
+        return;
+    }
+    // Debug valid message format for community devs
+    console.log(`Tool event data:`, {toolEventKey, toolEventValue});
+    switch (toolEventKey) {
+        case 'SHOPPING_LIST_CLICKED_PRODUCT_NAME':
+            searchMarketplace(toolEventValue);
+            break;
+        case 'PROCESS_PROFITS_CLICKED_LIST_ITEM':
+            handleProcessProfitsClickedListItem(toolEventValue);
+            break;
+        case 'PRIVATE_LABELS_UPDATED':
+            const customDataByAddress = JSON.parse(toolEventValue);
+            handlePrivateLabelsUpdated(customDataByAddress);
+            break;
+    }
 }
 
 // Source: https://gist.github.com/Machy8/1b0e3cd6c61f140a6b520269acdd645f

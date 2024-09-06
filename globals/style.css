@@ -159,7 +159,7 @@
   height: 100%;
   padding: 25px;
   width: 100%;
-  z-index: 4;
+  z-index: 15;
 }
 .e115-window-wrapper .e115-window {
   background-color: black;
