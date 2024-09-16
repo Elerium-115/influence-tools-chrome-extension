@@ -122,6 +122,7 @@ const cachedData = getCachedData();
 const selectedCrewData = {
     crewmates: [],
     rationing: null,
+    foodRatio: null,
 };
 
 const selectedLocationData = {
@@ -607,7 +608,7 @@ function getToolUrlProcessFinder() {
  * Source: Influence SDK - "src/lib/crew.js"
  * @param timeSinceFed In-game seconds since the crew was last fully fed
  */
-const getCurrentFoodRatio = (timeSinceFed = 0, consumption = 1) => {
+function getCurrentFoodRatio(timeSinceFed = 0, consumption = 1) {
     const timeSinceFedInYears = timeSinceFed / YEAR_IN_SECONDS;
     const adjustedTimeSince = timeSinceFedInYears / consumption; // Simulates slower consumption
     return Math.min(
@@ -619,6 +620,17 @@ const getCurrentFoodRatio = (timeSinceFed = 0, consumption = 1) => {
         1
     );
 };
+
+function getCrewFoodRatioFromCrewPropValue(crewPropValue) {
+    try {
+        const crewConsumption = crewPropValue._foodBonuses.consumption;
+        const crewLastFed = crewPropValue.Crew.lastFed;
+        const crewTimeSinceFed = (Date.now() / 1000 - crewLastFed) * 24;
+        return Math.round(getCurrentFoodRatio(parseInt(crewTimeSinceFed), crewConsumption) * 100);
+    } catch (error) {
+        return null;
+    }
+}
 
 function getColorByLeaseEndTimestamp(leaseEndTimestamp) {
     const diffTimestamp = leaseEndTimestamp - Date.now();
@@ -1403,10 +1415,13 @@ function updateCrewData() {
     const selectedCrewValues = getSelectedCrewValues();
     try {
         selectedCrewData.crewmates = selectedCrewValues.crewValue._crewmates.map(crewmateData => ({class: crewmateData.Crewmate.class}));
+        // WARNING: "rationing" is no longer lower than 1 (even if food e.g. 48%) as of 2024-09-16
         selectedCrewData.rationing = selectedCrewValues.crewValue._foodBonuses.rationing;
+        selectedCrewData.foodRatio = getCrewFoodRatioFromCrewPropValue(selectedCrewValues.crewValue);
     } catch (error) {
         selectedCrewData.crewmates = [];
         selectedCrewData.rationing = null;
+        selectedCrewData.foodRatio = null;
     }
     // Mark the selected crew panel for CSS
     const elSelectedCrewPanel = getElSelectedCrewPanel();
@@ -2764,12 +2779,15 @@ async function highlightBlocklistedInventories() {
 function highlightCrewsRationing() {
     const isEnabledHighlight = extensionSettings.highlightCrewsRationing;
     // Highlight selected crew if rationing
-    if (selectedCrewData.rationing !== null) {
-        const elSelectedCrewPanel = getElSelectedCrewPanel();
-        if (elSelectedCrewPanel) {
-            const shouldHighlight = selectedCrewData.rationing < 1 && isEnabledHighlight;
-            elSelectedCrewPanel.classList.toggle('e115-crew-rationing', shouldHighlight);
-        }
+    const elSelectedCrewPanel = getElSelectedCrewPanel();
+    if (elSelectedCrewPanel) {
+        /**
+         * NOTE: Using both "rationing" and "lastFed" to determine if "shouldHighlightSelectedCrew",
+         * b/c "rationing" is no longer lower than 1 (even if food e.g. 48%) as of 2024-09-16
+         */
+        const isRationing = Boolean(selectedCrewData.rationing !== null && selectedCrewData.rationing < 1);
+        const shouldHighlightSelectedCrew = isEnabledHighlight && (isRationing || selectedCrewData.foodRatio < 50);
+        elSelectedCrewPanel.classList.toggle('e115-crew-rationing', shouldHighlightSelectedCrew);
     }
     // Highlight "My Crews" which are rationing
     const elsCrews = getElsMyCrews();
@@ -2781,16 +2799,15 @@ function highlightCrewsRationing() {
         const reactChildren = reactFiberCrew.memoizedProps.children;
         const crewData = getReactPropDataFromChildrenRecursive('crew', reactChildren);
         try {
-            const crewRationing = crewData.propValue._foodBonuses.rationing;
-            if (crewRationing < 1) {
-                const shouldHighlight = crewRationing < 1 && isEnabledHighlight;
-                elCrew.classList.toggle('e115-my-crew-rationing', shouldHighlight);
-            }
-            const crewConsumption = crewData.propValue._foodBonuses.consumption;
-            const crewLastFed = crewData.propValue.Crew.lastFed;
-            const crewTimeSinceFed = (Date.now() / 1000 - crewLastFed) * 24;
-            const crewFoodRatio = Math.round(getCurrentFoodRatio(parseInt(crewTimeSinceFed), crewConsumption) * 100);
+            const crewFoodRatio = getCrewFoodRatioFromCrewPropValue(crewData.propValue);
             elCrew.dataset.e115CrewFoodRatio = `${crewFoodRatio}%`;
+            /**
+             * NOTE: Using both "rationing" and "lastFed" to determine if "shouldHighlight",
+             * b/c "rationing" is no longer lower than 1 (even if food e.g. 48%) as of 2024-09-16
+             */
+            const crewRationing = crewData.propValue._foodBonuses.rationing;
+            const shouldHighlight = isEnabledHighlight && (crewRationing < 1 || crewFoodRatio < 50);
+            elCrew.classList.toggle('e115-my-crew-rationing', shouldHighlight);
         } catch (error) {
             // Swallow this error
         }
