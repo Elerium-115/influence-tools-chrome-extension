@@ -287,6 +287,7 @@ const toolsDefault = [
         items: [
             {title: 'Raw Materials', author: 'Elerium115', url: 'https://influence.elerium.dev/'},
             // {title: 'Materials Ratios', author: 'Elerium115', url: 'https://influence.elerium.dev/ratios.html'}, // misleading unless reworked
+            {title: 'Mining Companion', author: 'Denker', url: 'https://www.floodgate.space/tools/mining-companion'},
         ],
     },
     {
