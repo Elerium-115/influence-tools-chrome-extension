@@ -302,6 +302,7 @@ const toolsDefault = [
             {title: 'Production Tracker', author: 'Denker', url: 'https://www.adalia.info/tools/production-tracker'},
             {title: 'Public Buildings', author: 'Denker', url: 'https://www.adalia.info/tools/public-buildings'},
             // {title: 'Product List', author: 'Daharius', url: 'https://influence.daharius.com/ProductList'}, // removed as requested by Daharius @ 2024-03-19
+            {title: 'Industry Planner', author: 'Elerium115', url: 'https://influence-industry-planner.elerium.dev/'},
         ],
     },
     {
